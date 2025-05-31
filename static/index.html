@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script src="/js/deps/lodash.min.js" defer type="application/javascript"></script>
+  <script src="/js/generic.js" defer type="application/javascript"></script>
+  <script src="/js/mainctrl.js" defer type="application/javascript"></script>
+  <script src="/js/ajax.js" defer type="application/javascript"></script>
+  <script src="/js/home.js" defer type="application/javascript"></script>
+  <script src="/js/status.js" defer type="application/javascript"></script>
+  <script src="/js/controls.js" defer type="application/javascript"></script>
+  <script src="/js/settings.js" defer type="application/javascript"></script>
+  <title>Bloodfly MUI</title>
+</head>
+
+<body class="flex-c">
+  <header class="f-noshrink">
+    <nav>
+      <button type="button" id="goto-home" class="active">BfMUI</button>
+      <button type="button" id="goto-status">Status</button>
+      <button type="button" id="goto-controls">Controls</button>
+      <button type="button" id="goto-settings">Settings</button>
+
+      <button type="button" id="reload-app">♻</button>
+    </nav>
+  </header>
+
+  <section class="f-grow">
+    <div class="main-content">
+
+      <div class="view-tab flex-c" id="view-home">
+        <div id="home-intro">
+          <h2>Bloodfly MUI</h2>
+          <p>Welcome to the Bloodfly Mobile UI app.</p>
+          <p>Start by going to Settings and connecting to a device running the
+            Bloodfly Control server on the same local network over HTTP.</p>
+          <p>Enjoy. It's awesome.</p>
+          <button type="button" class="btn" id="home-hide-intro-btn">Hide & don't show again</button>
+        </div>
+
+        <div id="home-sysinfo">
+          <h2>System info</h2>
+          <div id="home-sysinfo-inner" class="flex-c" style="gap: 12px;"><p>Not connected.</p></div>
+        </div>
+      </div>
+
+
+      <div class="view-tab flex-c" id="view-status">
+        <div id="status-telemetry">
+          <h2>Telemetry</h2>
+          <div id="status-telemetry-inner" class="flex-c" style="gap: 12px;"></div>
+        </div>
+
+        <div id="status-controllers">
+          <h2>Controllers</h2>
+          <div id="status-controllers-inner" class="flex-c" style="gap: 12px;"></div>
+        </div>
+      </div>
+
+
+      <div class="view-tab flex-c" id="view-controls">
+        <div id="controls-buttons">
+          <h2>Buttons / actions</h2>
+          <div id="controls-buttons-inner" class="flex-c" style="gap: 8px;">
+            <p>Connect to load options.</p>
+          </div>
+        </div>
+
+        <div id="controls-axes">
+          <h2>Axes</h2>
+          <div id="controls-axes-inner" class="flex-c" style="gap: 8px;">
+            <p>Connect to load options.</p>
+          </div>
+        </div>
+
+        <div id="controls-btn-wrapper" class="flex-r f-j-c" style="gap: 8px;"></div>
+      </div>
+
+
+      <div class="view-tab flex-c" id="view-settings">
+        <div id="settings-connection">
+          <h2>Connection</h2>
+          <p id="settings-connection-status">Currently not connected.</p>
+          <p>Server IP + port</p>
+          <div class="flex-r" style="margin-bottom: 16px;">
+            <input id="input-ip" type="text" pattern="^[\d.]+$" maxlength="15" />
+            <span>:</span>
+            <input id="input-port" type="text" pattern="^\d+$" maxlength="4" />
+            <button type="button" class="btn" id="settings-connect-btn">Connect</button>
+          </div>
+          <p>Polling interval (ms)</p>
+          <div class="flex-r" style="gap: 8px;">
+            <input id="input-poll-interval" type="text" pattern="^\d+$" maxlength="5" />
+            <button type="button" class="btn" id="settings-poll-start-btn" disabled="">Start</button>
+            <button type="button" class="btn" id="settings-poll-pause-btn" disabled="">Stop</button>
+          </div>
+        </div>
+
+        <div>
+          <h2>Miscellaneous</h2>
+          <div class="flex-r">
+            <button type="button" class="btn" id="settings-reset-btn">Reset app settings</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</body>
