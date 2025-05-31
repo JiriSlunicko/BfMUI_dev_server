@@ -76,8 +76,21 @@ h4 {
   font-size: 12px;
 }
 
-.no-margin-bottom {
-  margin-bottom: 0;
+.mb0 {
+  margin-bottom: 0 !important;
+}
+
+.mb16 {
+  margin-bottom: 16px !important;
+}
+
+.w100 {
+  width: 100% !important;
+}
+
+label > span {
+  font-size: 12px;
+  color: var(--bg-darker);
 }
 
 button.btn {
@@ -97,7 +110,7 @@ button.btn:disabled {
   cursor: not-allowed;
 }
 
-input[type=text] {
+input[type=text], select {
   font-size: 18px;
   font-family: monospace;
   outline: none;
@@ -106,7 +119,7 @@ input[type=text] {
   color: var(--bg-darker);
   padding: 0.5ch;
 }
-input[type=text]:invalid {
+input[type=text]:invalid, select:invalid {
   background-color: var(--bad);
 }
 
@@ -144,6 +157,22 @@ input[type=text]:invalid {
   justify-content: center;
 }
 
+.f-g4 {
+  gap: 4px;
+}
+
+.f-g8 {
+  gap: 8px;
+}
+
+.f-g12 {
+  gap: 12px;
+}
+
+.f-g16 {
+  gap: 16px;
+}
+
 .modal-bg {
   position: absolute;
   z-index: 10;
@@ -157,6 +186,7 @@ input[type=text]:invalid {
   padding: 12px;
   width: 80%;
   border-radius: 3px;
+  margin-top: 48px;
 }
 
 .toast-container {

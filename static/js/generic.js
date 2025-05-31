@@ -50,14 +50,14 @@ function makePopup(type, msg, title=null) {
 
   return new Promise(resolve => {
     const bg = document.createElement("div");
-    bg.className = "modal-bg flex-c f-j-c f-a-c";
+    bg.className = "modal-bg flex-c f-a-c";
     const fg = document.createElement("div");
     fg.className = "modal-fg flex-c f-a-c";
 
     let html = "";
     if (title) html += `<h3>${title}</h3>`;
     html += `<p>${msg}</p>`;
-    html += `<div class="flex-r f-j-c" style="gap: 8px;">`;
+    html += `<div class="flex-r f-j-c f-g8">`;
     html +=   `<button type="button" class="btn" id="modal-ok-btn">Ok</button>`;
     if (type === "confirm") {
       html += `<button type="button" class="btn" id="modal-cancel-btn">Cancel</button>`;

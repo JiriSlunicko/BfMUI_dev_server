@@ -19,15 +19,14 @@ async function renderControlsInterface() {
   qs("#view-controls").addEventListener("click", function(e) {
     const mapping = e.target.closest(".ctrl-wrapper");
     if (mapping) {
-      const kind = mapping.dataset.kind;
-      const relevantAction = mapping.dataset.output;
-      makeMappingModal(kind, relevantAction, mapping.querySelector(".ctrl-input-current").innerText);
+      makeMappingModal(mapping);
       return;
     }
 
-    const submitButton = e.target.closest("#ctrl-submit-btn");
+    const submitButton = e.target.closest("#controls-submit-btn");
     if (submitButton) {
       submitMappings();
+      return;
     }
   });
 }
@@ -63,7 +62,7 @@ const makeMappingList = function(kind) {
     item.dataset.output = output;
     if (kind === "axis") {
       item.dataset.mapping = mapping?.inAxis || "None";
-      item.dataset.inverted = mapping?.invert || 0;
+      item.dataset.inverted = mapping?.invert || "false";
       item.dataset.deadzone = mapping?.deadzone || 0.0;
       item.dataset.gain = typeof mapping?.gain === "number" ? mapping.gain : -1;
     } else {
@@ -81,29 +80,29 @@ const makeMappingList = function(kind) {
 
 /**
  * Create a modal for mapping controller inputs to plane outputs.
- * @param {"button"|"axis"} kind are we mapping an action or an axis?
- * @param {string} output target action/axis
- * @param {string} currentInput setting currently active in the interface
+ * @param {Element} mapping .ctrl-wrapper for the mapping in DOM
  */
-function makeMappingModal(kind, output, currentInput) {
+function makeMappingModal(mapping) {
   if (qs(".modal-bg")) {
     console.error("Tried to open a control mapping modal while another modal was open.");
     return;
   }
 
-  currentInput = currentInput.split(/\s*,\s*/);
+  const kind = mapping.dataset.kind;
+  const output = mapping.dataset.output;
+  const currentInput = mapping.dataset.mapping.split(/\s*,\s*/);
   while (currentInput.length < 2) currentInput.push("None");
 
   const bg = document.createElement("div");
-  bg.className = "modal-bg flex-c f-j-c f-a-c";
+  bg.className = "modal-bg flex-c f-a-c";
   bg.dataset.output = output;
   const fg = document.createElement("div");
   fg.className = "modal-fg flex-c f-a-c";
   fg.insertAdjacentHTML("beforeend", `
     <h3 class="hal-center break-word">${output.replace(/([A-Z]+)/g, "<wbr />$1")}</h3>
-    <p class="hal-center">Select ${kind === "button"
+    <p class="hal-center mb16">Select ${kind === "button"
       ? "0-2 buttons. If 2 are selected, both need to be pressed simultaneously."
-      : "input axis."}</p>
+      : "input axis and its parameters."}</p>
   `);
 
   const priSelect = makeInputSelect(
@@ -116,10 +115,40 @@ function makeMappingModal(kind, output, currentInput) {
   if (kind === "button") {
     const secSelect = makeInputSelect("ctrl-input-secondary", g.controls.buttons, currentInput[1]);
     fg.appendChild(secSelect);
+  } else {
+    const inverted = mapping.dataset.inverted === "false" ? false : true;
+    const deadzone = mapping.dataset.deadzone;
+    const gain = mapping.dataset.gain;
+    fg.insertAdjacentHTML("beforeend", `
+      <label for="ctrl-input-invert" class="flex-c f-g4 w100 mb16">
+        <span>Axis direction</span>
+        <select id="ctrl-input-invert" class="ctrl-modal-options mb0">
+          <option class="ctrl-modal-option" value="normal"${inverted ? "" : " selected"}>not inverted</option>
+          <option class="ctrl-modal-option" value="inverted"${inverted ? " selected": ""}>inverted</option>
+        </select>
+      </label>
+      <label for="ctrl-input-deadzone" class="flex-c f-g4 w100 mb16">
+        <span>Deadzone (0–1)</span>
+        <input id="ctrl-input-deadzone" type="text" class="w100" pattern="^\\d*[\\.,]?\\d+$" maxlength="4"
+          value="${deadzone}"/>
+      </label>
+      <label for="ctrl-input-method" class="flex-c f-g4 w100 mb16">
+        <span>Input processing</span>
+        <select id="ctrl-input-method" class="ctrl-modal-options mb0">
+          <option class="ctrl-modal-option" value="direct"${gain < 0 ? " selected" : ""}>direct</option>
+          <option class="ctrl-modal-option" value="differential"${gain < 0 ? "": " selected"}>differential</option>
+        </select>
+      </label>
+      <label for="ctrl-input-gain" class="flex-c f-g4 w100 mb16">
+        <span>Gain (diff. input only)</span>
+        <input id="ctrl-input-gain" type="text" class="w100" pattern="^^\\d*[\\.,]?\\d+$" maxlength="5"
+          value="${gain < 0 ? "0" : gain}" />
+      </label>
+    `);
   }
 
   fg.insertAdjacentHTML("beforeend", `
-    <div class="flex-r f-j-c" style="gap: 8px;">
+    <div class="flex-r f-j-c f-g8">
       <button type="button" class="btn" id="ctrl-modal-ok">Ok</button>
       <button type="button" class="btn" id="ctrl-modal-cancel">Cancel</button>
     </div>
@@ -176,17 +205,55 @@ function applyCtrlMapping(kind) {
   if (whitelistedMappings
   && !whitelistedMappings.some(x => _.isEqual(x, _.sortBy(desiredMapping)))) {
     makeToast("error", "This mapping is not allowed. Whitelisted options for this action/axis:\n\n"
-      + whitelistedMappings.map(x => `<p class="tiny-p no-margin-bottom">${x.join(" + ")}</p>`).join(""),
+      + whitelistedMappings.map(x => `<p class="tiny-p mb0">${x.join(" + ")}</p>`).join(""),
       5000
     );
     return;
   }
 
   const resolvedMapping = desiredMapping.join(", ");
-  relevantWrapper.dataset.mapping = resolvedMapping;
-  mappingInDOM.innerText = resolvedMapping;
-  if ((kind === "button" && resolvedMapping !== g.controls.actionMappings[output]?.button)
-   || false) { // TODO: separate handling for axes & their parameters
+  let newInvert, newDeadzone, newMode, newGain;
+  let hasChanged = false;
+  if (kind === "button") {
+    if (resolvedMapping !== g.controls.actionMappings[output]?.button) {
+      hasChanged = true;
+    }
+  } else if (kind === "axis") {
+    try {
+      newInvert = modal.querySelector("#ctrl-input-invert")?.value === "inverted";
+      newDeadzone = Number(modal.querySelector("#ctrl-input-deadzone")?.value?.replace(",", ".") || 0);
+      if (isNaN(newDeadzone) || newDeadzone < 0 || newDeadzone > 1) {
+        throw new Error(`invalid deadzone '${newDeadzone}' (must be a number 0.0–1.0)`)
+      }
+      newMode = modal.querySelector("#ctrl-input-method")?.value || "direct";
+      newGain = Number(modal.querySelector("#ctrl-input-gain").value?.replace(",", ".") || 0);
+      if (isNaN(newGain) || newGain < 0) {
+        throw new Error(`invalid gain '${newGain}' (must be a non-negative number)`)
+      }
+    } catch (err) {
+      makeToast("error", `Error processing modal data for axis:\n\n${err.toString()}`, 7500);
+      return;
+    }
+
+    const currentSettings = g.controls.axisMappings[output];
+    if (resolvedMapping !== currentSettings?.inAxis
+    ||        newInvert !== currentSettings?.invert
+    ||      newDeadzone !== currentSettings?.deadzone
+    ||          newMode !== currentSettings?.mode
+    || (currentSettings?.mode === "differential" && newGain !== currentSettings?.gain)
+    ) {
+      hasChanged = true;
+    }
+  }
+
+  if (hasChanged) {
+    mappingInDOM.innerText = resolvedMapping;
+    relevantWrapper.dataset.mapping = resolvedMapping;
+    if (kind === "axis") {
+      relevantWrapper.dataset.inverted = newInvert;
+      relevantWrapper.dataset.deadzone = newDeadzone;
+      relevantWrapper.dataset.gain = newMode === "differential" ? newGain : -1;
+    }
     mappingInDOM.classList.add("modified");
     makeToast("success", "Mapping staged.\n\nHit the 'Apply' button to submit to server.");
   } else {
@@ -306,7 +373,11 @@ function convertAxisMappings(respMappings) {
       inAxis: mapping.ControllerAxis,
       invert: mapping.Inverted,
       deadzone: mapping.ControllerAxisDeadBand,
-      mode: mapping.FinalValueAssigner.$type,
+      mode: mapping.FinalValueAssigner.$type === "DifferenceValueAssigner"
+        ? "differential"
+        : mapping.FinalValueAssigner.$type === "DirectValueAssigner"
+        ? "direct"
+        : "undefined",
       gain: mapping.FinalValueAssigner.Gain || null,
     }
   }

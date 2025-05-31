@@ -36,8 +36,14 @@ h4 { font-size: 16px; color: var(--bg-darkest); margin-bottom: 8px; }
 .val-middle { vertical-align: middle; }
 .break-word { word-break: break-word; }
 .tiny-p { font-size: 12px; }
-.no-margin-bottom { margin-bottom: 0; }
+.mb0 { margin-bottom: 0 !important; }
+.mb16 { margin-bottom: 16px !important; }
+.w100 { width: 100% !important; }
 
+label>span {
+    font-size: 12px;
+    color: var(--bg-darker);
+}
 button.btn {
     font-size: 16px;
     color: var(--bg-brightest);
@@ -54,8 +60,7 @@ button.btn {
         cursor: not-allowed;
     }
 }
-
-input[type=text] {
+input[type=text], select {
     font-size: 18px;
     font-family: monospace;
     outline: none;
@@ -83,6 +88,10 @@ input[type=text] {
 .f-noshrink { flex-shrink: 0; }
 .f-a-c { align-items: center; }
 .f-j-c { justify-content: center; }
+.f-g4 { gap: 4px; }
+.f-g8 { gap: 8px; }
+.f-g12 { gap: 12px; }
+.f-g16 { gap: 16px; }
 
 .modal-bg {
     position: absolute;
@@ -96,6 +105,7 @@ input[type=text] {
     padding: 12px;
     width: 80%;
     border-radius: 3px;
+    margin-top: 48px;
 }
 
 .toast-container {
