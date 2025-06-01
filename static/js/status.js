@@ -31,11 +31,12 @@ function renderControllers() {
   }
 
   for (const [key, value] of Object.entries(ctrlData)) {
+    const { Name, IsConnected } = value;
     createOrUpdateEntry(
       "#status-controllers-inner",
       "ctrl-"+key,
       key,
-      {"": value}
+      {[Name]: IsConnected === true ? "connected" : "disconnected"}
     );
   }
   clearDeadEntries("#status-controllers-inner", Object.keys(ctrlData).map(x => "ctrl-"+x));

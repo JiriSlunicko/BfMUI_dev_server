@@ -5,6 +5,9 @@ document.addEventListener("DOMContentLoaded", () => {
     qs("#input-ip").value = ip;
     qs("#input-port").value = port;
     connect();
+    if (!g.controls.actions.length && g.currentPage === "controls") {
+      renderControlsInterface();
+    }
   }
   qs("#input-poll-interval").value = g.server.pollDelay;
   qs("#settings-reset-btn").addEventListener("click", resetSettings);
