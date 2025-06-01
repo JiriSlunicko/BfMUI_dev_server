@@ -93,7 +93,7 @@ function loadPage(targetPage) {
       renderControllers();
       break;
     case "controls":
-      if (!g.controls.actions.length) {
+      if (!g.controls.actions.length && g.server.info) {
         renderControlsInterface();
       }
       break;
