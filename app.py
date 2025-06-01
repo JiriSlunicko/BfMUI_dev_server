@@ -2,6 +2,7 @@ from flask import Flask, send_from_directory
 import sys
 import traceback
 from pathlib import Path
+from datetime import datetime
 
 # initialise config
 ################################################################
@@ -33,8 +34,9 @@ try:
     with open("key.txt", "r", encoding="utf-8") as f:
         app.secret_key = f.read()
 except:
-    _ = input("Missing key.txt. Make sure it exists in the same directory.")
-    sys.exit(1)
+    print("WARNING: Missing or corrupted key.txt, falling back to default placeholder.\n"
+        + "(Bad idea in real world situations, but this isn't one.)")
+    app.secret_key = f"bfmui-{int(datetime.now().timestamp() * 1000)}"
 
 
 # define routes
