@@ -1,5 +1,8 @@
 key.txt
 *.code-workspace
-.vscode
-svg
+.vscode/
+svg/
 minify_svg.py
+build/
+dist/
+*.spec
