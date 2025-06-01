@@ -1,9 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
   if (g.server.baseurl) {
-    const ip = g.server.baseurl.replace(/^https?:\/\/([\d.]+):.*$/, "$1");
-    const port = g.server.baseurl.replace(/^https?:\/\/[\d.]+:(\d+).*?$/, "$1");
+    const urlWithoutProtocol = g.server.baseurl.replace(/^https?:\/\//, "")
+    const [ip, port] = urlWithoutProtocol.split(":");
     qs("#input-ip").value = ip;
     qs("#input-port").value = port;
+    connect();
   }
   qs("#input-poll-interval").value = g.server.pollDelay;
   qs("#settings-reset-btn").addEventListener("click", resetSettings);

@@ -6,7 +6,7 @@ const qsa = sel => document.querySelectorAll(sel);
 const g = {
   currentPage: localStorage.getItem("activeTab") || "home",
   server: {
-    baseurl: localStorage.getItem("serverBaseurl"),
+    baseurl: localStorage.getItem("serverBaseurl") || "http://localhost:8080",
     pollDelay: Number(localStorage.getItem("pollDelay")) || 1000,
     info: null,
   },
