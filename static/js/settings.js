@@ -28,7 +28,7 @@ async function connect() {
   const ip = qs("#input-ip").value;
   const port = qs("#input-port").value;
 
-  if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip)
+  if (!/^(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})|localhost$/.test(ip)
    || !/^\d{4}$/.test(port)) {
     await makePopup("alert", "Invalid IP address / port.");
     return;
@@ -52,7 +52,8 @@ async function connect() {
       initSysInfo();
       qs("#settings-connection-status").textContent = "Connected to " + baseurl;
       qs("#settings-poll-start-btn").disabled = false;
-      makeToast("success", "Connection successful!");
+      pollStart();
+      makeToast("success", "Connection successful, polling.");
     }
   } catch (err) {
     makeToast("error", "Connection failed.\n\n" + err, 5000);

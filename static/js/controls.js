@@ -151,7 +151,7 @@ function makeMappingModal(mapping) {
         </select>
       </label>
       <label for="ctrl-input-gain" class="flex-c f-g4 w100 mb16${gain < 0 ? " hidden" : ""}">
-        <span>Gain (diff. input only)</span>
+        <span>Gain</span>
         <input id="ctrl-input-gain" type="text" class="w100" pattern="^^\\d*[\\.,]?\\d+$" maxlength="5"
           value="${gain < 0 ? "0" : gain}" />
       </label>
