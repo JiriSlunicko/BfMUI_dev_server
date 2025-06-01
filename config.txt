@@ -1,0 +1,5 @@
+# 4 digits
+port=8000
+
+# 0 = false, 1 = true
+debug=0
