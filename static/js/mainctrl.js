@@ -28,8 +28,8 @@ const g = {
     axisMappings: {},
   },
   util: {
-    toastInterval: null,
-    toastTimeout: null,
+    toastFadeTimeout: null,
+    toastDieTimeout: null,
   },
   userPreferences: {
     hideIntro: Boolean(localStorage.getItem("hideIntro")),
@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!btn) return;
 
     if (btn.id === "reload-app") {
-      location.reload();
+      reloadApp();
     } else {
       const targetPage = btn.id.replace("goto-", "");
       loadPage(targetPage);
@@ -52,6 +52,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   loadPage(g.currentPage);
 });
+
+
+async function reloadApp() {
+  const consent = await makePopup("confirm", "Reload the app?");
+  if (consent) {
+    location.reload();
+  }
+}
 
 
 /**
@@ -85,7 +93,9 @@ function loadPage(targetPage) {
       renderControllers();
       break;
     case "controls":
-      renderControlsInterface();
+      if (!g.controls.actions.length) {
+        renderControlsInterface();
+      }
       break;
   }
 }

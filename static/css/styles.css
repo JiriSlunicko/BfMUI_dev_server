@@ -4,11 +4,12 @@
   --bg-dark: hsl(0,10%,30%);
   --bg-medium: hsl(0,10%,45%);
   --bg-bright: hsl(0,10%,60%);
-  --bg-brighter: hsl(0,10%,75%);
+  --bg-brighter: hsl(0,10%,80%);
   --bg-brightest: hsl(0,10%,90%);
   --good: hsl(120,50%,75%);
   --bad: hsl(0,80%,80%);
-  --modified: hsl(90, 10%, 50%);
+  --modified: hsl(90,10%,50%);
+  --shadow: hsla(0,10%,10%,0.75);
 }
 
 *, *::before, *::after {
@@ -21,7 +22,10 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   background-color: var(--bg-darkest);
   height: 100vh;
+  max-width: 1200px;
   overflow: hidden;
+  position: relative;
+  margin: 0 auto;
 }
 
 a {
@@ -86,6 +90,10 @@ h4 {
 
 .w100 {
   width: 100% !important;
+}
+
+.hidden {
+  display: none !important;
 }
 
 label > span {
@@ -185,8 +193,9 @@ input[type=text]:invalid, select:invalid {
   background-color: var(--bg-bright);
   padding: 12px;
   width: 80%;
+  max-width: 400px;
   border-radius: 3px;
-  margin-top: 48px;
+  margin-top: 32px;
 }
 
 .toast-container {
@@ -203,15 +212,22 @@ input[type=text]:invalid, select:invalid {
   color: var(--bg-darker);
   font-size: 16px;
   width: 90%;
+  max-width: 600px;
   padding: 12px 6px;
   border-radius: 3px;
   border-left: 6px solid var(--bg-brighter);
+  box-shadow: 1px 1px 4px var(--shadow);
+  opacity: 1;
 }
 .toast.toast-ok {
   border-left-color: var(--good);
 }
 .toast.toast-err {
   border-left-color: var(--bad);
+}
+.toast.fading {
+  opacity: 0;
+  transition-duration: 500ms;
 }
 
 /*******************
@@ -227,13 +243,20 @@ header nav {
 header nav button {
   color: var(--bg-darkest);
   font-size: 18px;
-  padding: 4px 8px;
+  padding: 6px 8px 4px;
   border-top-left-radius: 3px;
   border-top-right-radius: 3px;
   background-color: var(--bg-medium);
 }
 header nav button.active {
   background-color: var(--bg-bright);
+}
+header nav button svg {
+  height: 28px;
+  width: 28px;
+}
+header nav #reload-app {
+  margin-left: auto;
 }
 
 section {
@@ -246,15 +269,14 @@ section .main-content {
   max-height: 100%;
   overflow-y: scroll;
   overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-brightest) var(--bg-brighter);
 }
 section .main-content .view-tab {
   gap: 24px;
   padding-bottom: 48px;
 }
 
-/***************
- * HOME SCREEN *
- ***************/
 .entry-wrapper {
   background-color: var(--bg-brighter);
   font-family: monospace;
@@ -262,7 +284,7 @@ section .main-content .view-tab {
   padding: 0 4px 4px;
 }
 .entry-wrapper .entry-header {
-  color: var(--bg-dark);
+  color: var(--bg-darker);
   font-size: 16px;
   padding: 4px 0;
 }
@@ -270,7 +292,7 @@ section .main-content .view-tab {
   background-color: var(--bg-dark);
 }
 .entry-wrapper .entry-items .entry-item {
-  color: var(--bg-brighter);
+  color: var(--bg-brightest);
   justify-content: space-between;
   padding: 2px 4px;
 }
@@ -278,9 +300,22 @@ section .main-content .view-tab {
   border-bottom: 1px solid var(--bg-medium);
 }
 
+/***************
+ * HOME SCREEN *
+ ***************/
+#view-home {
+  max-width: 480px;
+}
+
 /*****************
  * STATUS SCREEN *
  *****************/
+@media only screen and (min-width: 750px) {
+  #view-status {
+    display: grid;
+    grid-template-columns: repeat(2, calc(50% - 16px));
+  }
+}
 .health {
   margin-left: auto;
   width: 16px;
@@ -305,11 +340,27 @@ section .main-content .view-tab {
 /*******************
  * CONTROLS SCREEN *
  *******************/
+@media only screen and (min-width: 750px) {
+  #view-controls {
+    display: grid;
+    grid-template-columns: repeat(2, calc(50% - 16px));
+    grid-template-areas: "buttons axes" "interaction interaction";
+  }
+  #controls-buttons {
+    grid-area: buttons;
+  }
+  #controls-axes {
+    grid-area: axes;
+  }
+  #controls-btn-wrapper {
+    grid-area: interaction;
+  }
+}
 .ctrl-wrapper {
   cursor: pointer;
 }
 .ctrl-wrapper .ctrl-input-current {
-  background-color: var(--bg-medium);
+  background-color: var(--bg-dark);
   color: var(--bg-brightest);
   font-size: 12px;
   padding: 8px;
@@ -328,6 +379,20 @@ section .main-content .view-tab {
 /*******************
  * SETTINGS SCREEN *
  *******************/
+@media only screen and (min-width: 750px) {
+  #view-settings {
+    display: grid;
+    grid-template-columns: repeat(2, 376px);
+    gap: 0;
+  }
+  #view-settings > div:not(:last-child) {
+    padding-right: 16px;
+    border-right: 1px solid var(--bg-medium);
+  }
+  #view-settings > div:not(:first-child) {
+    padding-left: 16px;
+  }
+}
 #input-ip {
   width: 16ch;
 }

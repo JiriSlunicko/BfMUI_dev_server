@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
  * Create a floating notification.
  * @param {"error"|"success"|null} type error -> red stripe, success -> green stripe, null -> neutral stripe
  * @param {string} msg arbitrary text
- * @param {Number} timeout how long to show in ms
+ * @param {Number} timeout how long to show in ms, negative numbers -> indefinitely
  */
 function makeToast(type, msg, timeout=2500) {
   removeToast();
@@ -17,19 +17,23 @@ function makeToast(type, msg, timeout=2500) {
   tst.innerHTML = msg.replaceAll("\n", "<br />");
   qs(".toast-container").appendChild(tst);
   if (timeout >= 0) {
-    // TODO: add a fadeout animation.
-    g.util.toastTimeout = setTimeout(() => removeToast(), timeout);
+    g.util.toastFadeTimeout = setTimeout(() => {
+      qs(".toast").classList.add("fading");
+    }, timeout);
+    g.util.toastDieTimeout = setTimeout(() => {
+      removeToast();
+    }, timeout + 500);
   }
 }
 function removeToast() {
   qsa(".toast").forEach(el => el.remove());
-  if (g.util.toastInterval !== null) {
-    clearInterval(g.util.toastInterval);
-    g.util.toastInterval = null;
+  if (g.util.toastFadeTimeout !== null) {
+    clearTimeout(g.util.toastFadeTimeout);
+    g.util.toastFadeTimeout = null;
   }
-  if (g.util.toastTimeout !== null) {
-    clearTimeout(g.util.toastTimeout);
-    g.util.toastTimeout = null;
+  if (g.util.toastDieTimeout !== null) {
+    clearTimeout(g.util.toastDieTimeout);
+    g.util.toastDieTimeout = null;
   }
 }
 
@@ -40,7 +44,7 @@ function removeToast() {
  * @param {"alert"|"confirm"} type 'alert' or 'confirm'
  * @param {string} msg the main text
  * @param {string|null} title optional heading
- * @returns {Promise|false}
+ * @returns {Promise<Boolean>|false}
  */
 function makePopup(type, msg, title=null) {
   if (qs(".modal-bg")) {

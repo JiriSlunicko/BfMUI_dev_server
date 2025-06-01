@@ -60,17 +60,28 @@ const makeMappingList = function(kind) {
     item.className = "entry-wrapper ctrl-wrapper";
     item.dataset.kind = kind;
     item.dataset.output = output;
+    let mappingString;
+
     if (kind === "axis") {
-      item.dataset.mapping = mapping?.inAxis || "None";
-      item.dataset.inverted = mapping?.invert || "false";
-      item.dataset.deadzone = mapping?.deadzone || 0.0;
-      item.dataset.gain = typeof mapping?.gain === "number" ? mapping.gain : -1;
+      const mInAxis = mapping?.inAxis || "None";
+      const mInvert = mapping?.invert || false;
+      const mDeadzone = mapping?.deadzone || 0.0;
+      const mMode = mapping?.mode || "direct";
+      const mGain = typeof mapping?.gain === "number" ? mapping.gain : -1;
+      item.dataset.mapping = mInAxis;
+      item.dataset.inverted = mInvert;
+      item.dataset.deadzone = mDeadzone;
+      item.dataset.gain = mGain;
+      mappingString = stringifyAxisMapping(mInAxis, mInvert, mDeadzone, mMode, mGain);
     } else {
-      item.dataset.mapping = mapping?.button || "None";
+      const mButton = mapping?.button || "None";
+      item.dataset.mapping = mButton;
+      mappingString = mButton;
     }
+
     item.insertAdjacentHTML("beforeend", `
       <div class="entry-header ctrl-output">${output}</div>
-      <div class="ctrl-input-current">${mapping?.button || mapping?.inAxis || "None"}</div>
+      <div class="ctrl-input-current">${mappingString}</div>
     `);
     mappingsWrapper.appendChild(item);
   }
@@ -139,7 +150,7 @@ function makeMappingModal(mapping) {
           <option class="ctrl-modal-option" value="differential"${gain < 0 ? "": " selected"}>differential</option>
         </select>
       </label>
-      <label for="ctrl-input-gain" class="flex-c f-g4 w100 mb16">
+      <label for="ctrl-input-gain" class="flex-c f-g4 w100 mb16${gain < 0 ? " hidden" : ""}">
         <span>Gain (diff. input only)</span>
         <input id="ctrl-input-gain" type="text" class="w100" pattern="^^\\d*[\\.,]?\\d+$" maxlength="5"
           value="${gain < 0 ? "0" : gain}" />
@@ -153,6 +164,14 @@ function makeMappingModal(mapping) {
       <button type="button" class="btn" id="ctrl-modal-cancel">Cancel</button>
     </div>
   `);
+  fg.querySelector("#ctrl-input-method").addEventListener("change", function() {
+    const gainWrapper = qs(`label[for="ctrl-input-gain"]`);
+    if (this.value === "direct") {
+      gainWrapper.classList.add("hidden");
+    } else {
+      gainWrapper.classList.remove("hidden");
+    }
+  });
   fg.querySelector("#ctrl-modal-ok").addEventListener("click", () => applyCtrlMapping(kind));
   fg.querySelector("#ctrl-modal-cancel").addEventListener("click", () => qs(".modal-bg[data-output]")?.remove());
 
@@ -247,12 +266,14 @@ function applyCtrlMapping(kind) {
   }
 
   if (hasChanged) {
-    mappingInDOM.innerText = resolvedMapping;
     relevantWrapper.dataset.mapping = resolvedMapping;
     if (kind === "axis") {
+      mappingInDOM.innerText = stringifyAxisMapping(resolvedMapping, newInvert, newDeadzone, newMode, newGain);
       relevantWrapper.dataset.inverted = newInvert;
       relevantWrapper.dataset.deadzone = newDeadzone;
       relevantWrapper.dataset.gain = newMode === "differential" ? newGain : -1;
+    } else {
+      mappingInDOM.innerText = resolvedMapping;
     }
     mappingInDOM.classList.add("modified");
     makeToast("success", "Mapping staged.\n\nHit the 'Apply' button to submit to server.");
@@ -376,10 +397,14 @@ function convertAxisMappings(respMappings) {
       mode: mapping.FinalValueAssigner.$type === "DifferenceValueAssigner"
         ? "differential"
         : mapping.FinalValueAssigner.$type === "DirectValueAssigner"
-        ? "direct"
-        : "undefined",
+          ? "direct"
+          : "undefined",
       gain: mapping.FinalValueAssigner.Gain || null,
     }
   }
   return processedMappings;
+}
+
+const stringifyAxisMapping = function(mapping, invert, deadzone, mode, gain) {
+  return `${mapping}, inv=${invert ? "1" : "0"}, dz=${deadzone}, ${mode === "direct" ? "direct" : ("gain="+gain)}`;
 }
