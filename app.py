@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     r"""
     Testing:
-    1. Start server
+    1. Start server (requires key.txt with an arbitrary secret key)
     2. Connect phone, enable USB debugging (settings > more/other/whatever > developer)
     3. cmd > adb reverse tcp:8081 tcp:8000
     4. Open app
