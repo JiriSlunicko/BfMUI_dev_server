@@ -1,0 +1,32 @@
+name: Build on push
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Run build script
+        run: |
+          python build.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BfMUI_desktop_dist
+          path: dist/BfMUI_desktop.zip
