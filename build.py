@@ -54,7 +54,7 @@ def gather_files():
                         zipf.write(file, arcname)
     exe_path.unlink()
 
-    print(f"[✓] Created {zip_path}")
+    print(f"[OK] Created {zip_path}")
 
 def main():
     clean()
