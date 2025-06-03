@@ -9,6 +9,7 @@ const g = {
     baseurl: localStorage.getItem("serverBaseurl") || "http://localhost:8080",
     pollDelay: Number(localStorage.getItem("pollDelay")) || 1000,
     info: null,
+    usingArduino: null,
   },
   polling: {
     interval: null,

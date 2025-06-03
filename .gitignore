@@ -6,3 +6,4 @@ minify_svg.py
 build/
 dist/
 *.spec
+migrate.py

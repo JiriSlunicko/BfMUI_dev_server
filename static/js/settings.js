@@ -45,9 +45,11 @@ async function connect() {
   makeToast(null, "Attempting connection...", -1);
   const baseurl = "http://" + ip + ":" + port;
   try {
+    // get systeminfo
     const raw = await fetchWithTimeout(baseurl + "/systeminfo/");
     const resp = await raw.json();
 
+    // did we get an expected response format?
     if (_.isArray(resp)) {
       g.server.baseurl = baseurl;
       g.server.info = resp;
@@ -55,14 +57,39 @@ async function connect() {
 
       initSysInfo();
       qs("#settings-connection-status").textContent = "Connected to " + baseurl;
-      qs("#settings-poll-start-btn").disabled = false;
+
       pollStart();
-      makeToast("success", "Connection successful, polling.");
+
+      // check if serial port endpoints are supported
+      const serialPortResponse = await fetchWithTimeout(baseurl + "/settings/serialport/");
+      g.server.usingArduino = serialPortResponse.status === 200;
+      if (g.server.usingArduino) {
+        renderArduinoPortSettings();
+      }
+
+      makeToast("success", `Connection successful, polling.\n\nArduino: ${g.server.usingArduino}`);
     }
   } catch (err) {
     makeToast("error", "Connection failed.\n\n" + err, 5000);
   }
+}
 
+
+function renderArduinoPortSettings() {
+  const miscSettings = qs("#settings-misc");
+  const arduinoConfig = document.createElement("div");
+  arduinoConfig.className = "flex-r mb32";
+  const arduinoPortSelect = document.createElement("select");
+  arduinoPortSelect.id = "settings-arduino-port";
+  for (const opt of ["a", "b"]) {
+    arduinoPortSelect.insertAdjacentHTML("beforeend", `
+      <option value="${opt}">${opt}</option>
+    `);
+  }
+
+  arduinoConfig.appendChild(arduinoPortSelect);
+  miscSettings.prepend(arduinoConfig);
+  miscSettings.insertAdjacentHTML("afterbegin", "<h2>Arduino serial port</h2>");
 }
 
 

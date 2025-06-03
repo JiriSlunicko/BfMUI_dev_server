@@ -75,9 +75,10 @@ if __name__ == "__main__":
     3. cmd > adb reverse tcp:8081 tcp:8000
     4. Open app
 
-    Deployment:
+    Deployment (other repo):
     1. Copy the contents of /static to /app/src/main/assets of the mobile app project
     2. Build mobile app using .\gradlew.bat assembleDebug in its directory
+    3. Copy the .apk found in /app/build/outputs/apk/debug to the phone & install
 
     The mobile app project is in ...\Documents\_js\BfMUI
     """
