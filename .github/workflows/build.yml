@@ -35,4 +35,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: BfMUI_android_dist
-          path: apk/app-debug.apk
+          path: apk/bfmui.apk
