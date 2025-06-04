@@ -68,6 +68,8 @@ async function connect() {
       }
 
       makeToast("success", `Connection successful, polling.\n\nArduino: ${g.server.usingArduino}`);
+    } else {
+      throw new Error("server did not return a JSON array");
     }
   } catch (err) {
     makeToast("error", "Connection failed.\n\n" + err, 5000);
