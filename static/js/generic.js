@@ -132,8 +132,9 @@ async function postWithTimeout(url, payload, timeout = 5000) {
  * @param {string} header heading of the section
  * @param {object} data key-value data pairs
  * @param {"Healthy"|"Struggling"|"Broken"|"Inactive"|null} health optional, draws a coloured circle in the header
+ * @param {string|null} lastError arbitrary error message to append to the entry
  */
-function createOrUpdateEntry(parentSelector, entryId, header, data, health=null) {
+function createOrUpdateEntry(parentSelector, entryId, header, data, health=null, lastError=null) {
   const container = qs(parentSelector);
   if (!container) {
     console.error("Tried to edit entries of '"+parentSelector+"', but it does not exist.");
@@ -149,11 +150,12 @@ function createOrUpdateEntry(parentSelector, entryId, header, data, health=null)
     el.className = "entry-wrapper";
     el.dataset.entryId = entryId;
     el.innerHTML = `
-    <div class="entry-header flex-r f-a-c">
-      <span>${header}</span>
-      ${health ? '<span class="health f-noshrink"></span>' : ''}
-    </div>
-    <div class="entry-items"></div>`
+      <div class="entry-header flex-r f-a-c">
+        <span>${header}</span>
+        ${health ? '<span class="health f-noshrink"></span>' : ''}
+      </div>
+      <div class="entry-items"></div>
+      <div class="entry-error"></div>`;
     container.appendChild(el);
   }
 
@@ -175,6 +177,13 @@ function createOrUpdateEntry(parentSelector, entryId, header, data, health=null)
       </div>`;
   }
   items.innerHTML = newHtml;
+  // update error
+  if (lastError) {
+    const errorDiv = el.querySelector(".entry-error");
+    if (errorDiv) {
+      errorDiv.innerText = lastError;
+    }
+  }
 }
 
 /**

@@ -14,7 +14,8 @@ function renderTelemetry() {
       "sthd-" + entry.SerialTimerName,
       entry.SerialTimerName,
       processSTHDEntry(entry),
-      entry.Health
+      entry.Health,
+      entry.LatestErrorMessage
     );
   }
   clearDeadEntries("#status-telemetry-inner", sthdData.map(x => "sthd-"+x.SerialTimerName));

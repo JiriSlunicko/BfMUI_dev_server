@@ -410,5 +410,6 @@ function convertAxisMappings(respMappings) {
 }
 
 const stringifyAxisMapping = function(mapping, invert, deadzone, mode, gain) {
+  if (mapping === "None") return "unbound";
   return `${mapping}, inv=${invert ? "1" : "0"}, dz=${deadzone}, ${mode === "direct" ? "direct" : ("gain="+gain)}`;
 }

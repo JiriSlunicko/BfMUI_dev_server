@@ -219,6 +219,15 @@ section {
             }
         }
     }
+
+    .entry-error {
+        margin-top: 4px;
+        padding: 0 4px;
+        font-size: 16px;
+        font-weight: 600;
+        background: hsl(0, 100%, 75%);
+        color: hsl(0, 50%, 25%);
+    }
 }
 
 /***************

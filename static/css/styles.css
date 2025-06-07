@@ -303,6 +303,14 @@ section .main-content .view-tab {
 .entry-wrapper .entry-items .entry-item:not(:last-child) {
   border-bottom: 1px solid var(--bg-medium);
 }
+.entry-wrapper .entry-error {
+  margin-top: 4px;
+  padding: 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  background: hsl(0, 100%, 75%);
+  color: hsl(0, 50%, 25%);
+}
 
 /***************
  * HOME SCREEN *
