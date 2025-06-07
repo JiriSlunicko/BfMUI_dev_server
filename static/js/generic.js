@@ -144,19 +144,27 @@ function createOrUpdateEntry(parentSelector, entryId, header, data, health=null)
   let el;
   if (existing) {
     el = existing;
-  } else {
+  } else { // create the entry if it does not exist yet
     el = document.createElement("div");
     el.className = "entry-wrapper";
     el.dataset.entryId = entryId;
     el.innerHTML = `
     <div class="entry-header flex-r f-a-c">
       <span>${header}</span>
-      ${health ? '<span class="health '+health.toLowerCase()+' f-noshrink"></span>' : ''}
+      ${health ? '<span class="health f-noshrink"></span>' : ''}
     </div>
     <div class="entry-items"></div>`
     container.appendChild(el);
   }
 
+  // update health
+  if (health) {
+    const healthSpan = el.querySelector(".health");
+    if (healthSpan) {
+      healthSpan.className = "health " + health.toLowerCase() + " f-noshrink";
+    }
+  }
+  // update items
   const items = el.querySelector(".entry-items");
   let newHtml = "";
   for (const [key, value] of Object.entries(data)) {
