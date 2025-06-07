@@ -164,8 +164,9 @@ function makeMappingModal(mapping) {
       <button type="button" class="btn" id="ctrl-modal-cancel">Cancel</button>
     </div>
   `);
-  fg.querySelector("#ctrl-input-method").addEventListener("change", function() {
-    const gainWrapper = qs(`label[for="ctrl-input-gain"]`);
+
+  fg.querySelector("#ctrl-input-method")?.addEventListener("change", function() {
+    const gainWrapper = fg.querySelector(`label[for="ctrl-input-gain"]`);
     if (this.value === "direct") {
       gainWrapper.classList.add("hidden");
     } else {
