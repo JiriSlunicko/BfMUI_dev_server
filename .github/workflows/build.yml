@@ -28,11 +28,16 @@ jobs:
         run: |
           python build.py
 
+      - name: Unzip build results
+        run: |
+          mkdir extracted
+          powershell -Command "Expand-Archive -Path dist/BfMUI_desktop.zip -DestinationPath extracted"
+
       - name: Upload artifact - desktop
         uses: actions/upload-artifact@v4
         with:
           name: BfMUI_desktop_dist
-          path: dist/BfMUI_desktop.zip
+          path: extracted/
       
       - name: Upload artifact - android
         uses: actions/upload-artifact@v4
