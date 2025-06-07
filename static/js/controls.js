@@ -63,7 +63,7 @@ const makeMappingList = function(kind) {
     let mappingString;
 
     if (kind === "axis") {
-      const mInAxis = mapping?.inAxis || "None";
+      const mInAxis = mapping?.inAxis || "unbound";
       const mInvert = mapping?.invert || false;
       const mDeadzone = mapping?.deadzone || 0.0;
       const mMode = mapping?.mode || "direct";
@@ -74,7 +74,7 @@ const makeMappingList = function(kind) {
       item.dataset.gain = mGain;
       mappingString = stringifyAxisMapping(mInAxis, mInvert, mDeadzone, mMode, mGain);
     } else {
-      const mButton = mapping?.button || "None";
+      const mButton = mapping?.button || "unbound";
       item.dataset.mapping = mButton;
       mappingString = mButton;
     }
@@ -187,7 +187,10 @@ const makeInputSelect = function(id, options, current) {
   const select = document.createElement("select");
   select.className = "ctrl-modal-options";
   select.id = id;
-  for (const opt of options) {
+  select.insertAdjacentHTML("beforeend",
+    `<option class="ctrl-modal-option" value="unbound">(none)</option>`
+  );
+  for (const opt of options.filter(x => x !== "None")) {
     const selected = current === opt;
     select.insertAdjacentHTML("beforeend",
       `<option class="ctrl-modal-option" value="${opt}"${selected ? ' selected' : ''}>${opt}</option>`
@@ -280,10 +283,10 @@ function applyCtrlMapping(kind) {
       mappingInDOM.innerText = resolvedMapping;
     }
     mappingInDOM.classList.add("modified");
-    makeToast("success", "Mapping staged.\n\nHit the 'Apply' button to submit to server.");
+    //makeToast("success", "Mapping staged.\n\nHit the 'Apply' button to submit to server.");
   } else {
     mappingInDOM.classList.remove("modified");
-    makeToast(null, "Keeping original mapping.", 1500);
+    //makeToast(null, "Keeping original mapping.", 1500);
   }
   modal.remove();
 }
@@ -303,12 +306,18 @@ async function submitMappings() {
   // buttons-actions
   const actionElements = qsa("#controls-buttons-inner .ctrl-wrapper");
   for (const ae of actionElements) {
+    // skip unbound altogether
+    if (ae.dataset.mapping === "unbound") continue;
+    
     payload.ControlActionsSettings[ae.dataset.output] = ae.dataset.mapping;
   }
 
   // axes
   const axisElements = qsa("#controls-axes-inner .ctrl-wrapper");
   for (const ae of axisElements) {
+    // skip unbound altogether
+    if (ae.dataset.mapping === "unbound") continue;
+
     const mappingInfo = {
       ControllerAxis: ae.dataset.mapping,
       Inverted: ae.dataset.inverted === "false" ? false : true,
@@ -326,6 +335,8 @@ async function submitMappings() {
 
     payload.PlaneAxesSettings[ae.dataset.output] = mappingInfo;
   }
+
+  console.debug(payload);
 
   let raw = null;
   try {
@@ -371,7 +382,7 @@ function convertActionMappings(respMappings) {
   }
   const processedMappings = {};
   for (const [action, mapping] of Object.entries(respMappings)) {
-    processedMappings[action] = { "button": mapping };
+    processedMappings[action] = { "button": mapping == "None" ? "unbound" : mapping };
   }
   return processedMappings;
 }
@@ -410,6 +421,6 @@ function convertAxisMappings(respMappings) {
 }
 
 const stringifyAxisMapping = function(mapping, invert, deadzone, mode, gain) {
-  if (mapping === "None") return "unbound";
+  if (mapping === "unbound") return mapping;
   return `${mapping}, inv=${invert ? "1" : "0"}, dz=${deadzone}, ${mode === "direct" ? "direct" : ("gain="+gain)}`;
 }
