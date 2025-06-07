@@ -165,14 +165,17 @@ function makeMappingModal(mapping) {
     </div>
   `);
 
-  fg.querySelector("#ctrl-input-method")?.addEventListener("change", function() {
-    const gainWrapper = fg.querySelector(`label[for="ctrl-input-gain"]`);
-    if (this.value === "direct") {
-      gainWrapper.classList.add("hidden");
-    } else {
-      gainWrapper.classList.remove("hidden");
-    }
-  });
+  const inputMethod = fg.querySelector("#ctrl-input-method");
+  if (inputMethod) {
+    inputMethod.addEventListener("change", function () {
+      const gainWrapper = fg.querySelector(`label[for="ctrl-input-gain"]`);
+      if (this.value === "direct") {
+        gainWrapper.classList.add("hidden");
+      } else {
+        gainWrapper.classList.remove("hidden");
+      }
+    });
+  }
   fg.querySelector("#ctrl-modal-ok").addEventListener("click", () => applyCtrlMapping(kind));
   fg.querySelector("#ctrl-modal-cancel").addEventListener("click", () => qs(".modal-bg[data-output]")?.remove());
 

@@ -7,3 +7,4 @@ build/
 dist/
 *.spec
 migrate.py
+_TODO.txt
