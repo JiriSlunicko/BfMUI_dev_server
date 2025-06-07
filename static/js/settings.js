@@ -98,8 +98,8 @@ function renderArduinoPortSettings() {
 function changePollInterval() {
   const input = qs("#input-poll-interval").value;
   const newPollDelay = Number(input);
-  if (!/^\d+$/.test(input) || newPollDelay < 250) {
-    makeToast("error", "Polling interval must be a number >= 250.", 3000);
+  if (!/^\d+$/.test(input) || newPollDelay < 100) {
+    makeToast("error", "Polling interval must be a number >= 100.", 3000);
     return;
   }
 
