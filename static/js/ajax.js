@@ -53,3 +53,29 @@ async function fetchCtrlOptions() {
     return false;
   }
 }
+
+async function fetchSerialPortData() {
+  try {
+    const raw = await fetchWithTimeout(g.server.baseurl + "/settings/serialport/");
+    g.server.usingArduino = raw.status === 200;
+    if (g.server.usingArduino) {
+      const resp = await raw.json();
+      // nullable string
+      g.arduinoConfig.port = resp.SerialPortParameters ? resp.SerialPortParameters.Name : null;
+      // nullable integer
+      g.arduinoConfig.baudRate = resp.SerialPortParameters ? resp.SerialPortParameters.BaudRate : null;
+      // array of strings
+      g.arduinoConfig.availablePorts = resp.AvailablePorts;
+
+      if (!g.arduinoConfig.availablePorts.length) {
+        makeToast("error", "Warning:\n\nUsing Arduino, but no available serial ports.", 3000);
+      }
+      return true;
+    }
+
+    return false;
+  } catch (err) {
+    makeToast("error", "Error fetching serial port data.\n\n" + err, 5000);
+    return false;
+  }
+}

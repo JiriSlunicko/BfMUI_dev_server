@@ -28,6 +28,11 @@ const g = {
     actionMappings: {},
     axisMappings: {},
   },
+  arduinoConfig: {
+    port: null,
+    baudRate: null,
+    availablePorts: [],
+  },
   util: {
     toastFadeTimeout: null,
     toastDieTimeout: null,

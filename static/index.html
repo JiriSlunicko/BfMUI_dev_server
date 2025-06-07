@@ -60,7 +60,7 @@
         </svg>
       </button>
 
-      <button type="button" id="reload-app" title="Reload app">
+      <button type="button" id="reload-app" class="mla" title="Reload app">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8.4666665 8.4666666">
           <g>
             <path style="fill: none; stroke: currentColor; stroke-width: 1.05833; stroke-linecap: round; stroke-linejoin: round" d="M 6.8791666,4.4979167 C 6.8791666,5.9591701 5.6945867,7.14375 4.2333333,7.14375 2.77208,7.1437499 1.5875001,5.95917 1.5875001,4.4979167 1.5875002,3.0366634 2.77208,1.8520836 4.2333333,1.8520835" />
@@ -133,12 +133,12 @@
             <input id="input-ip" type="text" pattern="^(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})|localhost$" maxlength="15" />
             <span>:</span>
             <input id="input-port" type="text" pattern="^\d+$" maxlength="4" />
-            <button type="button" class="btn" id="settings-connect-btn">Connect</button>
+            <button type="button" class="btn mla" id="settings-connect-btn">Connect</button>
           </div>
           <p>Polling interval (ms)</p>
           <div class="flex-r f-g8">
             <input id="input-poll-interval" type="text" pattern="^\d+$" maxlength="5" />
-            <button type="button" class="btn" id="settings-poll-start-btn" disabled="">Start</button>
+            <button type="button" class="btn mla" id="settings-poll-start-btn" disabled="">Start</button>
             <button type="button" class="btn" id="settings-poll-pause-btn" disabled="">Stop</button>
           </div>
         </div>

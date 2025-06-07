@@ -92,6 +92,10 @@ h4 {
   margin-bottom: 32px !important;
 }
 
+.mla {
+  margin-left: auto !important;
+}
+
 .w100 {
   width: 100% !important;
 }
@@ -259,9 +263,6 @@ header nav button svg {
   height: 28px;
   width: 28px;
 }
-header nav #reload-app {
-  margin-left: auto;
-}
 
 section {
   background-color: var(--bg-bright);
@@ -329,7 +330,6 @@ section .main-content .view-tab {
   }
 }
 .health {
-  margin-left: auto;
   width: 16px;
   height: 16px;
   background-color: white;
@@ -413,10 +413,6 @@ section .main-content .view-tab {
   width: 5ch;
 }
 
-#settings-connect-btn {
-  margin-left: auto;
-}
-
 #input-poll-interval {
   width: 6ch;
 }
@@ -425,8 +421,4 @@ section .main-content .view-tab {
   margin: 0.5ch;
   font-family: monospace;
   font-size: 16px;
-}
-
-#settings-poll-start-btn {
-  margin-left: auto;
 }

@@ -152,7 +152,7 @@ function createOrUpdateEntry(parentSelector, entryId, header, data, health=null,
     el.innerHTML = `
       <div class="entry-header flex-r f-a-c">
         <span>${header}</span>
-        ${health ? '<span class="health f-noshrink"></span>' : ''}
+        ${health ? '<span class="health f-noshrink mla"></span>' : ''}
       </div>
       <div class="entry-items"></div>
       <div class="entry-error"></div>`;
@@ -163,7 +163,7 @@ function createOrUpdateEntry(parentSelector, entryId, header, data, health=null,
   if (health) {
     const healthSpan = el.querySelector(".health");
     if (healthSpan) {
-      healthSpan.className = "health " + health.toLowerCase() + " f-noshrink";
+      healthSpan.className = "health " + health.toLowerCase() + " f-noshrink mla";
     }
   }
   // update items
