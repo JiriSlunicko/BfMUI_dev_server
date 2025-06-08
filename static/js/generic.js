@@ -204,3 +204,43 @@ function clearDeadEntries(parentSelector, liveEntryIds) {
     }
   });
 }
+
+
+/**
+ * Map values between 0 and 100 to min-max logarithmically.
+ * 
+ * @param {Number} min output value for input 0 (must be >0)
+ * @param {Number} max output value for input 100
+ * @param {Number} actual input value
+ * @returns {Number}
+ */
+function percentToLog(min, max, actual) {
+  if (min <= 0 || max <= min || actual < 0 || actual > 100) {
+    throw new Error(`invalid parameters: ${min}-${max}, ${actual}`);
+  }
+  const minLog = Math.log10(min);
+  const maxLog = Math.log10(max);
+  const actualFrac = actual / 100;
+  const logVal = Math.pow(10, minLog + (maxLog - minLog) * actualFrac);
+  return logVal.toFixed(2);
+}
+
+
+/**
+ * Map logarithmically distributed values between min and max to 0-100.
+ * 
+ * @param {Number} min input value for output 0 (must be >0)
+ * @param {Number} max input value for output 100
+ * @param {Number} actual input value
+ * @returns {Number}
+ */
+function logToPercent(min, max, actual) {
+  if (min <= 0 || max <= min || actual < min || actual > max) {
+    throw new Error(`invalid parameters: ${min}-${max}, ${actual}`);
+  }
+  const minLog = Math.log10(min);
+  const maxLog = Math.log10(max);
+  const logVal = Math.log10(actual);
+  const scale = (logVal - minLog) / (maxLog - minLog);
+  return Math.min(100, Math.max(0, scale * 100));
+}

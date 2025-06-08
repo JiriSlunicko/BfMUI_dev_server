@@ -62,7 +62,7 @@ async function connect() {
 
       // check if serial port endpoints are supported
       if (fetchSerialPortData()) {
-        renderArduinoPortSettings();
+        renderInitialArduinoPortSettings();
       }
 
       makeToast("success", `Connection successful, polling.\n\nArduino: ${g.server.usingArduino}`);
@@ -75,18 +75,15 @@ async function connect() {
 }
 
 
-function renderArduinoPortSettings() {
-  const arduinoConfig = document.createElement("div");
-  arduinoConfig.className = "flex-r f-g8 mb32";
-
-  const arduinoPortSelect = document.createElement("select");
-  arduinoPortSelect.id = "settings-arduino-port";
-  arduinoConfig.appendChild(arduinoPortSelect);
+function renderInitialArduinoPortSettings() {
+  qs("#settings-misc").insertAdjacentHTML("afterbegin", `
+    <h2>Arduino serial port</h2>
+    <div class="flex-r f-g8 mb32">
+      <select id="settings-arduino-port"></select>
+      <button type="button" class="btn mla" id="settings-port-btn">Set port</button>
+    </div>
+  `);
   updateArduinoPortSettings();
-
-  const miscSettings = qs("#settings-misc");
-  miscSettings.prepend(arduinoConfig);
-  miscSettings.insertAdjacentHTML("afterbegin", "<h2>Arduino serial port</h2>");
 }
 
 

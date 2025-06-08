@@ -140,8 +140,12 @@ function makeMappingModal(mapping) {
       </label>
       <label for="ctrl-input-deadzone" class="flex-c f-g4 w100 mb16">
         <span>Deadzone (0–1)</span>
-        <input id="ctrl-input-deadzone" type="text" class="w100" pattern="^\\d*[\\.,]?\\d+$" maxlength="4"
-          value="${deadzone}"/>
+          <div class="flex-r f-g16">
+            <input id="ctrl-input-deadzone-range" type="range" class="f-grow"
+              min="${g.limits.axisDeadzone.min}" max="${g.limits.axisDeadzone.max}"
+              step="0.01" value="${deadzone}" />
+            <input id="ctrl-input-deadzone-text" type="text" value="${Number(deadzone).toFixed(2)}" />
+          </div>
       </label>
       <label for="ctrl-input-method" class="flex-c f-g4 w100 mb16">
         <span>Input processing</span>
@@ -152,8 +156,11 @@ function makeMappingModal(mapping) {
       </label>
       <label for="ctrl-input-gain" class="flex-c f-g4 w100 mb16${gain < 0 ? " hidden" : ""}">
         <span>Gain</span>
-        <input id="ctrl-input-gain" type="text" class="w100" pattern="^^\\d*[\\.,]?\\d+$" maxlength="5"
-          value="${gain < 0 ? "0" : gain}" />
+        <div class="flex-r f-g16">
+          <input id="ctrl-input-gain-range" type="range" class="f-grow"
+            min="0" max="100" step="0.1" value="${gain < 0 ? "0" : gain}" />
+          <input id="ctrl-input-gain-text" type="text" value="${gain < 0 ? "0" : gain}" />
+        </div>
       </label>
     `);
   }
@@ -165,14 +172,50 @@ function makeMappingModal(mapping) {
     </div>
   `);
 
-  const inputMethod = fg.querySelector("#ctrl-input-method");
-  if (inputMethod) {
-    inputMethod.addEventListener("change", function () {
+  if (kind === "axis") {
+    // update deadzone
+    const minDZ = g.limits.axisDeadzone.min;
+    const maxDZ = g.limits.axisDeadzone.max;
+    fg.querySelector("#ctrl-input-deadzone-range").addEventListener("input", function() {
+      const deadzoneValue = fg.querySelector("#ctrl-input-deadzone-text");
+      deadzoneValue.value = Number(this.value).toFixed(2);
+    });
+    fg.querySelector("#ctrl-input-deadzone-text").addEventListener("change", function() {
+      const inputValue = Number(this.value);
+      const deadzoneSlider = fg.querySelector("#ctrl-input-deadzone-range");
+      if (isNaN(inputValue) || inputValue < minDZ || inputValue > maxDZ) {
+        this.value = Number(deadzoneSlider.value).toFixed(2);
+        makeToast("error", `Deadzone must be between ${minDZ} and ${maxDZ}`);
+      } else {
+        deadzoneSlider.value = inputValue;
+      }
+    });
+
+    // show/hide gain settings
+    fg.querySelector("#ctrl-input-method").addEventListener("change", function () {
       const gainWrapper = fg.querySelector(`label[for="ctrl-input-gain"]`);
       if (this.value === "direct") {
         gainWrapper.classList.add("hidden");
       } else {
         gainWrapper.classList.remove("hidden");
+      }
+    });
+
+    // update gain
+    const minGain = g.limits.axisGain.min;
+    const maxGain = g.limits.axisGain.max;
+    fg.querySelector("#ctrl-input-gain-range").addEventListener("input", function() {
+      const gainValue = fg.querySelector("#ctrl-input-gain-text");
+      gainValue.value = percentToLog(minGain, maxGain, this.value).slice(0,4).replace(/\.$/, "");
+    });
+    fg.querySelector("#ctrl-input-gain-text").addEventListener("change", function() {
+      const inputValue = Number(this.value);
+      const gainSlider = fg.querySelector("#ctrl-input-gain-range");
+      if (isNaN(inputValue) || inputValue < minGain || inputValue > maxGain) {
+        this.value = percentToLog(minGain, maxGain, gainSlider.value).slice(0,4).replace(/\.$/, "");
+        makeToast("error", `Gain must be between ${minGain} and ${maxGain}!`);
+      } else {
+        gainSlider.value = logToPercent(minGain, maxGain, inputValue).toFixed(1);
       }
     });
   }
@@ -181,7 +224,6 @@ function makeMappingModal(mapping) {
 
   bg.appendChild(fg);
   document.body.append(bg);
-
 }
 const makeInputSelect = function(id, options, current) {
   const select = document.createElement("select");
@@ -247,14 +289,18 @@ function applyCtrlMapping(kind) {
   } else if (kind === "axis") {
     try {
       newInvert = modal.querySelector("#ctrl-input-invert")?.value === "inverted";
-      newDeadzone = Number(modal.querySelector("#ctrl-input-deadzone")?.value?.replace(",", ".") || 0);
-      if (isNaN(newDeadzone) || newDeadzone < 0 || newDeadzone > 1) {
-        throw new Error(`invalid deadzone '${newDeadzone}' (must be a number 0.0–1.0)`)
+      newDeadzone = Number(modal.querySelector("#ctrl-input-deadzone-range")?.value || 0);
+      const minDZ = g.limits.axisDeadzone.min;
+      const maxDZ = g.limits.axisDeadzone.max;
+      if (isNaN(newDeadzone) || newDeadzone < minDZ || newDeadzone > maxDZ) {
+        throw new Error(`invalid deadzone '${newDeadzone}' (must be a number ${minDZ}–${maxDZ})`);
       }
       newMode = modal.querySelector("#ctrl-input-method")?.value || "direct";
-      newGain = Number(modal.querySelector("#ctrl-input-gain").value?.replace(",", ".") || 0);
-      if (isNaN(newGain) || newGain < 0) {
-        throw new Error(`invalid gain '${newGain}' (must be a non-negative number)`)
+      newGain = Number(modal.querySelector("#ctrl-input-gain-text")?.value || 0);
+      const minGain = g.limits.axisGain.min;
+      const maxGain = g.limits.axisGain.max;
+      if (isNaN(newGain) || newGain < minGain || newGain > maxGain) {
+        throw new Error(`invalid gain '${newGain}' (must be a number ${minGain}–${maxGain})`);
       }
     } catch (err) {
       makeToast("error", `Error processing modal data for axis:\n\n${err.toString()}`, 7500);

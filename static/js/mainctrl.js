@@ -28,6 +28,10 @@ const g = {
     actionMappings: {},
     axisMappings: {},
   },
+  limits: {
+    axisGain: { min: 0.01, max: 100, },
+    axisDeadzone: { min: 0, max: 1 },
+  },
   arduinoConfig: {
     port: null,
     baudRate: null,

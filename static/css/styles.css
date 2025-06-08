@@ -139,6 +139,43 @@ input[type=text]:invalid, select:invalid {
   background-color: var(--bad);
 }
 
+input[type=range] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+       appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  background: var(--bg-dark);
+  height: 8px;
+  border-radius: 4px;
+}
+
+input[type=range]::-moz-range-track {
+  background: var(--bg-dark);
+  height: 8px;
+  border-radius: 4px;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -4px;
+  background-color: var(--bg-brightest);
+  height: 16px;
+  width: 16px;
+}
+
+input[type=range]::-moz-range-thumb {
+  border: none;
+  border-radius: 8px;
+  background-color: var(--bg-brightest);
+  height: 16px;
+  width: 16px;
+}
+
 .flex-r {
   display: flex;
   flex-direction: row;
@@ -323,7 +360,7 @@ section .main-content .view-tab {
 /*****************
  * STATUS SCREEN *
  *****************/
-@media only screen and (min-width: 750px) {
+@media only screen and (min-width: 751px) {
   #view-status {
     display: grid;
     grid-template-columns: repeat(2, calc(50% - 16px));
@@ -352,7 +389,7 @@ section .main-content .view-tab {
 /*******************
  * CONTROLS SCREEN *
  *******************/
-@media only screen and (min-width: 750px) {
+@media only screen and (min-width: 751px) {
   #view-controls {
     display: grid;
     grid-template-columns: repeat(2, calc(50% - 16px));
@@ -388,21 +425,31 @@ section .main-content .view-tab {
   padding: 8px;
 }
 
+#ctrl-input-deadzone-text, #ctrl-input-gain-text {
+  width: 5ch;
+}
+
 /*******************
  * SETTINGS SCREEN *
  *******************/
-@media only screen and (min-width: 750px) {
+@media only screen and (min-width: 751px) {
   #view-settings {
     display: grid;
     grid-template-columns: repeat(2, 376px);
     gap: 0;
   }
-  #view-settings > div:not(:last-child) {
+  #view-settings > div {
     padding-right: 16px;
     border-right: 1px solid var(--bg-medium);
   }
   #view-settings > div:not(:first-child) {
     padding-left: 16px;
+  }
+}
+@media only screen and (max-width: 750px) {
+  #view-settings > div:not(:last-child) {
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--bg-medium);
   }
 }
 #input-ip {
@@ -421,4 +468,8 @@ section .main-content .view-tab {
   margin: 0.5ch;
   font-family: monospace;
   font-size: 16px;
+}
+
+#settings-arduino-port {
+  width: 16ch;
 }
