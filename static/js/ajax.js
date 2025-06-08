@@ -61,13 +61,13 @@ async function fetchSerialPortData() {
     if (g.server.usingArduino) {
       const resp = await raw.json();
       // nullable string
-      g.arduinoConfig.port = resp.SerialPortParameters ? resp.SerialPortParameters.Name : null;
+      g.arduino.port = resp.SerialPortParameters ? resp.SerialPortParameters.Name : null;
       // nullable integer
-      g.arduinoConfig.baudRate = resp.SerialPortParameters ? resp.SerialPortParameters.BaudRate : null;
+      g.arduino.baudRate = resp.SerialPortParameters ? resp.SerialPortParameters.BaudRate : null;
       // array of strings
-      g.arduinoConfig.availablePorts = resp.AvailablePorts;
+      g.arduino.availablePorts = resp.AvailablePorts;
 
-      if (!g.arduinoConfig.availablePorts.length) {
+      if (!g.arduino.availablePorts.length) {
         makeToast("error", "Warning:\n\nUsing Arduino, but no available serial ports.", 3000);
       }
       return true;

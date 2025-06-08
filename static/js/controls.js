@@ -102,7 +102,7 @@ function makeMappingModal(mapping) {
   const kind = mapping.dataset.kind;
   const output = mapping.dataset.output;
   const currentInput = mapping.dataset.mapping.split(/\s*,\s*/);
-  while (currentInput.length < 2) currentInput.push("None");
+  while (currentInput.length < 2) currentInput.push("unbound");
 
   const bg = document.createElement("div");
   bg.className = "modal-bg flex-c f-a-c";
@@ -157,9 +157,9 @@ function makeMappingModal(mapping) {
       <label for="ctrl-input-gain" class="flex-c f-g4 w100 mb16${gain < 0 ? " hidden" : ""}">
         <span>Gain</span>
         <div class="flex-r f-g16">
-          <input id="ctrl-input-gain-range" type="range" class="f-grow"
-            min="0" max="100" step="0.1" value="${gain < 0 ? "0" : gain}" />
-          <input id="ctrl-input-gain-text" type="text" value="${gain < 0 ? "0" : gain}" />
+          <input id="ctrl-input-gain-range" type="range" class="f-grow" min="0" max="100" step="0.1"
+            value="${logToPercent(g.limits.axisGain.min, g.limits.axisGain.max, (gain < 0 ? "0.01" : gain))}" />
+          <input id="ctrl-input-gain-text" type="text" value="${gain < 0 ? "0.01" : gain}" />
         </div>
       </label>
     `);
@@ -262,14 +262,16 @@ function applyCtrlMapping(kind) {
   }
   const mappingInDOM = relevantWrapper.querySelector(".ctrl-input-current");
 
+  // parse button/axis inputs
   const input1 = modal.querySelector("#ctrl-input-primary").value;
-  const input2 = kind === "button" ? modal.querySelector("#ctrl-input-secondary").value : "None";
+  const input2 = kind === "button" ? modal.querySelector("#ctrl-input-secondary").value : "unbound";
   const whitelistedMappings = g.controls.restrictions[output]?.map(x => _.sortBy(x.split(/\s*,\s*/)));
-  let desiredMapping = _.without(_.uniq([input1,input2]), "None");
+  let desiredMapping = _.without(_.uniq([input1,input2]), "unbound");
   if (!desiredMapping.length) {
-    desiredMapping = ["None"];
+    desiredMapping = ["unbound"];
   }
 
+  // check constraints
   if (whitelistedMappings
   && !whitelistedMappings.some(x => _.isEqual(x, _.sortBy(desiredMapping)))) {
     makeToast("error", "This mapping is not allowed. Whitelisted options for this action/axis:\n\n"
@@ -279,11 +281,13 @@ function applyCtrlMapping(kind) {
     return;
   }
 
+  // further inputs processing
   const resolvedMapping = desiredMapping.join(", ");
   let newInvert, newDeadzone, newMode, newGain;
   let hasChanged = false;
   if (kind === "button") {
-    if (resolvedMapping !== g.controls.actionMappings[output]?.button) {
+    if (!(g.controls.actionMappings[output] === undefined && resolvedMapping === "unbound")
+    && (resolvedMapping !== g.controls.actionMappings[output]?.button)) {
       hasChanged = true;
     }
   } else if (kind === "axis") {
@@ -307,32 +311,36 @@ function applyCtrlMapping(kind) {
       return;
     }
 
+    // is this different from the server's config?
     const currentSettings = g.controls.axisMappings[output];
-    if (resolvedMapping !== currentSettings?.inAxis
-    ||        newInvert !== currentSettings?.invert
-    ||      newDeadzone !== currentSettings?.deadzone
-    ||          newMode !== currentSettings?.mode
-    || (currentSettings?.mode === "differential" && newGain !== currentSettings?.gain)
+    if (!(currentSettings === undefined && resolvedMapping === "unbound")
+    && (resolvedMapping !== currentSettings?.inAxis
+         ||   newInvert !== currentSettings?.invert
+         || newDeadzone !== currentSettings?.deadzone
+         ||     newMode !== currentSettings?.mode
+         || (currentSettings?.mode === "differential" && newGain !== currentSettings?.gain)
+      )
     ) {
       hasChanged = true;
     }
   }
 
+  // update GUI element
+  relevantWrapper.dataset.mapping = resolvedMapping;
+  if (kind === "axis") {
+    mappingInDOM.innerText = stringifyAxisMapping(resolvedMapping, newInvert, newDeadzone, newMode, newGain);
+    relevantWrapper.dataset.inverted = newInvert;
+    relevantWrapper.dataset.deadzone = newDeadzone;
+    relevantWrapper.dataset.gain = newMode === "differential" ? newGain : -1;
+  } else {
+    mappingInDOM.innerText = resolvedMapping;
+  }
+
+  // signal whether the current settings differ from the server's
   if (hasChanged) {
-    relevantWrapper.dataset.mapping = resolvedMapping;
-    if (kind === "axis") {
-      mappingInDOM.innerText = stringifyAxisMapping(resolvedMapping, newInvert, newDeadzone, newMode, newGain);
-      relevantWrapper.dataset.inverted = newInvert;
-      relevantWrapper.dataset.deadzone = newDeadzone;
-      relevantWrapper.dataset.gain = newMode === "differential" ? newGain : -1;
-    } else {
-      mappingInDOM.innerText = resolvedMapping;
-    }
     mappingInDOM.classList.add("modified");
-    //makeToast("success", "Mapping staged.\n\nHit the 'Apply' button to submit to server.");
   } else {
     mappingInDOM.classList.remove("modified");
-    //makeToast(null, "Keeping original mapping.", 1500);
   }
   modal.remove();
 }
@@ -382,7 +390,7 @@ async function submitMappings() {
     payload.PlaneAxesSettings[ae.dataset.output] = mappingInfo;
   }
 
-  console.debug(payload);
+  console.debug("submitMappings payload:", payload);
 
   let raw = null;
   try {

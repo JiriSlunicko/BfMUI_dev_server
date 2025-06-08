@@ -84,6 +84,10 @@ h4 {
   margin-bottom: 0 !important;
 }
 
+.mb8 {
+  margin-bottom: 8px !important;
+}
+
 .mb16 {
   margin-bottom: 16px !important;
 }
@@ -94,6 +98,10 @@ h4 {
 
 .mla {
   margin-left: auto !important;
+}
+
+.ml8 {
+  margin-left: 8px !important;
 }
 
 .w100 {
@@ -464,12 +472,13 @@ section .main-content .view-tab {
   width: 6ch;
 }
 
-#settings-connection span {
+#settings-connection span,
+#settings-misc .flex-r span {
   margin: 0.5ch;
   font-family: monospace;
   font-size: 16px;
 }
 
 #settings-arduino-port {
-  width: 16ch;
+  width: 8ch;
 }

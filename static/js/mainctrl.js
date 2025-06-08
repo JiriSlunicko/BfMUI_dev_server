@@ -32,10 +32,12 @@ const g = {
     axisGain: { min: 0.01, max: 100, },
     axisDeadzone: { min: 0, max: 1 },
   },
-  arduinoConfig: {
+  arduino: {
     port: null,
     baudRate: null,
     availablePorts: [],
+    baudRatePresets: [110, 300, 600, 1200, 2400, 4800, 9600, 14400,
+                      19200, 38400, 57600, 115200, 128000, 256000],
   },
   util: {
     toastFadeTimeout: null,

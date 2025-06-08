@@ -62,7 +62,7 @@ async function connect() {
 
       // check if serial port endpoints are supported
       if (fetchSerialPortData()) {
-        renderInitialArduinoPortSettings();
+        renderInitialArduinoSettings();
       }
 
       makeToast("success", `Connection successful, polling.\n\nArduino: ${g.server.usingArduino}`);
@@ -75,26 +75,91 @@ async function connect() {
 }
 
 
-function renderInitialArduinoPortSettings() {
+function renderInitialArduinoSettings() {
   qs("#settings-misc").insertAdjacentHTML("afterbegin", `
     <h2>Arduino serial port</h2>
-    <div class="flex-r f-g8 mb32">
-      <select id="settings-arduino-port"></select>
-      <button type="button" class="btn mla" id="settings-port-btn">Set port</button>
+    <div class="flex-r mb8">
+      <select id="settings-arduino-port" class="f-noshrink"></select>
+      <span class="f-noshrink">@</span>
+      <select id="settings-arduino-baudrate-select" class="f-noshrink">
+        <option value="custom">(custom)</option>
+      </select>
+      <input type="text" id="settings-arduino-baudrate-text" class="ml8" pattern="^\\d{1,8}$"
+        value="${g.arduino.baudRate ? g.arduino.baudRate : ''}" />
     </div>
+    <button type="button" class="btn mb32" id="settings-arduino-apply-btn">Apply settings</button>
   `);
-  updateArduinoPortSettings();
+  const select = qs("#settings-arduino-baudrate-select");
+  const textInput = qs("#settings-arduino-baudrate-text");
+
+  // baudrate config
+  for (const baudRate of g.arduino.baudRatePresets) {
+    const optText = baudRate < 1000 ? baudRate+" bps" : baudRate/1000+" kbps";
+    const isSelected = baudRate === g.arduino.baudRate;
+    select.insertAdjacentHTML("beforeend", `
+      <option value="${baudRate}"${isSelected ? " selected" : ""}>${optText}</option>
+    `);
+  }
+  // update text input on select interaction
+  select.addEventListener("change", function () {
+    if (this.value !== "custom") { textInput.value = this.value; }
+  });
+  // update select on text input
+  textInput.addEventListener("change", function() {
+    const val = parseInt(this.value);
+    select.value = g.arduino.baudRatePresets.includes(val) ? val : "custom";
+  });
+
+  // serial port selection
+  updateArduinoSettings();
+
+  // submit listener
+  qs("#settings-arduino-apply-btn").addEventListener("click", submitArduinoSettings);
 }
 
 
-function updateArduinoPortSettings() {
+function updateArduinoSettings() {
   const arduinoPortSelect = qs("#settings-arduino-port");
   if (arduinoPortSelect) {
     arduinoPortSelect.innerHTML = "";
-    for (const opt of g.arduinoConfig.availablePorts) {
+    for (const opt of g.arduino.availablePorts) {
       arduinoPortSelect.insertAdjacentHTML("beforeend", `
-        <option value="${opt}">${opt}</option>
+        <option value="${opt}"${opt === g.arduino.port ? " selected" : ""}>${opt}</option>
       `);
+    }
+  }
+}
+
+
+async function submitArduinoSettings() {
+  const arduinoPort = qs("#settings-arduino-port").value;
+  const baudRate = qs("#settings-arduino-baudrate-text").value;
+  if (!/^\d+$/.test(baudRate)) {
+    makeToast("error", "Invalid baud rate. Must be a non-negative integer.", 3000);
+    return;
+  }
+
+  const payload = {Name: arduinoPort, BaudRate: parseInt(baudRate)};
+  console.debug("submitArduinoSettings payload:", payload);
+
+  let raw = null;
+  try {
+    raw = await postWithTimeout(g.server.baseurl + "/settings/serialport/", payload);
+  } catch (err) {
+    makeToast("error", "Failed - network error:\n\n" + err.toString(), 5000);
+    raw = null;
+  }
+  if (raw) {
+    try {
+      const resp = await raw.json();
+      g.arduino.port = resp.Name;
+      g.arduino.baudRate = resp.BaudRate;
+    } catch (err) {
+      if (raw.ok) {
+        makeToast("error", `POST succeeded, but can't process response:\n\n${err.toString()}`, 7500);
+      } else {
+        makeToast("error", `Failed utterly - ${raw.status}:\n\n${raw.statusText}`, 7500);
+      }
     }
   }
 }

@@ -41,9 +41,11 @@ h4 { font-size: 16px; color: var(--bg-darkest); margin-bottom: 8px; }
 .break-word { word-break: break-word; }
 .tiny-p { font-size: 12px; }
 .mb0 { margin-bottom: 0 !important; }
+.mb8 { margin-bottom: 8px !important; }
 .mb16 { margin-bottom: 16px !important; }
 .mb32 { margin-bottom: 32px !important; }
 .mla { margin-left: auto !important; }
+.ml8 { margin-left: 8px !important; }
 .w100 { width: 100% !important; }
 .hidden { display: none !important; }
 
@@ -360,10 +362,11 @@ section {
 #input-port { width: 5ch; }
 #input-poll-interval { width: 6ch; }
 
-#settings-connection span {
+#settings-connection span,
+#settings-misc .flex-r span {
     margin: 0.5ch;
     font-family: monospace;
     font-size: 16px;
 }
 
-#settings-arduino-port { width: 16ch; }
+#settings-arduino-port { width: 8ch; }
