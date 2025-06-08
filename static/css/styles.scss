@@ -68,6 +68,14 @@ button.btn {
         color: var(--bg-dark);
         cursor: not-allowed;
     }
+    &.primed-yes {
+        background-color: var(--good);
+        color: var(--bg-darkest);
+    }
+    &.primed-no {
+        background-color: var(--bad);
+        color: var(--bg-darkest);
+    }
 }
 input[type=text], select {
     font-size: 18px;

@@ -133,6 +133,14 @@ button.btn:disabled {
   color: var(--bg-dark);
   cursor: not-allowed;
 }
+button.btn.primed-yes {
+  background-color: var(--good);
+  color: var(--bg-darkest);
+}
+button.btn.primed-no {
+  background-color: var(--bad);
+  color: var(--bg-darkest);
+}
 
 input[type=text], select {
   font-size: 18px;

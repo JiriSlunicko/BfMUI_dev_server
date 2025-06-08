@@ -9,7 +9,10 @@ async function renderControlsInterface() {
   if (loadSuccess) {
     makeMappingList("button");
     makeMappingList("axis");
-    qs("#controls-btn-wrapper").innerHTML = `<button type="button" class="btn" id="controls-submit-btn">Apply</button>`;
+    qs("#controls-btn-wrapper").innerHTML = `
+      <button type="button" class="btn" id="controls-submit-btn">Submit changes</button>
+      <button type="button" class="btn" id="controls-reset-btn">Discard changes</button>
+    `;
   } else {
     qs("#controls-buttons-inner").innerHTML = "<p>Failed to fetch options.</p>";
     qs("#controls-axes-inner").innerHTML = "<p>Failed to fetch options.</p>";
@@ -26,6 +29,17 @@ async function renderControlsInterface() {
     const submitButton = e.target.closest("#controls-submit-btn");
     if (submitButton) {
       submitMappings();
+      return;
+    }
+
+    const cancelButton = e.target.closest("#controls-reset-btn");
+    if (cancelButton) {
+      if (cancelButton.classList.contains("primed-no")) {
+        makeMappingList("button");
+        makeMappingList("axis");
+        qs("#controls-submit-btn").classList.remove("primed-yes");
+        qs("#controls-reset-btn").classList.remove("primed-no");
+      }
       return;
     }
   });
@@ -342,6 +356,17 @@ function applyCtrlMapping(kind) {
   } else {
     mappingInDOM.classList.remove("modified");
   }
+  // if ANY inputs differ from the server's config, highlight the apply button
+  const submitBtn = qs("#controls-submit-btn");
+  const cancelBtn = qs("#controls-reset-btn");
+  if (qs(".ctrl-input-current.modified")) {
+    submitBtn.classList.add("primed-yes");
+    cancelBtn.classList.add("primed-no");
+  } else {
+    submitBtn.classList.remove("primed-yes");
+    cancelBtn.classList.remove("primed-no");
+  }
+
   modal.remove();
 }
 
