@@ -1,10 +1,11 @@
-key.txt
-*.code-workspace
 .vscode/
-svg/
-minify_svg.py
+*.code-workspace
 build/
 dist/
 *.spec
+minify_svg.py
 migrate.py
+static/svg/
+static/js2/
+key.txt
 _TODO.txt
