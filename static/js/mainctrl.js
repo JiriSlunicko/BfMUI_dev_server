@@ -1,113 +1,119 @@
-// convenience aliases
-const qs = sel => document.querySelector(sel);
-const qsa = sel => document.querySelectorAll(sel);
+/**
+ * This module stores globals and implements navigation and global logic.
+ * 
+ * Each page needs to be registered under window.pages and implement the following
+ * methods at least nominally:
+ * - .init() runs once when the app loads
+ * - .activate() runs when the page is navigated to
+ * - .deactivate() runs when the page is navigated away from
+ */
+window.pages = {};
 
-// global state
-const g = {
-  currentPage: localStorage.getItem("activeTab") || "home",
+
+// global state variables and data storage
+window.globals =
+{
   server: {
     baseurl: localStorage.getItem("serverBaseurl") || "http://localhost:8080",
-    pollDelay: Number(localStorage.getItem("pollDelay")) || 1000,
+    //pollDelay: Number(localStorage.getItem("pollDelay")) || 1000,
     info: null,
     usingArduino: null,
-  },
-  polling: {
-    interval: null,
-    active: false,
-  },
-  data: {
-    serialTimers: Array(25).fill([]),
-    controllers: {},
-  },
-  controls: {
-    buttons: [],
-    inAxes: [],
-    actions: [],
-    outAxes: [],
-    restrictions: {},
-    actionMappings: {},
-    axisMappings: {},
-  },
-  limits: {
-    axisGain: { min: 0.01, max: 100, },
-    axisDeadzone: { min: 0, max: 1 },
   },
   arduino: {
     port: null,
     baudRate: null,
     availablePorts: [],
     baudRatePresets: [110, 300, 600, 1200, 2400, 4800, 9600, 14400,
-                      19200, 38400, 57600, 115200, 128000, 256000],
-  },
-  util: {
-    toastFadeTimeout: null,
-    toastDieTimeout: null,
+      19200, 38400, 57600, 115200, 128000, 256000],
   },
   userPreferences: {
     hideIntro: Boolean(localStorage.getItem("hideIntro")),
   },
 }
 
-// initialise navigation
-document.addEventListener("DOMContentLoaded", () => {
-  qs("header nav").addEventListener("click", function (e) {
-    const btn = e.target.closest("button");
-    if (!btn) return;
 
-    if (btn.id === "reload-app") {
-      reloadApp();
-    } else {
-      const targetPage = btn.id.replace("goto-", "");
-      loadPage(targetPage);
-    }
-  });
+// module for navigating between pages etc
+window.nav = (function()
+{
+  let currentPage = localStorage.getItem("activeTab") || "home";
 
-  loadPage(g.currentPage);
-});
+  /** Add navigation listeners & load the initial page. */
+  function init() {
+    utils.qs("header nav").addEventListener("click", function(e) {
+      const btn = e.target.closest("button");
+      if (!btn) return;
 
-
-async function reloadApp() {
-  const consent = await makePopup("confirm", "Reload the app?");
-  if (consent) {
-    location.reload();
-  }
-}
-
-
-/**
- * Navigate to the desired page.
- * @param {string} targetPage 'home', 'status' etc.
- */
-function loadPage(targetPage) {
-  const targetContainerId = "view-"+targetPage;
-  if (!qs("#"+targetContainerId)) return;
-
-  g.currentPage = targetPage;
-
-  // nav menu
-  localStorage.setItem("activeTab", targetPage);
-  qsa("header nav button").forEach(el => {
-    el.classList.remove("active");
-    if (el.id === "goto-"+targetPage) {
-      el.classList.add("active");
-    }
-  });
-
-  // content
-  qsa(".main-content .view-tab").forEach(el => {
-    el.style.display = el.id === targetContainerId ? "" : "none";
-  });
-
-  // finer logic
-  switch (targetPage) {
-    case "status":
-      renderTelemetry();
-      renderControllers();
-      break;
-    case "controls":
-      if (!g.controls.actions.length && g.server.info) {
-        renderControlsInterface();
+      if (btn.id === "reload-app") {
+        nav.reloadApp();
+      } else {
+        const targetPage = btn.id.replace("goto-", "");
+        nav.gotoPage(targetPage);
       }
-      break;
+    });
+
+    nav.gotoPage(currentPage);
   }
-}
+
+  /** Reload the whole thing if the user consents. */
+  async function reloadApp() {
+    const consent = await ui.makePopup("confirm", "Reload the app?");
+    if (consent) {
+      location.reload();
+    }
+  }
+
+  /** Navigate to the desired page.
+   * @param {string} targetPage "home", "status" etc.
+   */
+  function gotoPage(targetPage) {
+    const targetContainerId = "view-"+targetPage;
+    if (!utils.qs("#"+targetContainerId)) return;
+
+    currentPage = targetPage;
+
+    // nav menu
+    localStorage.setItem("activeTab", targetPage);
+    utils.qsa("header nav button").forEach(el => {
+      el.classList.remove("active");
+      if (el.id === "goto-"+targetPage) {
+        el.classList.add("active");
+      }
+    });
+
+    // content
+    utils.qsa(".main-content .view-tab").forEach(el => {
+      el.style.display = el.id === targetContainerId ? "" : "none";
+    });
+
+    // page-specific logic
+    for (const pageName of Object.keys(pages)) {
+      if (pageName === targetPage) {
+        pages[pageName].activate();
+      } else {
+        pages[pageName].deactivate();
+      }
+    }
+  }
+
+  // public API
+  return {
+    currentPage,
+    init,
+    reloadApp,
+    gotoPage
+  }
+})();
+
+
+// this should be the ONLY DOMContentLoaded listener in the app
+document.addEventListener("DOMContentLoaded", () => {
+  const toastContainer = document.createElement("div");
+  toastContainer.className = "toast-container";
+  document.body.appendChild(toastContainer);
+
+  for (const pageName of Object.keys(pages)) {
+    pages[pageName].init();
+  }
+
+  nav.init();
+});
