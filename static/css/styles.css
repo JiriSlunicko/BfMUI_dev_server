@@ -113,7 +113,9 @@ h4 {
 }
 
 label > span {
-  font-size: 12px;
+  display: block;
+  margin-bottom: 2px;
+  font-size: 14px;
   color: var(--bg-darker);
 }
 
@@ -242,6 +244,10 @@ input[type=range]::-moz-range-thumb {
   gap: 16px;
 }
 
+.f-g24 {
+  gap: 24px;
+}
+
 .modal-bg {
   position: absolute;
   z-index: 10;
@@ -321,14 +327,14 @@ section {
   background-color: var(--bg-bright);
   border-top-right-radius: 3px;
   border-top-left-radius: 3px;
-  padding: 8px;
 }
 section .main-content {
   max-height: 100%;
-  overflow-y: scroll;
+  padding: 8px;
+  overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
-  scrollbar-color: var(--bg-brightest) var(--bg-brighter);
+  scrollbar-color: var(--bg-brighter) var(--bg-medium);
 }
 section .main-content .view-tab {
   gap: 24px;
@@ -448,6 +454,11 @@ section .main-content .view-tab {
 /*******************
  * SETTINGS SCREEN *
  *******************/
+#settings-radio-channel-text,
+#settings-radio-pa-text {
+  width: 4ch;
+}
+
 @media only screen and (min-width: 751px) {
   #view-settings {
     display: grid;
@@ -463,7 +474,8 @@ section .main-content .view-tab {
   }
 }
 @media only screen and (max-width: 750px) {
-  #view-settings > div:not(:last-child) {
+  #view-settings > div:not(:last-child),
+  #view-settings > div > div:not(:last-child) {
     padding-bottom: 32px;
     border-bottom: 1px solid var(--bg-medium);
   }
@@ -480,8 +492,8 @@ section .main-content .view-tab {
   width: 6ch;
 }
 
-#settings-connection span,
-#settings-misc .flex-r span {
+#settings-connection .flex-r span,
+#settings-arduino .flex-r span {
   margin: 0.5ch;
   font-family: monospace;
   font-size: 16px;

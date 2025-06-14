@@ -15,19 +15,8 @@ window.globals =
 {
   server: {
     baseurl: localStorage.getItem("serverBaseurl") || "http://localhost:8080",
-    //pollDelay: Number(localStorage.getItem("pollDelay")) || 1000,
     info: null,
     usingArduino: null,
-  },
-  arduino: {
-    port: null,
-    baudRate: null,
-    availablePorts: [],
-    baudRatePresets: [110, 300, 600, 1200, 2400, 4800, 9600, 14400,
-      19200, 38400, 57600, 115200, 128000, 256000],
-  },
-  userPreferences: {
-    hideIntro: Boolean(localStorage.getItem("hideIntro")),
   },
 }
 

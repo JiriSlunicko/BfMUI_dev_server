@@ -50,7 +50,9 @@ h4 { font-size: 16px; color: var(--bg-darkest); margin-bottom: 8px; }
 .hidden { display: none !important; }
 
 label > span {
-    font-size: 12px;
+    display: block;
+    margin-bottom: 2px;
+    font-size: 14px;
     color: var(--bg-darker);
 }
 button.btn {
@@ -141,6 +143,7 @@ input[type=range]::-moz-range-thumb {
 .f-g8 { gap: 8px; }
 .f-g12 { gap: 12px; }
 .f-g16 { gap: 16px; }
+.f-g24 { gap: 24px; }
 
 .modal-bg {
     position: absolute;
@@ -219,14 +222,14 @@ section {
     background-color: var(--bg-bright);
     border-top-right-radius: 3px;
     border-top-left-radius: 3px;
-    padding: 8px;
 
     .main-content {
         max-height: 100%;
-        overflow-y: scroll;
+        padding: 8px;
+        overflow-y: auto;
         overflow-x: hidden;
         scrollbar-width: thin;
-        scrollbar-color: var(--bg-brightest) var(--bg-brighter);
+        scrollbar-color: var(--bg-brighter) var(--bg-medium);
 
         .view-tab {
             gap: 24px;
@@ -345,6 +348,11 @@ section {
 /*******************
  * SETTINGS SCREEN *
  *******************/
+#settings-radio-channel-text,
+#settings-radio-pa-text {
+    width: 4ch;
+}
+
 @media only screen and (min-width: 751px) {
     #view-settings {
         display: grid;
@@ -360,7 +368,8 @@ section {
     }
 }
 @media only screen and (max-width: 750px) {
-    #view-settings > div:not(:last-child) {
+    #view-settings > div:not(:last-child),
+    #view-settings > div > div:not(:last-child) {
         padding-bottom: 32px;
         border-bottom: 1px solid var(--bg-medium);
     }
@@ -370,8 +379,8 @@ section {
 #input-port { width: 5ch; }
 #input-poll-interval { width: 6ch; }
 
-#settings-connection span,
-#settings-misc .flex-r span {
+#settings-connection .flex-r span,
+#settings-arduino .flex-r span {
     margin: 0.5ch;
     font-family: monospace;
     font-size: 16px;

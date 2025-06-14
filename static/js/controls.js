@@ -221,14 +221,14 @@ window.pages.controls = (function () {
           <option class="ctrl-modal-option" value="inverted"${inverted ? " selected" : ""}>inverted</option>
         </select>
       </label>
-      <label for="ctrl-input-deadzone" class="flex-c f-g4 w100 mb16">
+      <label for="ctrl-input-deadzone-range" class="flex-c f-g4 w100 mb16">
         <span>Deadzone (0–1)</span>
-          <div class="flex-r f-g16">
-            <input id="ctrl-input-deadzone-range" type="range" class="f-grow"
-              min="${_limits.axisDeadzone.min}" max="${_limits.axisDeadzone.max}"
-              step="0.01" value="${deadzone}" />
-            <input id="ctrl-input-deadzone-text" type="text" value="${Number(deadzone).toFixed(2)}" />
-          </div>
+        <div class="flex-r f-g16">
+          <input id="ctrl-input-deadzone-range" type="range" class="f-grow"
+            min="${_limits.axisDeadzone.min}" max="${_limits.axisDeadzone.max}"
+            step="0.01" value="${deadzone}" />
+          <input id="ctrl-input-deadzone-text" type="text" value="${Number(deadzone).toFixed(2)}" />
+        </div>
       </label>
       <label for="ctrl-input-method" class="flex-c f-g4 w100 mb16">
         <span>Input processing</span>
@@ -237,7 +237,7 @@ window.pages.controls = (function () {
           <option class="ctrl-modal-option" value="differential"${gain < 0 ? "" : " selected"}>differential</option>
         </select>
       </label>
-      <label for="ctrl-input-gain" class="flex-c f-g4 w100 mb16${gain < 0 ? " hidden" : ""}">
+      <label for="ctrl-input-gain-text" class="flex-c f-g4 w100 mb16${gain < 0 ? " hidden" : ""}">
         <span>Gain</span>
         <div class="flex-r f-g16">
           <input id="ctrl-input-gain-range" type="range" class="f-grow" min="0" max="100" step="0.1"

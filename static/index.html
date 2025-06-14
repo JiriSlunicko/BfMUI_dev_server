@@ -125,28 +125,66 @@
 
 
       <div class="view-tab flex-c" id="view-settings">
-        <div id="settings-connection">
-          <h2>Connection</h2>
-          <p id="settings-connection-status">Currently not connected.</p>
-          <p>Server IP + port</p>
-          <div class="flex-r mb16">
-            <input id="input-ip" type="text" pattern="^(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})|localhost$" maxlength="15" />
-            <span>:</span>
-            <input id="input-port" type="text" pattern="^\d+$" maxlength="4" />
-            <button type="button" class="btn mla" id="settings-connect-btn">Connect</button>
-          </div>
-          <p>Polling interval (ms)</p>
-          <div class="flex-r f-g8">
-            <input id="input-poll-interval" type="text" pattern="^\d+$" maxlength="5" />
-            <button type="button" class="btn mla" id="settings-poll-start-btn" disabled="">Start</button>
-            <button type="button" class="btn" id="settings-poll-pause-btn" disabled="">Stop</button>
+        <div class="flex-c f-g24">
+          <div id="settings-connection">
+            <h2>Connection</h2>
+            <p id="settings-connection-status">Currently not connected.</p>
+            <label for="input-ip">
+              <span>Server IP + port</span>
+              <div class="flex-r mb16">
+                <input id="input-ip" type="text" pattern="^(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})|localhost$" maxlength="15" />
+                <span>:</span>
+                <input id="input-port" type="text" pattern="^\d+$" maxlength="4" />
+                <button type="button" class="btn mla" id="settings-connect-btn">Connect</button>
+              </div>
+            </label>
+            <label for="input-poll-interval">
+              <span>Polling interval (ms)</span>
+              <div class="flex-r f-g8">
+                <input id="input-poll-interval" type="text" pattern="^\d+$" maxlength="5" />
+                <button type="button" class="btn mla" id="settings-poll-start-btn" disabled="">Start</button>
+                <button type="button" class="btn" id="settings-poll-pause-btn" disabled="">Stop</button>
+              </div>
+            </label>
           </div>
         </div>
 
-        <div id="settings-misc">
-          <h2>Miscellaneous</h2>
-          <div class="flex-r">
-            <button type="button" class="btn" id="settings-reset-btn">Reset app settings</button>
+        <div class="flex-c f-g24">
+          <div id="settings-radio">
+            <h2>Radio</h2>
+            <label for="settings-radio-channel-range">
+              <span>Channel</span>
+              <div class="flex-r f-g16 mb16">
+                <input id="settings-radio-channel-range" type="range" class="f-grow" min="0" max="125" step="1" value="0" />
+                <input id="settings-radio-channel-text" type="text" pattern="^\d+$" maxlength="3" value="0" />
+              </div>
+            </label>
+            <div class="flex-r f-g16 mb16">
+              <label for="settings-radio-pa-range" class="f-grow">
+                <span>Power amp level</span>
+                <div class="flex-r f-g16">
+                  <input id="settings-radio-pa-range" type="range" class="f-grow" min="0" max="3" step="1" value="0" />
+                  <input id="settings-radio-pa-text" type="text" pattern="^\d$" maxlength="1" value="0" />
+                </div>
+              </label>
+              <label for="settings-radio-feedback">
+                <span>Plane feedback</span>
+                <select id="settings-radio-feedback">
+                  <option value="yes">enabled</option>
+                  <option value="">disabled</option>
+                </select>
+              </label>
+            </div>
+            <div class="flex-r">
+              <button type="button" class="btn" id="settings-radio-apply-btn">Apply radio settings</button>
+            </div>
+          </div>
+
+          <div id="settings-misc">
+            <h2>Miscellaneous</h2>
+            <div class="flex-r">
+              <button type="button" class="btn" id="settings-reset-btn">Reset app settings</button>
+            </div>
           </div>
         </div>
       </div>

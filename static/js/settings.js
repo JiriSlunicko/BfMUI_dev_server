@@ -4,54 +4,117 @@ window.pages.settings = (function () {
     interval: null,
     active: false,
   };
+  let _radio = {
+    channel: null,
+    paLevel: null,
+    feedback: null,
+  }
+  let _arduino = {
+    port: null,
+    baudRate: null,
+    availablePorts: [],
+    baudRatePresets: [110, 300, 600, 1200, 2400, 4800, 9600, 14400,
+      19200, 38400, 57600, 115200, 128000, 256000],
+  }
 
   function init() {
+    // server & polling config
     if (globals.server.baseurl) {
       const urlWithoutProtocol = globals.server.baseurl.replace(/^https?:\/\//, "");
       const [ip, port] = urlWithoutProtocol.split(":");
       utils.qs("#input-ip").value = ip;
       utils.qs("#input-port").value = port;
-      _connect(globals.server, globals.arduino);
+      _connect(globals.server);
     }
     utils.qs("#input-poll-interval").value = _polling.delay;
     utils.qs("#settings-reset-btn").addEventListener("click", _resetSettings);
     utils.qs("#settings-connect-btn").addEventListener("click", () => {
-      _connect(globals.server, globals.arduino);
+      _connect(globals.server);
     });
     utils.qs("#input-poll-interval").addEventListener("blur", _changePollInterval);
     utils.qs("#settings-poll-start-btn").addEventListener("click", _pollStart);
     utils.qs("#settings-poll-start-btn").disabled = true;
     utils.qs("#settings-poll-pause-btn").addEventListener("click", _pollPause);
     utils.qs("#settings-poll-pause-btn").disabled = true;
+    
+    // radio channel config
+    const radioChannelRange = utils.qs("#settings-radio-channel-range");
+    const radioChannelText = utils.qs("#settings-radio-channel-text");
+    radioChannelRange.addEventListener("input", function() {
+      radioChannelText.value = this.value;
+    });
+    radioChannelText.addEventListener("change", function() {
+      const inputValue = Number(this.value);
+      if (isNaN(inputValue) || inputValue < 0 || inputValue > 125) {
+        this.value = radioChannelRange.value;
+        ui.makeToast("error", "Invalid input for radio channel.");
+      } else {
+        radioChannelRange.value = inputValue.toFixed(0);
+      }
+    });
+    // radio PA config
+    const radioPARange = utils.qs("#settings-radio-pa-range");
+    const radioPAText = utils.qs("#settings-radio-pa-text");
+    radioPARange.addEventListener("input", function () {
+      radioPAText.value = this.value;
+    });
+    radioPAText.addEventListener("change", function () {
+      const inputValue = Number(this.value);
+      if (isNaN(inputValue) || inputValue < 0 || inputValue > 3) {
+        this.value = radioPARange.value;
+        ui.makeToast("error", "Invalid input for radio PA level.");
+      } else {
+        radioPARange.value = inputValue.toFixed(0);
+      }
+    });
+    // submit radio settings
+    utils.qs("#settings-radio-apply-btn").addEventListener("click", _submitRadioSettings);
   }
 
 
   /** Get serial port options and settings from the server.
    * @param {object} globalServer globals.server - .usingArduino will be updated
-   * @param {object} globalArduino globals.arduino - will be updated
+   * @return {Boolean} true if we get a response indicating arduino is being used
    */
-  async function _fetchSerialPortData(globalServer, globalArduino) {
+  async function _fetchSerialPortData(globalServer) {
     try {
       const raw = await ajax.fetchWithTimeout(globalServer.baseurl + "/settings/serialport/");
       globalServer.usingArduino = raw.status === 200;
       if (globalServer.usingArduino) {
         const resp = await raw.json();
         // nullable string
-        globalArduino.port = resp.SerialPortParameters ? resp.SerialPortParameters.Name : null;
+        _arduino.port = resp.SerialPortParameters ? resp.SerialPortParameters.Name : null;
         // nullable integer
-        globalArduino.baudRate = resp.SerialPortParameters ? resp.SerialPortParameters.BaudRate : null;
+        _arduino.baudRate = resp.SerialPortParameters ? resp.SerialPortParameters.BaudRate : null;
         // array of strings
-        globalArduino.availablePorts = resp.AvailablePorts;
-
-        if (!globalArduino.availablePorts.length) {
-          ui.makeToast("error", "Warning:\n\nUsing Arduino, but no available serial ports.", 3000);
-        }
+        _arduino.availablePorts = resp.AvailablePorts;
         return true;
       }
 
       return false;
     } catch (err) {
-      ui.makeToast("error", "Error fetching serial port data.\n\n" + err, 5000);
+      ui.makeToast("error", "Error fetching serial port data.\n\n" + err.toString(), 5000);
+      return false;
+    }
+  }
+
+
+  /** Get current radio settings & save them to _radio.
+   * @returns {Boolean} success?
+  */
+  async function _fetchRadioData() {
+    try {
+      const raw = await ajax.fetchWithTimeout(globals.server.baseurl + "/settings/radio/");
+      if (raw.status !== 200) {
+        throw new Error("/settings/radio/ returned "+raw.status);
+      }
+      const resp = await raw.json();
+      _radio.channel = resp.Channel;
+      _radio.paLevel = resp.PALevel;
+      _radio.feedback = resp.IsPlaneFeedbackEnabled;
+      return true;
+    } catch (err) {
+      ui.makeToast("error", "Error fetching radio data.\n\n" + err.toString(), 5000);
       return false;
     }
   }
@@ -66,9 +129,8 @@ window.pages.settings = (function () {
 
   /** Attempt connection to the backend server, start polling.
    * @param {object} globalServer globals.server - will be updated on success
-   * @param {object} globalArduino globals.arduino - will be updated on success
    */
-  async function _connect(globalServer, globalArduino) {
+  async function _connect(globalServer) {
     const ip = utils.qs("#input-ip").value;
     const port = utils.qs("#input-port").value;
 
@@ -101,14 +163,28 @@ window.pages.settings = (function () {
         _pollStart();
 
         // check if serial port endpoints are supported
-        const arduino = await _fetchSerialPortData(globalServer, globalArduino);
-        if (arduino) {
+        const arduinoSuccess = await _fetchSerialPortData(globalServer);
+        _removeArduinoSettings();
+        if (arduinoSuccess) {
           _renderInitialArduinoSettings();
-        } else {
-          _removeArduinoSettings();
         }
 
-        ui.makeToast("success", `Connection successful, polling.\n\nArduino: ${globalServer.usingArduino}`);
+        // load radio data
+        const radioSuccess = await _fetchRadioData();
+        if (radioSuccess) {
+          utils.qs("#settings-radio-channel-range").value = _radio.channel;
+          utils.qs("#settings-radio-channel-text").value = _radio.channel;
+          utils.qs("#settings-radio-pa-range").value = _radio.paLevel;
+          utils.qs("#settings-radio-pa-text").value = _radio.paLevel;
+          utils.qs("#settings-radio-feedback").value = _radio.feedback ? "yes" : "";
+        }
+
+        ui.makeToast("success",
+          "Connected to server, polling.\n\n"
+          +(globalServer.usingArduino ? `Using arduino, ${_arduino.availablePorts.length} available ports.\n\n` : "")
+          +`Radio: ${radioSuccess ? "ok" : "ERROR"}`,
+          5000
+        );
       } else {
         throw new Error("server did not return a JSON array");
       }
@@ -120,29 +196,28 @@ window.pages.settings = (function () {
 
   /** Initialise arduino settings section. */
   function _renderInitialArduinoSettings() {
-    _removeArduinoSettings();
-    utils.qs("#settings-misc").insertAdjacentHTML("afterbegin", `
+    utils.qs("#settings-connection").insertAdjacentHTML("afterend", `
       <div id="settings-arduino">
         <h2>Arduino serial port</h2>
-        <div class="flex-r mb8">
+        <div class="flex-r mb16">
           <select id="settings-arduino-port" class="f-noshrink"></select>
           <span class="f-noshrink">@</span>
           <select id="settings-arduino-baudrate-select" class="f-noshrink">
             <option value="custom">(custom)</option>
           </select>
           <input type="text" id="settings-arduino-baudrate-text" class="ml8" pattern="^\\d{1,8}$"
-            value="${globals.arduino.baudRate ? globals.arduino.baudRate : ''}" />
+            value="${_arduino.baudRate ? _arduino.baudRate : ''}" placeholder="baud rate" />
         </div>
-        <button type="button" class="btn mb32" id="settings-arduino-apply-btn">Apply settings</button>
+        <button type="button" class="btn" id="settings-arduino-apply-btn">Apply serial port settings</button>
       </div>
     `);
     const select = utils.qs("#settings-arduino-baudrate-select");
     const textInput = utils.qs("#settings-arduino-baudrate-text");
 
     // baudrate config
-    for (const baudRate of globals.arduino.baudRatePresets) {
+    for (const baudRate of _arduino.baudRatePresets) {
       const optText = baudRate < 1000 ? baudRate + " bps" : baudRate / 1000 + " kbps";
-      const isSelected = baudRate === globals.arduino.baudRate;
+      const isSelected = baudRate === _arduino.baudRate;
       select.insertAdjacentHTML("beforeend", `
         <option value="${baudRate}"${isSelected ? " selected" : ""}>${optText}</option>
       `);
@@ -154,7 +229,7 @@ window.pages.settings = (function () {
     // update select on text input
     textInput.addEventListener("change", function () {
       const val = parseInt(this.value);
-      select.value = globals.arduino.baudRatePresets.includes(val) ? val : "custom";
+      select.value = _arduino.baudRatePresets.includes(val) ? val : "custom";
     });
 
     // serial port selection
@@ -177,19 +252,17 @@ window.pages.settings = (function () {
     const arduinoPortSelect = utils.qs("#settings-arduino-port");
     if (arduinoPortSelect) {
       arduinoPortSelect.innerHTML = "";
-      for (const opt of globals.arduino.availablePorts) {
+      for (const opt of _arduino.availablePorts) {
         arduinoPortSelect.insertAdjacentHTML("beforeend", `
-          <option value="${opt}"${opt === globals.arduino.port ? " selected" : ""}>${opt}</option>
+          <option value="${opt}"${opt === _arduino.port ? " selected" : ""}>${opt}</option>
         `);
       }
     }
   }
 
 
-  /** POST arduino settings to server & process its response.
-   * @param {object} globalArduino globals.arduino - updated on success
-  */
-  async function _submitArduinoSettings(globalArduino) {
+  /** POST arduino settings to server & process its response. */
+  async function _submitArduinoSettings() {
     const arduinoPort = utils.qs("#settings-arduino-port").value;
     const baudRate = utils.qs("#settings-arduino-baudrate-text").value;
     if (!/^\d+$/.test(baudRate)) {
@@ -210,8 +283,9 @@ window.pages.settings = (function () {
     if (raw) {
       try {
         const resp = await raw.json();
-        globalArduino.port = resp.Name;
-        globalArduino.baudRate = resp.BaudRate;
+        _arduino.port = resp.Name;
+        _arduino.baudRate = resp.BaudRate;
+        ui.makeToast("success", "Successfully updated.");
       } catch (err) {
         if (raw.ok) {
           ui.makeToast("error", `POST succeeded, but can't process response:\n\n${err.toString()}`, 7500);
@@ -220,6 +294,41 @@ window.pages.settings = (function () {
         }
       }
     }
+  }
+
+
+  /** POST radio settings to server & process its response. */
+  async function _submitRadioSettings() {
+    const payload = {
+      Channel: Number(utils.qs("#settings-radio-channel-range").value),
+      PALevel: Number(utils.qs("#settings-radio-pa-range").value),
+      IsPlaneFeedbackEnabled: utils.qs("#settings-radio-feedback").value === "yes",
+    };
+    console.debug("submitRadioSettings payload:", payload);
+
+    let raw = null;
+    try {
+      raw = await ajax.postWithTimeout(globals.server.baseurl + "/settings/radio/", payload);
+    } catch (err) {
+      ui.makeToast("error", "Failed - network error:\n\n" + err.toString(), 5000);
+      raw = null;
+    }
+    if (raw) {
+      try {
+        const resp = await raw.json();
+        _radio.channel = resp.Channel;
+        _radio.paLevel = resp.PALevel;
+        _radio.feedback = resp.IsPlaneFeedbackEnabled;
+        ui.makeToast("success", "Successfully updated.");
+      } catch (err) {
+        if (raw.ok) {
+          ui.makeToast("error", `POST succeeded, but can't process response:\n\n${err.toString()}`, 7500);
+        } else {
+          ui.makeToast("error", `Failed utterly - ${raw.status}:\n\n${raw.statusText}`, 7500);
+        }
+      }
+    }
+
   }
 
 

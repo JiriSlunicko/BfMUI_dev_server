@@ -1,16 +1,20 @@
 window.pages.home = (function()
 {
+  let _userPreferences = {
+    hideIntro: Boolean(localStorage.getItem("hideIntro")),
+  }
+
   /**
    * On DOM load, hide the intro text if desired & allow the user to hide it.
    */
   function init() {
-    if (globals.userPreferences.hideIntro) {
+    if (_userPreferences.hideIntro) {
       utils.qs("#home-intro").style.display = "none";
     }
 
     utils.qs("#home-hide-intro-btn").addEventListener("click", () => {
       localStorage.setItem("hideIntro", "1");
-      globals.userPreferences.hideIntro = true;
+      _userPreferences.hideIntro = true;
       utils.qs("#home-intro").style.display = "none";
       ui.makeToast("success", "The intro text won't show again unless you reset the app settings.", 3000);
     })
