@@ -1,5 +1,5 @@
 window.pages.controls = (function () {
-  let loaded = false;
+  let _loaded = false;
 
   let _loadInterval = null;
 
@@ -18,6 +18,7 @@ window.pages.controls = (function () {
     axisDeadzone: { min: 0, max: 1, },
   }
 
+
   /** Lazy load the interface only when the user navigates to it. */
   function activate() {
     if (!_controls.actions.length && _loadInterval === null) {
@@ -26,10 +27,12 @@ window.pages.controls = (function () {
           _renderControlsInterface();
           clearInterval(_loadInterval);
           _loadInterval = null;
+          _loaded = true;
         }
       }, 50);
     }
   }
+
 
   /** Load the current mappings from the server. Don't call on POST.
    * @returns {Boolean} */
@@ -61,6 +64,7 @@ window.pages.controls = (function () {
       return false;
     }
   }
+
 
   /** Load the current mappings from the server and render them. Don't call on POST. */
   async function _renderControlsInterface() {
@@ -109,6 +113,7 @@ window.pages.controls = (function () {
       }
     });
   }
+
 
   /**
    * Populate the relevant container with current input-output mappings.
@@ -165,6 +170,7 @@ window.pages.controls = (function () {
     }
     container.append(mappingsWrapper);
   }
+
 
   /**
    * Create a modal for mapping controller inputs to plane outputs.
@@ -303,6 +309,7 @@ window.pages.controls = (function () {
     document.body.append(bg);
   }
 
+
   /**
    * Trivial helper for _makeMappingModal - make a <select>.
    * @param {string} id ID attribute to assign to the new select
@@ -325,6 +332,7 @@ window.pages.controls = (function () {
     }
     return select;
   }
+
 
   /**
    * Stage new mapping from modal (not committed to server).
@@ -436,11 +444,13 @@ window.pages.controls = (function () {
     modal.remove();
   }
 
+
   /** Trivial helper for showing axis properties as a string. */
   function _stringifyAxisMapping(axis, invert, deadzone, mode, gain) {
     if (axis === "unbound") return axis;
     return `${axis}, inv=${invert ? "1" : "0"}, dz=${deadzone}, ${mode === "direct" ? "direct" : ("gain=" + gain)}`;
   }
+
 
   /** POST settings to server & get new server-side mappings. */
   async function _submitMappings() {
@@ -519,6 +529,7 @@ window.pages.controls = (function () {
     }
   }
 
+
   /** Convert response action mappings from server to:
    * {
    *   string action: {
@@ -537,6 +548,7 @@ window.pages.controls = (function () {
     }
     return processedMappings;
   }
+
 
   /** Convert response axis mappings from server to:
    * {
@@ -571,11 +583,12 @@ window.pages.controls = (function () {
     return processedMappings;
   }
 
+
   // public API
   return {
-    init: () => { },
+    init: () => {},
     activate,
-    deactivate: () => { },
-    loaded
+    deactivate: () => {},
+    hasLoaded: () => _loaded,
   }
 })();

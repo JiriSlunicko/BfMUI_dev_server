@@ -35,7 +35,7 @@ window.globals =
 // module for navigating between pages etc
 window.nav = (function()
 {
-  let currentPage = localStorage.getItem("activeTab") || "home";
+  let _currentPage = localStorage.getItem("activeTab") || "home";
 
   /** Add navigation listeners & load the initial page. */
   function init() {
@@ -51,8 +51,9 @@ window.nav = (function()
       }
     });
 
-    nav.gotoPage(currentPage);
+    nav.gotoPage(_currentPage);
   }
+
 
   /** Reload the whole thing if the user consents. */
   async function reloadApp() {
@@ -62,6 +63,7 @@ window.nav = (function()
     }
   }
 
+
   /** Navigate to the desired page.
    * @param {string} targetPage "home", "status" etc.
    */
@@ -69,7 +71,7 @@ window.nav = (function()
     const targetContainerId = "view-"+targetPage;
     if (!utils.qs("#"+targetContainerId)) return;
 
-    currentPage = targetPage;
+    _currentPage = targetPage;
 
     // nav menu
     localStorage.setItem("activeTab", targetPage);
@@ -95,9 +97,10 @@ window.nav = (function()
     }
   }
 
+  
   // public API
   return {
-    currentPage,
+    getCurrentPage: () => _currentPage,
     init,
     reloadApp,
     gotoPage

@@ -16,6 +16,7 @@ window.pages.home = (function()
     })
   }
 
+
   /** Load basic server info for the homepage. */
   function initSysInfo() {
     if (!globals.server.info) {
@@ -34,6 +35,7 @@ window.pages.home = (function()
     }
   }
 
+  
   // public API
   return {
     init,

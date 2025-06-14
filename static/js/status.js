@@ -11,6 +11,7 @@ window.pages.status = (function()
     _teleData.controllers = {};
   }
 
+
   /** Get current telemetry data and render it if we're on the "status" page. */
   async function fetchTelemetry() {
     let resp;
@@ -33,10 +34,11 @@ window.pages.status = (function()
     _teleData.serialTimers.shift();
     _teleData.controllers = resp.Controllers;
 
-    if (nav.currentPage === "status") {
+    if (nav.getCurrentPage() === "status") {
       _renderTelemetry();
     }
   }
+
 
   /** Render the latest health timer data and controller status. */
   function _renderTelemetry() {
@@ -78,6 +80,7 @@ window.pages.status = (function()
     entries.cleanUpDangling("#status-controllers-inner", Object.keys(ctrlData).map(x => "ctrl-" + x));
   }
 
+
   /** Private helper for processing serial timer health data entries. */
   function _processSTHDEntry(entry) {
     const result = {};
@@ -99,6 +102,7 @@ window.pages.status = (function()
     return result;
   }
 
+  
   // public API
   return {
     init: ()=>{},

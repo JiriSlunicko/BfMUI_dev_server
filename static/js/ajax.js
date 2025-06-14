@@ -28,6 +28,7 @@ window.ajax = (function()
     }
   }
 
+
   /**
    * Attempt to make a POST request, failing after a specified timeout.
    * @param {string} url 
@@ -43,6 +44,7 @@ window.ajax = (function()
     });
   }
 
+  
   // public API
   return {
     fetchWithTimeout,

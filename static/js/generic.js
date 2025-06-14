@@ -26,6 +26,7 @@ window.utils = (function()
     return logVal.toFixed(2);
   }
 
+
   /**
    * Map logarithmically distributed values between min and max to 0-100.
    * 
@@ -83,6 +84,7 @@ window.ui = (function()
     }
   }
 
+
   /** Remove any existing notifications. */
   function removeToast() {
     utils.qsa(".toast").forEach(el => el.remove());
@@ -95,6 +97,7 @@ window.ui = (function()
       toastKillTimeout = null;
     }
   }
+
 
   /**
    * Create a custom alert/confirm modal. Returns a Promise if successful,
@@ -143,6 +146,7 @@ window.ui = (function()
       }
     })
   }
+
 
   // public API
   return {
@@ -218,6 +222,7 @@ window.entries = (function()
     }
   }
 
+
   /**
    * Iterate over existing entries in the DOM and remove ones not on the list.
    * 
@@ -237,6 +242,7 @@ window.entries = (function()
       }
     });
   }
+  
 
   // public API
   return {
