@@ -49,6 +49,20 @@ window.pages.status = (function()
       utils.qs("#status-telemetry-inner").innerHTML = "<p>No data.</p>";
       return;
     }
+
+    // new mechanism
+    for (let i = 0; i < sthdData.length; i++) {
+      const dataEntry = sthdData[i];
+      entries.reuseOrCreate(
+        "#status-telemetry-inner", i,
+        dataEntry.SerialTimerName, _processSTHDEntry(dataEntry),
+        dataEntry.Health, dataEntry.LatestErrorMessage
+      );
+    };
+    entries.trimList("#status-telemetry-inner", sthdData.length);
+
+    // old mechanism
+    /*
     for (const entry of sthdData) {
       entries.createOrUpdate(
         "#status-telemetry-inner",
@@ -60,6 +74,7 @@ window.pages.status = (function()
       );
     }
     entries.cleanUpDangling("#status-telemetry-inner", sthdData.map(x => "sthd-" + x.SerialTimerName));
+    */
 
     // controller info
     utils.qs("#status-controllers-inner > p")?.remove();
@@ -68,6 +83,21 @@ window.pages.status = (function()
       utils.qs("#status-controllers-inner").innerHTML = "<p>No controllers detected.</p>";
       return;
     }
+
+    // new mechanism
+    const ctrlKeys = _.toArray(Object.keys(ctrlData));
+    for (let i = 0; i < ctrlKeys.length; i++) {
+      const key = ctrlKeys[i];
+      const {Name, IsConnected} = ctrlData[key];
+      entries.reuseOrCreate(
+        "#status-controllers-inner", i, key,
+        { [Name]: IsConnected ? "connected" : "disconnected" }
+      );
+    };
+    entries.trimList("#status-controllers-inner", ctrlKeys.length);
+
+    // old mechanism
+    /*
     for (const [key, value] of Object.entries(ctrlData)) {
       const { Name, IsConnected } = value;
       entries.createOrUpdate(
@@ -78,6 +108,7 @@ window.pages.status = (function()
       );
     }
     entries.cleanUpDangling("#status-controllers-inner", Object.keys(ctrlData).map(x => "ctrl-" + x));
+    */
   }
 
 

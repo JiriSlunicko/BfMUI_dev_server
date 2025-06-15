@@ -98,6 +98,8 @@ window.pages.controls = (function () {
       const submitButton = e.target.closest("#controls-submit-btn");
       if (submitButton) {
         _submitMappings();
+        utils.qs("#controls-submit-btn").classList.remove("primed-yes");
+        utils.qs("#controls-reset-btn").classList.remove("primed-no");
         return;
       }
 
