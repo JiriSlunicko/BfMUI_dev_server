@@ -16,6 +16,12 @@ window.pages.settings = (function () {
     baudRatePresets: [110, 300, 600, 1200, 2400, 4800, 9600, 14400,
       19200, 38400, 57600, 115200, 128000, 256000],
   }
+  let _maxSurfaceAngles = {
+    limits: {
+      min: 0, max: 90,
+    },
+    surfaces: {},
+  }
 
   function init() {
     // server & polling config
@@ -55,10 +61,10 @@ window.pages.settings = (function () {
     // radio PA config
     const radioPARange = utils.qs("#settings-radio-pa-range");
     const radioPAText = utils.qs("#settings-radio-pa-text");
-    radioPARange.addEventListener("input", function () {
+    radioPARange.addEventListener("input", function() {
       radioPAText.value = this.value;
     });
-    radioPAText.addEventListener("change", function () {
+    radioPAText.addEventListener("change", function() {
       const inputValue = Number(this.value);
       if (isNaN(inputValue) || inputValue < 0 || inputValue > 3) {
         this.value = radioPARange.value;
@@ -69,6 +75,36 @@ window.pages.settings = (function () {
     });
     // submit radio settings
     utils.qs("#settings-radio-apply-btn").addEventListener("click", _submitRadioSettings);
+
+    // max surface angle config
+    const msaSettings = utils.qs("#settings-surfaces-inner");
+    msaSettings.addEventListener("change", function(e) {
+      const rangeInput = e.target.closest(`input[type=range]`);
+      if (rangeInput) {
+        const textInput = rangeInput.parentNode.querySelector(`input[type=text]`);
+        textInput.value = rangeInput.value;
+      }
+    });
+    msaSettings.addEventListener("change", function(e) {
+      const textInput = e.target.closest(`input[type=text]`);
+      if (textInput) {
+        const rangeInput = textInput.parentNode.querySelector(`input[type=range]`);
+        const inputValue = Number(textInput.value);
+        if (isNaN(inputValue) || inputValue < _maxSurfaceAngles.limits.min || inputValue > _maxSurfaceAngles.limits.max) {
+          textInput.value = rangeInput.value;
+          ui.makeToast("error", "Invalid input for max. surface angle.");
+        } else {
+          rangeInput.value = inputValue.toFixed(0);
+        }
+      }
+    });
+    // submit max surface angle config
+    msaSettings.addEventListener("click", function(e) {
+      const button = e.target.closest("#settings-surfaces-apply-btn");
+      if (button) {
+        
+      }
+    });
   }
 
 
@@ -101,7 +137,7 @@ window.pages.settings = (function () {
 
   /** Get current radio settings & save them to _radio.
    * @returns {Boolean} success?
-  */
+   */
   async function _fetchRadioData() {
     try {
       const raw = await ajax.fetchWithTimeout(globals.server.baseurl + "/settings/radio/");
@@ -115,6 +151,28 @@ window.pages.settings = (function () {
       return true;
     } catch (err) {
       ui.makeToast("error", "Error fetching radio data.\n\n" + err.toString(), 5000);
+      return false;
+    }
+  }
+
+
+  /** Get max. surface angles - which surfaces we're dealing with.
+   * @returns {Boolean} success?
+   */
+  async function _fetchMaxSurfaceAnglesData() {
+    try {
+      const raw = await ajax.fetchWithTimeout(globals.server.baseurl + "/settings/maxsurfaceangles/");
+      if (raw.status !== 200) {
+        throw new Error("/settings/maxsurfaceangles/ returned "+raw.status);
+      }
+      const resp = await raw.json();
+      _maxSurfaceAngles.surfaces = {};
+      for (const surface of resp.AvailableSurfaces) {
+        _maxSurfaceAngles.surfaces[surface] = resp.MaxSurfaceAngles[surface] || 0;
+      }
+      return true;
+    } catch (err) {
+      ui.makeToast("error", "Error fetching max. surface angles data.\n\n" + err.toString(), 5000);
       return false;
     }
   }
@@ -179,10 +237,17 @@ window.pages.settings = (function () {
           utils.qs("#settings-radio-feedback").value = _radio.feedback ? "yes" : "";
         }
 
+        // load max surface angles data
+        const msaSuccess = await _fetchMaxSurfaceAnglesData();
+        if (msaSuccess) {
+          _renderMSASettings();
+        }
+
         ui.makeToast("success",
           "Connected to server, polling.\n\n"
           +(globalServer.usingArduino ? `Using arduino, ${_arduino.availablePorts.length} available ports.\n\n` : "")
-          +`Radio: ${radioSuccess ? "ok" : "ERROR"}`,
+          +`Radio: ${radioSuccess ? "ok" : "ERROR"}\n\n`
+          +`Max. surf angles: ${msaSuccess ? "ok" : "ERROR"}`,
           5000
         );
       } else {
@@ -294,6 +359,32 @@ window.pages.settings = (function () {
         }
       }
     }
+  }
+
+
+  function _renderMSASettings() {
+    const min = _maxSurfaceAngles.limits.min;
+    const max = _maxSurfaceAngles.limits.max;
+    const surfaces = _maxSurfaceAngles.surfaces;
+    const container = utils.qs("#settings-surfaces-inner");
+    let newHTML = "";
+    for (const [name, maxAngle] of Object.entries(surfaces)) {
+      newHTML += `
+      <label for="settings-surfaces-${name}-range">
+        <span>${name}</span>
+        <div class="flex-r f-g16">
+          <input id="settings-surfaces-${name}-range" type="range" class="f-grow"
+            min="${min}" max="${max}" step="1" value="${maxAngle}" />
+          <input id="settings-surfaces-${name}-text" class="w4ch" type="text"
+            pattern="^\\d+$" maxlength="2" value="${maxAngle}" />
+        </div>
+      </label>`;
+    };
+    newHTML += `
+    <div class="flex-r">
+      <button type="button" class="btn" id="settings-surfaces-apply-btn">Apply max angles settings</button>
+    </div>`;
+    container.innerHTML = newHTML;
   }
 
 
