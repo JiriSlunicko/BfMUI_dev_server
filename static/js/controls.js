@@ -501,34 +501,17 @@ window.pages.controls = (function () {
 
     console.debug("submitMappings payload:", payload);
 
-    let raw = null;
-    try {
-      raw = await ajax.postWithTimeout(globals.server.baseurl + "/settings/control/", payload);
-    } catch (err) {
-      ui.makeToast("error", "Failed - network error:\n\n" + err.toString(), 5000);
-      raw = null;
-    }
-    if (raw) {
-      try {
-        const resp = await raw.json();
+    const postSuccess = await ajax.postWithTimeout(
+      globals.server.baseurl + "/settings/control/",
+      payload,
+      (resp) => {
         _controls.actionMappings = _convertActionMappings(resp.ControlActionsSettings);
         _controls.axisMappings = _convertAxisMappings(resp.PlaneAxesSettings);
         _makeMappingList("button");
         _makeMappingList("axis");
-
-        if (raw.ok) {
-          ui.makeToast("success", "Successfully updated.");
-        } else {
-          ui.makeToast("error", `POST failed - ${raw.status}:\n\n${raw.statusText}\n\nRefreshed mappings from server.`, 7500);
-        }
-      } catch (err) {
-        if (raw.ok) {
-          ui.makeToast("error", `POST succeeded, but can't process response:\n\n${err.toString()}`, 7500);
-        } else {
-          ui.makeToast("error", `Failed utterly - ${raw.status}:\n\n${raw.statusText}`, 7500);
-        }
+        ui.makeToast("success", "Successfully updated.");
       }
-    }
+    );
   }
 
 

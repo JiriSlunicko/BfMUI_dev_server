@@ -102,7 +102,7 @@ window.pages.settings = (function () {
     msaSettings.addEventListener("click", function(e) {
       const button = e.target.closest("#settings-surfaces-apply-btn");
       if (button) {
-        
+        _submitMSASettings();
       }
     });
   }
@@ -338,30 +338,19 @@ window.pages.settings = (function () {
     const payload = { Name: arduinoPort, BaudRate: parseInt(baudRate) };
     console.debug("submitArduinoSettings payload:", payload);
 
-    let raw = null;
-    try {
-      raw = await ajax.postWithTimeout(globals.server.baseurl + "/settings/serialport/", payload);
-    } catch (err) {
-      ui.makeToast("error", "Failed - network error:\n\n" + err.toString(), 5000);
-      raw = null;
-    }
-    if (raw) {
-      try {
-        const resp = await raw.json();
+    const postSuccess = await ajax.postWithTimeout(
+      globals.server.baseurl + "/settings/serialport/",
+      payload,
+      (resp) => {
         _arduino.port = resp.Name;
         _arduino.baudRate = resp.BaudRate;
         ui.makeToast("success", "Successfully updated.");
-      } catch (err) {
-        if (raw.ok) {
-          ui.makeToast("error", `POST succeeded, but can't process response:\n\n${err.toString()}`, 7500);
-        } else {
-          ui.makeToast("error", `Failed utterly - ${raw.status}:\n\n${raw.statusText}`, 7500);
-        }
       }
-    }
+    );
   }
 
 
+  /** Render the settings interface for max. surface angles. */
   function _renderMSASettings() {
     const min = _maxSurfaceAngles.limits.min;
     const max = _maxSurfaceAngles.limits.max;
@@ -373,7 +362,7 @@ window.pages.settings = (function () {
       <label for="settings-surfaces-${name}-range">
         <span>${name}</span>
         <div class="flex-r f-g16">
-          <input id="settings-surfaces-${name}-range" type="range" class="f-grow"
+          <input id="settings-surfaces-${name}-range" type="range" class="f-grow" data-surf="${name}"
             min="${min}" max="${max}" step="1" value="${maxAngle}" />
           <input id="settings-surfaces-${name}-text" class="w4ch" type="text"
             pattern="^\\d+$" maxlength="2" value="${maxAngle}" />
@@ -388,6 +377,31 @@ window.pages.settings = (function () {
   }
 
 
+  /** POST max surface angles settings to server & process its response. */
+  async function _submitMSASettings() {
+    const payload = { MaxSurfaceAngles: {}, };
+    _.toArray(utils.qsa("#settings-surfaces-inner input[type=range]")).forEach(el => {
+      const name = el.dataset.surf;
+      const val = Number(el.value);
+      payload.MaxSurfaceAngles[name] = val;
+    });
+    console.debug("submitMSASettings payload:", payload);
+
+    const postSuccess = await ajax.postWithTimeout(
+      globals.server.baseurl + "/settings/maxsurfaceangles/",
+      payload,
+      (resp) => {
+        _maxSurfaceAngles.surfaces = {};
+        for (const surface of resp.AvailableSurfaces) {
+          _maxSurfaceAngles.surfaces[surface] = resp.MaxSurfaceAngles[surface] || 0;
+        }
+        _renderMSASettings();
+        ui.makeToast("success", "Successfully updated.");
+      }
+    );
+  }
+
+
   /** POST radio settings to server & process its response. */
   async function _submitRadioSettings() {
     const payload = {
@@ -397,29 +411,16 @@ window.pages.settings = (function () {
     };
     console.debug("submitRadioSettings payload:", payload);
 
-    let raw = null;
-    try {
-      raw = await ajax.postWithTimeout(globals.server.baseurl + "/settings/radio/", payload);
-    } catch (err) {
-      ui.makeToast("error", "Failed - network error:\n\n" + err.toString(), 5000);
-      raw = null;
-    }
-    if (raw) {
-      try {
-        const resp = await raw.json();
+    const postSuccess = await ajax.postWithTimeout(
+      globals.server.baseurl + "/settings/radio/",
+      payload,
+      (resp) => {
         _radio.channel = resp.Channel;
         _radio.paLevel = resp.PALevel;
         _radio.feedback = resp.IsPlaneFeedbackEnabled;
         ui.makeToast("success", "Successfully updated.");
-      } catch (err) {
-        if (raw.ok) {
-          ui.makeToast("error", `POST succeeded, but can't process response:\n\n${err.toString()}`, 7500);
-        } else {
-          ui.makeToast("error", `Failed utterly - ${raw.status}:\n\n${raw.statusText}`, 7500);
-        }
       }
-    }
-
+    );
   }
 
 
