@@ -379,11 +379,11 @@ window.pages.settings = (function () {
 
   /** POST max surface angles settings to server & process its response. */
   async function _submitMSASettings() {
-    const payload = { MaxSurfaceAngles: {}, };
+    const payload = {};
     _.toArray(utils.qsa("#settings-surfaces-inner input[type=range]")).forEach(el => {
       const name = el.dataset.surf;
       const val = Number(el.value);
-      payload.MaxSurfaceAngles[name] = val;
+      payload[name] = val;
     });
     console.debug("submitMSASettings payload:", payload);
 
@@ -392,8 +392,8 @@ window.pages.settings = (function () {
       payload,
       (resp) => {
         _maxSurfaceAngles.surfaces = {};
-        for (const surface of resp.AvailableSurfaces) {
-          _maxSurfaceAngles.surfaces[surface] = resp.MaxSurfaceAngles[surface] || 0;
+        for (const [surfName, surfMaxAngle] of Object.entries(resp)) {
+          _maxSurfaceAngles.surfaces[surfName] = surfMaxAngle;
         }
         _renderMSASettings();
         ui.makeToast("success", "Successfully updated.");
