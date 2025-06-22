@@ -10,10 +10,10 @@ window.utils = (function()
   /**
    * Map values between 0 and 100 to min-max logarithmically.
    * 
-   * @param {Number} min output value for input 0 (must be >0)
-   * @param {Number} max output value for input 100
-   * @param {Number} actual input value
-   * @returns {Number}
+   * @param {number} min output value for input 0 (must be >0)
+   * @param {number} max output value for input 100
+   * @param {number} actual input value
+   * @returns {number}
    */
   function percentToLog(min, max, actual) {
     if (min <= 0 || max <= min || actual < 0 || actual > 100) {
@@ -30,10 +30,10 @@ window.utils = (function()
   /**
    * Map logarithmically distributed values between min and max to 0-100.
    * 
-   * @param {Number} min input value for output 0 (must be >0)
-   * @param {Number} max input value for output 100
-   * @param {Number} actual input value
-   * @returns {Number}
+   * @param {number} min input value for output 0 (must be >0)
+   * @param {number} max input value for output 100
+   * @param {number} actual input value
+   * @returns {number}
    */
   function logToPercent(min, max, actual) {
     if (min <= 0 || max <= min || actual < min || actual > max) {
@@ -66,7 +66,7 @@ window.ui = (function()
    * 
    * @param {"error"|"success"|null} type affects stripe colour only
    * @param {string} msg arbitrary text
-   * @param {Number} timeout how long to show in ms, negative numbers -> indefinitely
+   * @param {number} timeout how long to show in ms, negative numbers -> indefinitely
    */
   function makeToast(type, msg, timeout = 2500) {
     removeToast();
@@ -170,6 +170,7 @@ window.entries = (function()
    * @param {"Healthy"|"Struggling"|"Broken"|"Inactive"|null} health optional, draws a coloured circle in the header
    * @param {string|null} lastError arbitrary error message to append to the entry
    */
+  /*
   function createOrUpdate(parentSelector, entryId, header, data, health = null, lastError = null) {
     const container = utils.qs(parentSelector);
     if (!container) {
@@ -221,6 +222,7 @@ window.entries = (function()
       }
     }
   }
+  */
 
 
   /**
@@ -229,6 +231,7 @@ window.entries = (function()
    * @param {string} parentSelector immediate parent for entries
    * @param {Array<string>} liveEntryIds entry IDs to keep
    */
+  /*
   function cleanUpDangling(parentSelector, liveEntryIds) {
     const container = utils.qs(parentSelector);
     if (!container) {
@@ -242,13 +245,14 @@ window.entries = (function()
       }
     });
   }
+  */
 
 
   /**
    * New system: use the (n+1)-th entry if available, otherwise create one 
    * 
    * @param {string} parentSelector immediate parent for the entry
-   * @param {Number} n index of the entry
+   * @param {number} n index of the entry
    * @param {string} header heading of the section
    * @param {object} data key-value data pairs
    * @param {"Healthy"|"Struggling"|"Broken"|"Inactive"|null} health optional, draws a coloured circle in the header
@@ -304,7 +308,7 @@ window.entries = (function()
    * New system: remove UI entries that extend beyond the specified length.
    * 
    * @param {string} parentSelector immediate parent for the entries
-   * @param {Number} maxLength how many entries to keep in the DOM
+   * @param {number} maxLength how many entries to keep in the DOM
    */
   function trimList(parentSelector, maxLength) {
     const container = utils.qs(parentSelector);
