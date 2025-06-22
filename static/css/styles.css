@@ -248,6 +248,14 @@ input[type=range]::-moz-range-thumb {
   gap: 24px;
 }
 
+.f-g32 {
+  gap: 32px;
+}
+
+.f-g48 {
+  gap: 48px;
+}
+
 .modal-bg {
   position: absolute;
   z-index: 10;
@@ -460,25 +468,35 @@ section .main-content .view-tab {
   width: 4ch;
 }
 
+#view-settings > div > div {
+  border-bottom: 1px solid var(--bg-medium);
+}
+
+#view-settings > div > div {
+  padding-bottom: 32px;
+}
+
+#view-settings > div > div:not(:first-child) {
+  padding-top: 16px;
+}
+
 @media only screen and (min-width: 751px) {
   #view-settings {
     display: grid;
     grid-template-columns: repeat(2, 376px);
     gap: 0;
   }
-  #view-settings > div {
+  #view-settings > div > div {
     padding-right: 16px;
+  }
+  #view-settings > div > div:last-child {
+    border-bottom: none;
+  }
+  #view-settings > div:not(:last-child) > div {
     border-right: 1px solid var(--bg-medium);
   }
-  #view-settings > div:not(:first-child) {
+  #view-settings > div:not(:first-child) > div {
     padding-left: 16px;
-  }
-}
-@media only screen and (max-width: 750px) {
-  #view-settings > div:not(:last-child),
-  #view-settings > div > div:not(:last-child) {
-    padding-bottom: 32px;
-    border-bottom: 1px solid var(--bg-medium);
   }
 }
 #input-ip {

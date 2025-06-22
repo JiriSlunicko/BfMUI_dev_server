@@ -78,7 +78,7 @@ window.pages.settings = (function () {
 
     // max surface angle config
     const msaSettings = utils.qs("#settings-surfaces-inner");
-    msaSettings.addEventListener("change", function(e) {
+    msaSettings.addEventListener("input", function(e) {
       const rangeInput = e.target.closest(`input[type=range]`);
       if (rangeInput) {
         const textInput = rangeInput.parentNode.querySelector(`input[type=text]`);

@@ -7,7 +7,7 @@ window.ajax = (function()
   /**
    * Attempt to fetch a resource, failing after a specified timeout.
    * @param {string} url 
-   * @param {Number} [timeout=5000] time limit in ms, default 5000
+   * @param {number} [timeout=5000] time limit in ms, default 5000
    * @param {object} [opts={}] standard fetch API options object
    * @returns {Promise<Response>}
    */
@@ -36,8 +36,8 @@ window.ajax = (function()
    * @param {function|null} [successHandler=null]
    * function called when a JSON response is successfully retrieved, with the JSON data as an argument
    * @param {function|null} [failureHandler=null]
-   * function called when anything fails, with Response|null and TypeError (network error) as arguments
-   * @param {Number} [timeout=5000]
+   * function called when anything fails, with Response|null and the error as arguments
+   * @param {number} [timeout=5000]
    * @returns {Promise<Boolean>}
    */
   async function postWithTimeout(url, payload, successHandler=null, failureHandler=null, timeout=5000) {
@@ -46,31 +46,28 @@ window.ajax = (function()
       raw = await fetchWithTimeout(url, timeout, {
         method: "POST",
         body: JSON.stringify(payload),
+        // content-type deliberately not specified (weird backend compat issue)
       });
     } catch (err) {
+      console.error(url, err);
+      failureHandler?.(raw, err);
       ui.makeToast("error", `POST ${url} failed - network error\n\n${err.toString()}`, 5000);
-      if (failureHandler) {
-        failureHandler(raw, err);
-      }
       return false;
     }
 
     if (raw) {
       try {
         const resp = await raw.json();
-        if (successHandler) {
-          successHandler(resp);
-        }
+        successHandler?.(resp);
         return true;
       } catch (err) {
-        if (failureHandler) {
-          failureHandler(raw, err);
-        }
-        if (raw.ok) {
-          ui.makeToast("error", `POST ${url} succeeded, but can't process response\n\n${err.toString()}`, 7500);
-        } else {
-          ui.makeToast("error", `POST ${url} failed utterly - ${raw.status}:\n\n${raw.statusText}`, 7500);
-        }
+        console.error(url, err);
+        failureHandler?.(raw, err);
+        ui.makeToast("error", raw.ok
+          ? `POST ${url} succeeded, but can't process response\n\n${err.toString()}`
+          : `POST ${url} failed utterly - ${raw.status}:\n\n${raw.statusText}`,
+          7500
+        );
         return false;
       }
     }
