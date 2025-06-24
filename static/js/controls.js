@@ -23,7 +23,7 @@ window.pages.controls = (function () {
   function activate() {
     if (!_controls.actions.length && _loadInterval === null) {
       _loadInterval = setInterval(() => {
-        if (globals.server.info) {
+        if (backend.info) {
           _renderControlsInterface();
           clearInterval(_loadInterval);
           _loadInterval = null;
@@ -41,7 +41,7 @@ window.pages.controls = (function () {
     let raw, resp;
 
     try {
-      raw = await ajax.fetchWithTimeout(globals.server.baseurl + "/settings/control/");
+      raw = await ajax.fetchWithTimeout(backend.baseurl + "/settings/control/");
       resp = await raw.json();
 
       // array of strings (enum)
@@ -68,7 +68,7 @@ window.pages.controls = (function () {
 
   /** Load the current mappings from the server and render them. Don't call on POST. */
   async function _renderControlsInterface() {
-    if (!globals.server.baseurl) {
+    if (!backend.baseurl) {
       ui.makeToast("error", "You need to connect to a server before tinkering with this.", 3000);
       return;
     }
@@ -161,6 +161,7 @@ window.pages.controls = (function () {
       } else {
         const mButton = mapping?.button || "unbound";
         item.dataset.mapping = mButton;
+        item.dataset.isEnum = _controls.restrictions[output] ? "yes" : "";
         mappingString = mButton;
       }
 
@@ -187,6 +188,7 @@ window.pages.controls = (function () {
     const kind = mapping.dataset.kind;
     const output = mapping.dataset.output;
     const currentInput = mapping.dataset.mapping.split(/\s*,\s*/);
+    const mappingIsEnum = mapping.dataset.isEnum === "yes";
     while (currentInput.length < 2) currentInput.push("unbound");
 
     const bg = document.createElement("div");
@@ -195,59 +197,72 @@ window.pages.controls = (function () {
     const fg = document.createElement("div");
     fg.className = "modal-fg flex-c f-a-c";
     fg.insertAdjacentHTML("beforeend", `
-    <h3 class="hal-center break-word">${output.replace(/([A-Z]+)/g, "<wbr />$1")}</h3>
-    <p class="hal-center mb16">Select ${kind === "button"
-        ? "0-2 buttons. If 2 are selected, both need to be pressed simultaneously."
-        : "input axis and its parameters."}</p>
-  `);
-
-    const priSelect = _makeInputSelect(
-      "ctrl-input-primary",
-      kind === "button" ? _controls.buttons : _controls.inAxes,
-      currentInput[0]
-    );
-    fg.appendChild(priSelect);
-
-    if (kind === "button") {
-      const secSelect = _makeInputSelect("ctrl-input-secondary", _controls.buttons, currentInput[1]);
-      fg.appendChild(secSelect);
-    } else {
-      const inverted = mapping.dataset.inverted === "false" ? false : true;
-      const deadzone = mapping.dataset.deadzone;
-      const gain = mapping.dataset.gain;
-      fg.insertAdjacentHTML("beforeend", `
-      <label for="ctrl-input-invert" class="flex-c f-g4 w100 mb16">
-        <span>Axis direction</span>
-        <select id="ctrl-input-invert" class="ctrl-modal-options mb0">
-          <option class="ctrl-modal-option" value="normal"${inverted ? "" : " selected"}>not inverted</option>
-          <option class="ctrl-modal-option" value="inverted"${inverted ? " selected" : ""}>inverted</option>
-        </select>
-      </label>
-      <label for="ctrl-input-deadzone-range" class="flex-c f-g4 w100 mb16">
-        <span>Deadzone (0–1)</span>
-        <div class="flex-r f-g16">
-          <input id="ctrl-input-deadzone-range" type="range" class="f-grow"
-            min="${_limits.axisDeadzone.min}" max="${_limits.axisDeadzone.max}"
-            step="0.01" value="${deadzone}" />
-          <input id="ctrl-input-deadzone-text" type="text" value="${Number(deadzone).toFixed(2)}" />
-        </div>
-      </label>
-      <label for="ctrl-input-method" class="flex-c f-g4 w100 mb16">
-        <span>Input processing</span>
-        <select id="ctrl-input-method" class="ctrl-modal-options mb0">
-          <option class="ctrl-modal-option" value="direct"${gain < 0 ? " selected" : ""}>direct</option>
-          <option class="ctrl-modal-option" value="differential"${gain < 0 ? "" : " selected"}>differential</option>
-        </select>
-      </label>
-      <label for="ctrl-input-gain-text" class="flex-c f-g4 w100 mb16${gain < 0 ? " hidden" : ""}">
-        <span>Gain</span>
-        <div class="flex-r f-g16">
-          <input id="ctrl-input-gain-range" type="range" class="f-grow" min="0" max="100" step="0.1"
-            value="${utils.logToPercent(_limits.axisGain.min, _limits.axisGain.max, (gain < 0 ? "0.01" : gain))}" />
-          <input id="ctrl-input-gain-text" type="text" value="${gain < 0 ? "0.01" : gain}" />
-        </div>
-      </label>
+      <h3 class="hal-center break-word">${output.replace(/([A-Z]+)/g, "<wbr />$1")}</h3>
+      <p class="hal-center mb16">Select ${kind === "button"
+          ? "0-2 buttons. If 2 are selected, both need to be pressed simultaneously."
+          : "input axis and its parameters."}</p>
     `);
+
+    // selecting from an enum of possible bindings
+    if (mappingIsEnum) {
+      const enumSelect = _makeInputSelect(
+        "ctrl-input-enum",
+        _controls.restrictions[output],
+        mapping.dataset.mapping
+      );
+      fg.appendChild(enumSelect);
+    // binding arbitrary buttons/axes
+    } else {
+      const priSelect = _makeInputSelect(
+        "ctrl-input-primary",
+        kind === "button" ? _controls.buttons : _controls.inAxes,
+        currentInput[0]
+      );
+      fg.appendChild(priSelect);
+
+      // buttons
+      if (kind === "button") {
+        const secSelect = _makeInputSelect("ctrl-input-secondary", _controls.buttons, currentInput[1]);
+        fg.appendChild(secSelect);
+      // axes
+      } else {
+        const inverted = mapping.dataset.inverted === "false" ? false : true;
+        const deadzone = mapping.dataset.deadzone;
+        const gain = mapping.dataset.gain;
+        fg.insertAdjacentHTML("beforeend", `
+        <label for="ctrl-input-invert" class="flex-c f-g4 w100 mb16">
+          <span>Axis direction</span>
+          <select id="ctrl-input-invert" class="ctrl-modal-options mb0">
+            <option class="ctrl-modal-option" value="normal"${inverted ? "" : " selected"}>not inverted</option>
+            <option class="ctrl-modal-option" value="inverted"${inverted ? " selected" : ""}>inverted</option>
+          </select>
+        </label>
+        <label for="ctrl-input-deadzone-range" class="flex-c f-g4 w100 mb16">
+          <span>Deadzone (0–1)</span>
+          <div class="flex-r f-g16">
+            <input id="ctrl-input-deadzone-range" type="range" class="f-grow"
+              min="${_limits.axisDeadzone.min}" max="${_limits.axisDeadzone.max}"
+              step="0.01" value="${deadzone}" />
+            <input id="ctrl-input-deadzone-text" type="text" value="${Number(deadzone).toFixed(2)}" />
+          </div>
+        </label>
+        <label for="ctrl-input-method" class="flex-c f-g4 w100 mb16">
+          <span>Input processing</span>
+          <select id="ctrl-input-method" class="ctrl-modal-options mb0">
+            <option class="ctrl-modal-option" value="direct"${gain < 0 ? " selected" : ""}>direct</option>
+            <option class="ctrl-modal-option" value="differential"${gain < 0 ? "" : " selected"}>differential</option>
+          </select>
+        </label>
+        <label for="ctrl-input-gain-text" class="flex-c f-g4 w100 mb16${gain < 0 ? " hidden" : ""}">
+          <span>Gain</span>
+          <div class="flex-r f-g16">
+            <input id="ctrl-input-gain-range" type="range" class="f-grow" min="0" max="100" step="0.1"
+              value="${utils.logToPercent(_limits.axisGain.min, _limits.axisGain.max, (gain < 0 ? "0.01" : gain))}" />
+            <input id="ctrl-input-gain-text" type="text" value="${gain < 0 ? "0.01" : gain}" />
+          </div>
+        </label>
+      `);
+      }
     }
 
     fg.insertAdjacentHTML("beforeend", `
@@ -328,8 +343,9 @@ window.pages.controls = (function () {
     );
     for (const opt of options.filter(x => x !== "None")) {
       const selected = current === opt;
+      const optName = opt.replace(/\b(.)Input/g, "$1I").replace(/\s*,\s*/g, " + ");
       select.insertAdjacentHTML("beforeend",
-        `<option class="ctrl-modal-option" value="${opt}"${selected ? ' selected' : ''}>${opt}</option>`
+        `<option class="ctrl-modal-option" value="${opt}"${selected? ' selected' : ''}>${optName}</option>`
       );
     }
     return select;
@@ -356,10 +372,22 @@ window.pages.controls = (function () {
     }
     const mappingInDOM = relevantWrapper.querySelector(".ctrl-input-current");
 
-    // parse button/axis inputs
-    const input1 = modal.querySelector("#ctrl-input-primary").value;
-    const input2 = kind === "button" ? modal.querySelector("#ctrl-input-secondary").value : "unbound";
+    // let's parse button/axis inputs
+    let input1, input2;
+    // first check if this is an enum
+    const enumInput = modal.querySelector("#ctrl-input-enum");
+    if (enumInput) {
+      const enumButtons = enumInput.value.split(/\s*,\s*/);
+      [input1, input2] = enumButtons.length === 2 ? enumButtons : ["unbound", "unbound"];
+    // otherwise grab primary & secondary inputs
+    } else {
+      input1 = modal.querySelector("#ctrl-input-primary").value;
+      input2 = kind === "button" ? modal.querySelector("#ctrl-input-secondary").value : "unbound";
+    }
     const whitelistedMappings = _controls.restrictions[output]?.map(x => _.sortBy(x.split(/\s*,\s*/)));
+    if (whitelistedMappings) {
+      whitelistedMappings.push(["unbound"]);
+    }
     let desiredMapping = _.without(_.uniq([input1, input2]), "unbound");
     if (!desiredMapping.length) { desiredMapping = ["unbound"]; }
 
@@ -502,7 +530,7 @@ window.pages.controls = (function () {
     console.debug("submitMappings payload:", payload);
 
     const postSuccess = await ajax.postWithTimeout(
-      globals.server.baseurl + "/settings/control/",
+      backend.baseurl + "/settings/control/",
       payload,
       (resp) => {
         _controls.actionMappings = _convertActionMappings(resp.ControlActionsSettings);

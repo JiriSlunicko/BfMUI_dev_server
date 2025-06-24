@@ -23,32 +23,19 @@ window.pages.home = (function()
 
   /** Load basic server info for the homepage. */
   function initSysInfo() {
-    if (!globals.server.info) {
+    if (!backend.info) {
       console.error("Tried to initSysInfo without any server info!");
       return;
     }
 
     // new mechanism
     utils.qs("#home-sysinfo-inner > p")?.remove();
-    const sysInfo = globals.server.info;
+    const sysInfo = backend.info;
     for (let i = 0; i < sysInfo.length; i++) {
       const dataEntry = sysInfo[i];
       entries.reuseOrCreate("#home-sysinfo-inner", i, dataEntry.ComponentName, dataEntry.Properties);
     };
     entries.trimList("#home-sysinfo-inner", sysInfo.length);
-
-    // old mechanism
-    /*
-    utils.qs("#home-sysinfo-inner").innerHTML = "";
-    for (const entry of globals.server.info) {
-      entries.createOrUpdate(
-        "#home-sysinfo-inner",
-        entry.ComponentName,
-        entry.ComponentName,
-        entry.Properties
-      );
-    }
-    */
   }
 
   

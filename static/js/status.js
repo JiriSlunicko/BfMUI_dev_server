@@ -16,7 +16,7 @@ window.pages.status = (function()
   async function fetchTelemetry() {
     let resp;
     try {
-      const raw = await ajax.fetchWithTimeout(globals.server.baseurl + "/telemetry/");
+      const raw = await ajax.fetchWithTimeout(backend.baseurl + "/telemetry/");
       resp = await raw.json();
     } catch (err) {
       ui.makeToast("error", "Connection failed.\n\n" + err.toString(), 5000);
@@ -61,21 +61,6 @@ window.pages.status = (function()
     };
     entries.trimList("#status-telemetry-inner", sthdData.length);
 
-    // old mechanism
-    /*
-    for (const entry of sthdData) {
-      entries.createOrUpdate(
-        "#status-telemetry-inner",
-        "sthd-" + entry.SerialTimerName,
-        entry.SerialTimerName,
-        _processSTHDEntry(entry),
-        entry.Health,
-        entry.LatestErrorMessage
-      );
-    }
-    entries.cleanUpDangling("#status-telemetry-inner", sthdData.map(x => "sthd-" + x.SerialTimerName));
-    */
-
     // controller info
     utils.qs("#status-controllers-inner > p")?.remove();
     const ctrlData = _teleData.controllers;
@@ -95,20 +80,6 @@ window.pages.status = (function()
       );
     };
     entries.trimList("#status-controllers-inner", ctrlKeys.length);
-
-    // old mechanism
-    /*
-    for (const [key, value] of Object.entries(ctrlData)) {
-      const { Name, IsConnected } = value;
-      entries.createOrUpdate(
-        "#status-controllers-inner",
-        "ctrl-" + key,
-        key,
-        { [Name]: IsConnected === true ? "connected" : "disconnected" }
-      );
-    }
-    entries.cleanUpDangling("#status-controllers-inner", Object.keys(ctrlData).map(x => "ctrl-" + x));
-    */
   }
 
 

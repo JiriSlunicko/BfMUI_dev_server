@@ -11,13 +11,12 @@ window.pages = {};
 
 
 // global state variables and data storage
-window.globals =
+window.backend =
 {
-  server: {
-    baseurl: localStorage.getItem("serverBaseurl") || "http://localhost:8080",
-    info: null,
-    usingArduino: null,
-  },
+  baseurl: localStorage.getItem("serverBaseurl") || "http://localhost:8080",
+  info: null,
+  usingArduino: null,
+  eventStream: null,
 }
 
 
@@ -99,13 +98,16 @@ window.nav = (function()
 
 // this should be the ONLY DOMContentLoaded listener in the app
 document.addEventListener("DOMContentLoaded", () => {
+  // init toast stuff
   const toastContainer = document.createElement("div");
   toastContainer.className = "toast-container";
   document.body.appendChild(toastContainer);
 
+  // init all page modules
   for (const pageName of Object.keys(pages)) {
     pages[pageName].init();
   }
 
+  // init navigation
   nav.init();
 });

@@ -25,17 +25,17 @@ window.pages.settings = (function () {
 
   function init() {
     // server & polling config
-    if (globals.server.baseurl) {
-      const urlWithoutProtocol = globals.server.baseurl.replace(/^https?:\/\//, "");
+    if (backend.baseurl) {
+      const urlWithoutProtocol = backend.baseurl.replace(/^https?:\/\//, "");
       const [ip, port] = urlWithoutProtocol.split(":");
       utils.qs("#input-ip").value = ip;
       utils.qs("#input-port").value = port;
-      _connect(globals.server);
+      _connect(backend);
     }
     utils.qs("#input-poll-interval").value = _polling.delay;
     utils.qs("#settings-reset-btn").addEventListener("click", _resetSettings);
     utils.qs("#settings-connect-btn").addEventListener("click", () => {
-      _connect(globals.server);
+      _connect(backend);
     });
     utils.qs("#input-poll-interval").addEventListener("blur", _changePollInterval);
     utils.qs("#settings-poll-start-btn").addEventListener("click", _pollStart);
@@ -109,7 +109,7 @@ window.pages.settings = (function () {
 
 
   /** Get serial port options and settings from the server.
-   * @param {object} globalServer globals.server - .usingArduino will be updated
+   * @param {object} globalServer backend - .usingArduino will be updated
    * @return {Boolean} true if we get a response indicating arduino is being used
    */
   async function _fetchSerialPortData(globalServer) {
@@ -140,7 +140,7 @@ window.pages.settings = (function () {
    */
   async function _fetchRadioData() {
     try {
-      const raw = await ajax.fetchWithTimeout(globals.server.baseurl + "/settings/radio/");
+      const raw = await ajax.fetchWithTimeout(backend.baseurl + "/settings/radio/");
       if (raw.status !== 200) {
         throw new Error("/settings/radio/ returned "+raw.status);
       }
@@ -161,7 +161,7 @@ window.pages.settings = (function () {
    */
   async function _fetchMaxSurfaceAnglesData() {
     try {
-      const raw = await ajax.fetchWithTimeout(globals.server.baseurl + "/settings/maxsurfaceangles/");
+      const raw = await ajax.fetchWithTimeout(backend.baseurl + "/settings/maxsurfaceangles/");
       if (raw.status !== 200) {
         throw new Error("/settings/maxsurfaceangles/ returned "+raw.status);
       }
@@ -185,8 +185,9 @@ window.pages.settings = (function () {
   }
 
 
-  /** Attempt connection to the backend server, start polling.
-   * @param {object} globalServer globals.server - will be updated on success
+  /**
+   * Attempt connection to the backend server, start polling and everything.
+   * @param {object} globalServer backend - will be updated on success
    */
   async function _connect(globalServer) {
     const ip = utils.qs("#input-ip").value;
@@ -243,6 +244,9 @@ window.pages.settings = (function () {
           _renderMSASettings();
         }
 
+        // open event stream
+        events.openStream(globalServer);
+
         ui.makeToast("success",
           "Connected to server, polling.\n\n"
           +(globalServer.usingArduino ? `Using arduino, ${_arduino.availablePorts.length} available ports.\n\n` : "")
@@ -298,7 +302,7 @@ window.pages.settings = (function () {
     });
 
     // serial port selection
-    _updateArduinoSettings();
+    updateArduinoSettings();
 
     // submit listener
     utils.qs("#settings-arduino-apply-btn").addEventListener("click", _submitArduinoSettings);
@@ -312,8 +316,8 @@ window.pages.settings = (function () {
   }
 
 
-  /** Switch an existing arduino <select> to the currently active option. */
-  function _updateArduinoSettings() {
+  /** Re-render an existing arduino select & choose the currently active option. */
+  function updateArduinoSettings() {
     const arduinoPortSelect = utils.qs("#settings-arduino-port");
     if (arduinoPortSelect) {
       arduinoPortSelect.innerHTML = "";
@@ -339,7 +343,7 @@ window.pages.settings = (function () {
     console.debug("submitArduinoSettings payload:", payload);
 
     const postSuccess = await ajax.postWithTimeout(
-      globals.server.baseurl + "/settings/serialport/",
+      backend.baseurl + "/settings/serialport/",
       payload,
       (resp) => {
         _arduino.port = resp.Name;
@@ -388,7 +392,7 @@ window.pages.settings = (function () {
     console.debug("submitMSASettings payload:", payload);
 
     const postSuccess = await ajax.postWithTimeout(
-      globals.server.baseurl + "/settings/maxsurfaceangles/",
+      backend.baseurl + "/settings/maxsurfaceangles/",
       payload,
       (resp) => {
         _maxSurfaceAngles.surfaces = {};
@@ -412,7 +416,7 @@ window.pages.settings = (function () {
     console.debug("submitRadioSettings payload:", payload);
 
     const postSuccess = await ajax.postWithTimeout(
-      globals.server.baseurl + "/settings/radio/",
+      backend.baseurl + "/settings/radio/",
       payload,
       (resp) => {
         _radio.channel = resp.Channel;
@@ -484,5 +488,6 @@ window.pages.settings = (function () {
     init,
     activate: ()=>{},
     deactivate: ()=>{},
+    updateArduinoSettings,
   }
 })();
