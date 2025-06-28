@@ -58,8 +58,8 @@ window.utils = (function()
 // functionality related to the user interface
 window.ui = (function()
 {
-  let toastFadeTimeout = null;
-  let toastKillTimeout = null;
+  let _toastFadeTimeout = null;
+  let _toastKillTimeout = null;
 
   /**
    * Create a floating notification.
@@ -75,10 +75,10 @@ window.ui = (function()
     tst.innerHTML = msg.replaceAll("\n", "<br />");
     utils.qs(".toast-container").appendChild(tst);
     if (timeout >= 0) {
-      toastFadeTimeout = setTimeout(() => {
+      _toastFadeTimeout = setTimeout(() => {
         utils.qs(".toast").classList.add("fading");
       }, timeout);
-      toastKillTimeout = setTimeout(() => {
+      _toastKillTimeout = setTimeout(() => {
         removeToast();
       }, timeout + 500);
     }
@@ -88,13 +88,13 @@ window.ui = (function()
   /** Remove any existing notifications. */
   function removeToast() {
     utils.qsa(".toast").forEach(el => el.remove());
-    if (toastFadeTimeout !== null) {
-      clearTimeout(toastFadeTimeout);
-      toastFadeTimeout = null;
+    if (_toastFadeTimeout !== null) {
+      clearTimeout(_toastFadeTimeout);
+      _toastFadeTimeout = null;
     }
-    if (toastKillTimeout !== null) {
-      clearTimeout(toastKillTimeout);
-      toastKillTimeout = null;
+    if (_toastKillTimeout !== null) {
+      clearTimeout(_toastKillTimeout);
+      _toastKillTimeout = null;
     }
   }
 
@@ -128,7 +128,7 @@ window.ui = (function()
       if (type === "confirm") {
         html += `<button type="button" class="btn" id="modal-cancel-btn">Cancel</button>`;
       }
-      html += `</div>`
+      html += `</div>`;
 
       fg.innerHTML = html;
       bg.appendChild(fg);
@@ -144,7 +144,7 @@ window.ui = (function()
           resolve(false);
         }
       }
-    })
+    });
   }
 
 
