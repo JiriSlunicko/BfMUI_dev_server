@@ -110,4 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // init navigation
   nav.init();
+
+  // init range-text input pair listeners
+  ui.initRangeTextPairLinks();
 });

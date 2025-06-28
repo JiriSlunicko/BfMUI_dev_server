@@ -23,7 +23,8 @@ window.utils = (function()
     const maxLog = Math.log10(max);
     const actualFrac = actual / 100;
     const logVal = Math.pow(10, minLog + (maxLog - minLog) * actualFrac);
-    return logVal.toFixed(2);
+    //return logVal.toFixed(2);
+    return logVal;
   }
 
 
@@ -46,11 +47,99 @@ window.utils = (function()
     return Math.min(100, Math.max(0, scale * 100));
   }
 
+
+  /**
+   * Map values between 0 and 100 to min-max logarithmically or exponentially.
+   * @param {number} min output at 0%
+   * @param {number} max output at 100%
+   * @param {number} percent input 0–100
+   * @param {number} [curve=4] 1 = linear, higher = more resolution near min
+   * @returns {number} scaled value
+   */
+  function percentToExp(min, max, percent, curve = 4) {
+    if (min >= max || percent < 0 || percent > 100) {
+      throw new Error(`invalid params: ${min}-${max}, ${percent}`);
+    }
+
+    const t = percent / 100;
+    const adjusted = Math.pow(t, curve);
+    return min + (max - min) * adjusted;
+  }
+
+
+  /**
+   * Map exponential values between min-max to 0–100 slider percentage.
+   * @param {number} min input min -> 0
+   * @param {number} max input max -> 100
+   * @param {number} value actual value
+   * @param {number} [curve=4] 1 = linear, higher = more resolution near min
+   * @returns {number} slider percent (0–100)
+   */
+  function expToPercent(min, max, value, curve = 4) {
+    if (min >= max || value < min || value > max) {
+      throw new Error(`invalid params: ${min}-${max}, ${value}`);
+    }
+
+    const linearT = (value - min) / (max - min);
+    const percent = Math.pow(linearT, 1 / curve);
+    return percent * 100;
+  }
+
+
+  /**
+   * Transform a range value to a text input value.
+   * @param {number} val current range input value
+   * @param {{min: number, max: number }|null} logScaling parameters for log scaling; null = linear
+   * @param {number|null} decimals fixed number of decimals, null = not applied
+   * @returns {number}
+   */
+  function rangeToText(val, logScaling=null, decimals=null) {
+    const resolvedValue =
+      logScaling
+      ? percentToExp(logScaling.min, logScaling.max, val)
+      : Number(val);
+    return (
+      decimals === null
+      ? resolvedValue
+      : resolvedValue.toFixed(decimals)
+    );
+  }
+
+
+  /**
+   * Attempt to map a text input value to a range value. Returns null on invalid input.
+   * @param {string} val current text input value
+   * @param {number} min lowest permissible value
+   * @param {number} max highest permissible value
+   * @param {boolean} isLog whether to apply logarithmic scaling
+   * @param {number|null} decimals fixed number of decimals, null = not applied
+   * @returns {number|null} null on failure
+   */
+  function textToRange(val, min, max, isLog=false, decimals=null) {
+    const numVal = Number(val);
+    if (isNaN(numVal) || numVal < min || numVal > max) {
+      ui.makeToast("error", `Value must be a number between ${min} and ${max}!`);
+      return null;
+    }
+    const resolvedValue =
+      isLog
+      ? expToPercent(min, max, numVal)
+      : numVal;
+    return (
+      decimals === null
+      ? resolvedValue
+      : resolvedValue.toFixed(decimals)
+    );
+  }
+
+
   return {
     qs: (sel) => document.querySelector(sel),
     qsa: (sel) => document.querySelectorAll(sel),
     percentToLog,
     logToPercent,
+    rangeToText,
+    textToRange,
   }
 })();
 
@@ -148,11 +237,135 @@ window.ui = (function()
   }
 
 
+  /**
+   * Prepare a linked range & text input pair for DOM insertion.
+   * 
+   * @param {string} valueName used for element IDs - will create "value-name-range" & "value-name-text"
+   * @param {string} title display name of the UI element
+   * @param {{
+   *  bounds: { min: number, max: number },
+   *  step: number,
+   *  value: number,
+   *  scaling: ("linear"|"logarithmic"),
+   *  textInputClassOverride?: (string|null),
+   * }} config sets how the range-textinput pair should behave
+   * @param {string} [labelClass=""] additional classes to apply to the label 
+   * @returns {string} HTML string
+   */
+  function makeRangeTextInputPair(valueName, title, config, labelClass="") {
+    // create elements
+    const label = document.createElement("label");
+    label.setAttribute("for", valueName+"-text");
+    label.className = "range-text-pair" + (labelClass ? ` ${labelClass}` : "");
+    label.insertAdjacentHTML("beforeend", `<span>${title}</span>`);
+
+    const inputWrapper = document.createElement("div");
+    inputWrapper.className = "flex-r f-g16";
+
+    const rangeInput = document.createElement("input");
+    rangeInput.setAttribute("type", "range");
+    rangeInput.id = valueName + "-range";
+    rangeInput.className = "f-grow";
+
+    const textInput = document.createElement("input");
+    textInput.setAttribute("type", "text");
+    textInput.id = valueName + "-text";
+    textInput.className = "w4ch";
+
+    // apply config
+    if (config.textInputClassOverride !== undefined && config.textInputClassOverride !== null) {
+      textInput.className = config.textInputClassOverride;
+    }
+    try {
+      const minScaled = config.bounds.min;
+      const maxScaled = config.bounds.max;
+      const step = (config.step || 1).toString();
+      const stepDecimals = step.split(".")[1]?.length || 0;
+      const usesLogScaling = config.scaling === "logarithmic";
+
+      label.dataset.min = minScaled;
+      label.dataset.max = maxScaled;
+      label.dataset.step = config.step || 1;
+      label.dataset.log = usesLogScaling ? "1" : "";
+
+      textInput.setAttribute("value", Number(config.value).toFixed(stepDecimals));
+      rangeInput.setAttribute("value", utils.textToRange(
+        config.value, minScaled, maxScaled, usesLogScaling,
+        usesLogScaling ? 1 : stepDecimals)
+      );
+      rangeInput.setAttribute("min", usesLogScaling ? 0 : minScaled);
+      rangeInput.setAttribute("max", usesLogScaling ? 100 : maxScaled);
+      rangeInput.setAttribute("step", usesLogScaling ? 0.1 : step);
+    } catch (err) {
+      console.error("Invalid config passed to makeRangeTextInputPair.", config, err);
+      return "";
+    }
+
+    // put it all together and return the HTML
+    inputWrapper.appendChild(rangeInput);
+    inputWrapper.appendChild(textInput);
+    label.appendChild(inputWrapper);
+    return label.outerHTML;
+  }
+
+
+  /** Call this once on DOM load to link range & text input pairs. */
+  function initRangeTextPairLinks() {
+    // range -> text
+    document.addEventListener("input", function(e) {
+      const rangeInput = e.target.closest(".range-text-pair input[type=range]");
+      if (!rangeInput) return;
+
+      const pairWrapper = rangeInput.closest(".range-text-pair");
+      const minVal = Number(pairWrapper.dataset.min);
+      const maxVal = Number(pairWrapper.dataset.max);
+      const decimals = pairWrapper.dataset.step.split(".")[1]?.length || 0;
+      const isLog = Boolean(pairWrapper.dataset.log);
+
+      const textInput = pairWrapper.querySelector("input[type=text]");
+      // apply scaled value to text input
+      textInput.value = utils.rangeToText(rangeInput.value,
+        isLog ? { min: minVal, max: maxVal } : null,
+        decimals
+      );
+    });
+    // text -> range
+    document.addEventListener("change", function(e) {
+      const textInput = e.target.closest(".range-text-pair input[type=text]");
+      if (!textInput) return;
+
+      const pairWrapper = textInput.closest(".range-text-pair");
+      const minVal = Number(pairWrapper.dataset.min);
+      const maxVal = Number(pairWrapper.dataset.max);
+      const decimals = pairWrapper.dataset.step.split(".")[1]?.length || 0;
+      const isLog = Boolean(pairWrapper.dataset.log);
+
+      const rangeInput = pairWrapper.querySelector("input[type=range]");
+
+      const newVal = utils.textToRange(textInput.value,
+        minVal, maxVal, isLog, isLog ? 1 : decimals
+      );
+      if (newVal === null) {
+        // revert text input to range value, which should by definition be safe
+        textInput.value = utils.rangeToText(rangeInput.value,
+          isLog ? { min: minVal, max: maxVal } : null,
+          decimals
+        );
+      } else {
+        // apply scaled value to range slider
+        rangeInput.value = newVal;
+      }
+    });
+  }
+
+
   // public API
   return {
     makeToast,
     removeToast,
     makePopup,
+    makeRangeTextInputPair,
+    initRangeTextPairLinks,
   }
 })();
 

@@ -1,4 +1,4 @@
-window.pages.controls = (function () {
+window.pages.controls = (function() {
   let _loaded = false;
 
   let _loadInterval = null;
@@ -88,7 +88,7 @@ window.pages.controls = (function () {
       utils.qs("#controls-btn-wrapper").innerHTML = "";
     }
 
-    utils.qs("#view-controls").addEventListener("click", function (e) {
+    utils.qs("#view-controls").addEventListener("click", function(e) {
       const mapping = e.target.closest(".ctrl-wrapper");
       if (mapping) {
         _makeMappingModal(mapping);
@@ -237,15 +237,15 @@ window.pages.controls = (function () {
             <option class="ctrl-modal-option" value="inverted"${inverted ? " selected" : ""}>inverted</option>
           </select>
         </label>
-        <label for="ctrl-input-deadzone-range" class="flex-c f-g4 w100 mb16">
-          <span>Deadzone (0–1)</span>
-          <div class="flex-r f-g16">
-            <input id="ctrl-input-deadzone-range" type="range" class="f-grow"
-              min="${_limits.axisDeadzone.min}" max="${_limits.axisDeadzone.max}"
-              step="0.01" value="${deadzone}" />
-            <input id="ctrl-input-deadzone-text" type="text" value="${Number(deadzone).toFixed(2)}" />
-          </div>
-        </label>
+        ${ui.makeRangeTextInputPair("ctrl-input-deadzone", "Deadzone (0-1)", {
+            bounds: { min: _limits.axisDeadzone.min, max: _limits.axisDeadzone.max },
+            step: 0.01,
+            value: deadzone,
+            scaling: "linear",
+            textInputClassOverride: "w5ch"
+          },
+          "w100 mb16"
+        )}
         <label for="ctrl-input-method" class="flex-c f-g4 w100 mb16">
           <span>Input processing</span>
           <select id="ctrl-input-method" class="ctrl-modal-options mb0">
@@ -253,14 +253,15 @@ window.pages.controls = (function () {
             <option class="ctrl-modal-option" value="differential"${gain < 0 ? "" : " selected"}>differential</option>
           </select>
         </label>
-        <label for="ctrl-input-gain-text" class="flex-c f-g4 w100 mb16${gain < 0 ? " hidden" : ""}">
-          <span>Gain</span>
-          <div class="flex-r f-g16">
-            <input id="ctrl-input-gain-range" type="range" class="f-grow" min="0" max="100" step="0.1"
-              value="${utils.logToPercent(_limits.axisGain.min, _limits.axisGain.max, (gain < 0 ? "0.01" : gain))}" />
-            <input id="ctrl-input-gain-text" type="text" value="${gain < 0 ? "0.01" : gain}" />
-          </div>
-        </label>
+        ${ui.makeRangeTextInputPair("ctrl-input-gain", "Gain", {
+            bounds: { min: _limits.axisGain.min, max: _limits.axisGain.max },
+            step: 0.01,
+            value: gain < 0 ? "0.01" : gain,
+            scaling: "logarithmic",
+            textInputClassOverride: "w7ch"
+          },
+          "w100 mb16" + (gain < 0 ? " hidden" : "")
+        )}
       `);
       }
     }
@@ -273,49 +274,13 @@ window.pages.controls = (function () {
   `);
 
     if (kind === "axis") {
-      // update deadzone
-      const minDZ = _limits.axisDeadzone.min;
-      const maxDZ = _limits.axisDeadzone.max;
-      fg.querySelector("#ctrl-input-deadzone-range").addEventListener("input", function () {
-        const deadzoneValue = fg.querySelector("#ctrl-input-deadzone-text");
-        deadzoneValue.value = Number(this.value).toFixed(2);
-      });
-      fg.querySelector("#ctrl-input-deadzone-text").addEventListener("change", function () {
-        const inputValue = Number(this.value);
-        const deadzoneSlider = fg.querySelector("#ctrl-input-deadzone-range");
-        if (isNaN(inputValue) || inputValue < minDZ || inputValue > maxDZ) {
-          this.value = Number(deadzoneSlider.value).toFixed(2);
-          ui.makeToast("error", `Deadzone must be between ${minDZ} and ${maxDZ}`);
-        } else {
-          deadzoneSlider.value = inputValue;
-        }
-      });
-
       // show/hide gain settings
-      fg.querySelector("#ctrl-input-method").addEventListener("change", function () {
-        const gainWrapper = fg.querySelector(`label[for="ctrl-input-gain"]`);
+      fg.querySelector("#ctrl-input-method").addEventListener("change", function() {
+        const gainWrapper = fg.querySelector(`label[for="ctrl-input-gain-text"]`);
         if (this.value === "direct") {
           gainWrapper.classList.add("hidden");
         } else {
           gainWrapper.classList.remove("hidden");
-        }
-      });
-
-      // update gain
-      const minGain = _limits.axisGain.min;
-      const maxGain = _limits.axisGain.max;
-      fg.querySelector("#ctrl-input-gain-range").addEventListener("input", function () {
-        const gainValue = fg.querySelector("#ctrl-input-gain-text");
-        gainValue.value = utils.percentToLog(minGain, maxGain, this.value).slice(0, 4).replace(/\.$/, "");
-      });
-      fg.querySelector("#ctrl-input-gain-text").addEventListener("change", function () {
-        const inputValue = Number(this.value);
-        const gainSlider = fg.querySelector("#ctrl-input-gain-range");
-        if (isNaN(inputValue) || inputValue < minGain || inputValue > maxGain) {
-          this.value = utils.percentToLog(minGain, maxGain, gainSlider.value).slice(0, 4).replace(/\.$/, "");
-          ui.makeToast("error", `Gain must be between ${minGain} and ${maxGain}!`);
-        } else {
-          gainSlider.value = utils.logToPercent(minGain, maxGain, inputValue).toFixed(1);
         }
       });
     }

@@ -44,62 +44,26 @@ window.pages.settings = (function () {
     utils.qs("#settings-poll-pause-btn").disabled = true;
     
     // radio channel config
-    const radioChannelRange = utils.qs("#settings-radio-channel-range");
-    const radioChannelText = utils.qs("#settings-radio-channel-text");
-    radioChannelRange.addEventListener("input", function() {
-      radioChannelText.value = this.value;
-    });
-    radioChannelText.addEventListener("change", function() {
-      const inputValue = Number(this.value);
-      if (isNaN(inputValue) || inputValue < 0 || inputValue > 125) {
-        this.value = radioChannelRange.value;
-        ui.makeToast("error", "Invalid input for radio channel.");
-      } else {
-        radioChannelRange.value = inputValue.toFixed(0);
-      }
-    });
+    const radioChannelPlaceholder = utils.qs("#settings-radio-channel-placeholder");
+    radioChannelPlaceholder.outerHTML = ui.makeRangeTextInputPair(
+      "settings-radio-channel", "Channel", {
+        bounds: { min: 0, max: 125 }, step: 1, value: 0, scaling: "linear"
+      }, "mb16"
+    );
+
     // radio PA config
-    const radioPARange = utils.qs("#settings-radio-pa-range");
-    const radioPAText = utils.qs("#settings-radio-pa-text");
-    radioPARange.addEventListener("input", function() {
-      radioPAText.value = this.value;
-    });
-    radioPAText.addEventListener("change", function() {
-      const inputValue = Number(this.value);
-      if (isNaN(inputValue) || inputValue < 0 || inputValue > 3) {
-        this.value = radioPARange.value;
-        ui.makeToast("error", "Invalid input for radio PA level.");
-      } else {
-        radioPARange.value = inputValue.toFixed(0);
+    const radioPAPlaceholder = utils.qs("#settings-radio-pa-placeholder");
+    radioPAPlaceholder.outerHTML = ui.makeRangeTextInputPair(
+      "settings-radio-pa", "Power amp level", {
+        bounds: { min: 0, max: 3 }, step: 1, value: 0, scaling: "linear"
       }
-    });
+    );
+
     // submit radio settings
     utils.qs("#settings-radio-apply-btn").addEventListener("click", _submitRadioSettings);
 
-    // max surface angle config
-    const msaSettings = utils.qs("#settings-surfaces-inner");
-    msaSettings.addEventListener("input", function(e) {
-      const rangeInput = e.target.closest(`input[type=range]`);
-      if (rangeInput) {
-        const textInput = rangeInput.parentNode.querySelector(`input[type=text]`);
-        textInput.value = rangeInput.value;
-      }
-    });
-    msaSettings.addEventListener("change", function(e) {
-      const textInput = e.target.closest(`input[type=text]`);
-      if (textInput) {
-        const rangeInput = textInput.parentNode.querySelector(`input[type=range]`);
-        const inputValue = Number(textInput.value);
-        if (isNaN(inputValue) || inputValue < _maxSurfaceAngles.limits.min || inputValue > _maxSurfaceAngles.limits.max) {
-          textInput.value = rangeInput.value;
-          ui.makeToast("error", "Invalid input for max. surface angle.");
-        } else {
-          rangeInput.value = inputValue.toFixed(0);
-        }
-      }
-    });
     // submit max surface angle config
-    msaSettings.addEventListener("click", function(e) {
+    utils.qs("#settings-surfaces-inner").addEventListener("click", function(e) {
       const button = e.target.closest("#settings-surfaces-apply-btn");
       if (button) {
         _submitMSASettings();
@@ -362,16 +326,11 @@ window.pages.settings = (function () {
     const container = utils.qs("#settings-surfaces-inner");
     let newHTML = "";
     for (const [name, maxAngle] of Object.entries(surfaces)) {
-      newHTML += `
-      <label for="settings-surfaces-${name}-range">
-        <span>${name}</span>
-        <div class="flex-r f-g16">
-          <input id="settings-surfaces-${name}-range" type="range" class="f-grow" data-surf="${name}"
-            min="${min}" max="${max}" step="1" value="${maxAngle}" />
-          <input id="settings-surfaces-${name}-text" class="w4ch" type="text"
-            pattern="^\\d+$" maxlength="2" value="${maxAngle}" />
-        </div>
-      </label>`;
+      newHTML += ui.makeRangeTextInputPair(
+        "settings-surfaces-"+name, name, {
+          bounds: { min: min, max: max }, step: 1, value: maxAngle, scaling: "linear"
+        }
+      );
     };
     newHTML += `
     <div class="flex-r">
@@ -384,8 +343,11 @@ window.pages.settings = (function () {
   /** POST max surface angles settings to server & process its response. */
   async function _submitMSASettings() {
     const payload = {};
-    _.toArray(utils.qsa("#settings-surfaces-inner input[type=range]")).forEach(el => {
-      const name = el.dataset.surf;
+    _.toArray(utils.qsa("#settings-surfaces-inner input[type=text]")).forEach(el => {
+      const name = /settings-surfaces-(.+?)-text/.exec(el.id)?.[1];
+      if (name === undefined) {
+        throw new Error("Can't extract surface name from text input ID", el.id);
+      }
       const val = Number(el.value);
       payload[name] = val;
     });

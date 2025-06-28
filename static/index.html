@@ -150,21 +150,9 @@
 
           <div id="settings-radio">
             <h2>Radio</h2>
-            <label for="settings-radio-channel-range">
-              <span>Channel</span>
-              <div class="flex-r f-g16 mb16">
-                <input id="settings-radio-channel-range" type="range" class="f-grow" min="0" max="125" step="1" value="0" />
-                <input id="settings-radio-channel-text" type="text" pattern="^\d+$" maxlength="3" value="0" />
-              </div>
-            </label>
+            <div id="settings-radio-channel-placeholder"></div>
             <div class="flex-r f-g16 mb16">
-              <label for="settings-radio-pa-range" class="f-grow">
-                <span>Power amp level</span>
-                <div class="flex-r f-g16">
-                  <input id="settings-radio-pa-range" type="range" class="f-grow" min="0" max="3" step="1" value="0" />
-                  <input id="settings-radio-pa-text" type="text" pattern="^\d$" maxlength="1" value="0" />
-                </div>
-              </label>
+              <div id="settings-radio-pa-placeholder"></div>
               <label for="settings-radio-feedback">
                 <span>Plane feedback</span>
                 <select id="settings-radio-feedback">

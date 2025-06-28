@@ -108,8 +108,32 @@ h4 {
   width: 100% !important;
 }
 
+.w4ch {
+  width: 4ch;
+}
+
+.w5ch {
+  width: 5ch;
+}
+
+.w6ch {
+  width: 6ch;
+}
+
+.w7ch {
+  width: 7ch;
+}
+
+.w8ch {
+  width: 8ch;
+}
+
 .hidden {
   display: none !important;
+}
+
+label {
+  display: block;
 }
 
 label > span {
@@ -455,19 +479,9 @@ section .main-content .view-tab {
   padding: 8px;
 }
 
-#ctrl-input-deadzone-text, #ctrl-input-gain-text {
-  width: 5ch;
-}
-
 /*******************
  * SETTINGS SCREEN *
  *******************/
-#settings-radio-channel-text,
-#settings-radio-pa-text,
-.w4ch {
-  width: 4ch;
-}
-
 #view-settings > div > div {
   border-bottom: 1px solid var(--bg-medium);
 }

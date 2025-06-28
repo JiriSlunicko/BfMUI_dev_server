@@ -47,8 +47,14 @@ h4 { font-size: 16px; color: var(--bg-darkest); margin-bottom: 8px; }
 .mla { margin-left: auto !important; }
 .ml8 { margin-left: 8px !important; }
 .w100 { width: 100% !important; }
+.w4ch { width: 4ch; }
+.w5ch { width: 5ch; }
+.w6ch { width: 6ch; }
+.w7ch { width: 7ch; }
+.w8ch { width: 8ch; }
 .hidden { display: none !important; }
 
+label { display: block; }
 label > span {
     display: block;
     margin-bottom: 2px;
@@ -344,18 +350,10 @@ section {
     padding: 8px;
 }
 
-#ctrl-input-deadzone-text, #ctrl-input-gain-text { width: 5ch; }
-
 
 /*******************
  * SETTINGS SCREEN *
  *******************/
-#settings-radio-channel-text,
-#settings-radio-pa-text,
-.w4ch {
-    width: 4ch;
-}
-
 #view-settings > div > div { border-bottom: 1px solid var(--bg-medium); }
 #view-settings > div > div { padding-bottom: 32px; }
 #view-settings > div > div:not(:first-child) { padding-top: 16px; }
