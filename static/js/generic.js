@@ -8,47 +8,6 @@
 window.utils = (function()
 {
   /**
-   * Map values between 0 and 100 to min-max logarithmically.
-   * 
-   * @param {number} min output value for input 0 (must be >0)
-   * @param {number} max output value for input 100
-   * @param {number} actual input value
-   * @returns {number}
-   */
-  function percentToLog(min, max, actual) {
-    if (min <= 0 || max <= min || actual < 0 || actual > 100) {
-      throw new Error(`invalid parameters: ${min}-${max}, ${actual}`);
-    }
-    const minLog = Math.log10(min);
-    const maxLog = Math.log10(max);
-    const actualFrac = actual / 100;
-    const logVal = Math.pow(10, minLog + (maxLog - minLog) * actualFrac);
-    //return logVal.toFixed(2);
-    return logVal;
-  }
-
-
-  /**
-   * Map logarithmically distributed values between min and max to 0-100.
-   * 
-   * @param {number} min input value for output 0 (must be >0)
-   * @param {number} max input value for output 100
-   * @param {number} actual input value
-   * @returns {number}
-   */
-  function logToPercent(min, max, actual) {
-    if (min <= 0 || max <= min || actual < min || actual > max) {
-      throw new Error(`invalid parameters: ${min}-${max}, ${actual}`);
-    }
-    const minLog = Math.log10(min);
-    const maxLog = Math.log10(max);
-    const logVal = Math.log10(actual);
-    const scale = (logVal - minLog) / (maxLog - minLog);
-    return Math.min(100, Math.max(0, scale * 100));
-  }
-
-
-  /**
    * Map values between 0 and 100 to min-max logarithmically or exponentially.
    * @param {number} min output at 0%
    * @param {number} max output at 100%
@@ -136,8 +95,6 @@ window.utils = (function()
   return {
     qs: (sel) => document.querySelector(sel),
     qsa: (sel) => document.querySelectorAll(sel),
-    percentToLog,
-    logToPercent,
     rangeToText,
     textToRange,
   }
