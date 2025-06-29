@@ -40,6 +40,9 @@ window.nav = (function()
     });
 
     nav.gotoPage(_currentPage);
+
+    window.addEventListener("pagehide", () => events.closeStream(backend));
+    window.addEventListener("beforeunload", () => events.closeStream(backend));
   }
 
 
@@ -47,6 +50,7 @@ window.nav = (function()
   async function reloadApp() {
     const consent = await ui.makePopup("confirm", "Reload the app?");
     if (consent) {
+      events.closeStream(backend);
       location.reload();
     }
   }

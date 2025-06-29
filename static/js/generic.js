@@ -515,9 +515,7 @@ window.events = (function()
    * @param {object} globalServer backend - will be updated
    */
   function openStream(globalServer) {
-    if (globalServer.eventStream) {
-      globalServer.eventStream.close();
-    }
+    closeStream(globalServer);
     globalServer.eventStream = new EventSource(globalServer.baseurl + "/events/");
     globalServer.eventStream.onmessage = (msg) => {
       let asJson = null;
@@ -549,8 +547,20 @@ window.events = (function()
   }
 
 
+  /** Close an open event stream.
+   * @param {object} globalServer backend - will be updated
+   */
+  function closeStream(globalServer) {
+    if (globalServer.eventStream) {
+      globalServer.eventStream?.close();
+      globalServer.eventStream = null;
+    }
+  }
+
+
   // public API
   return {
     openStream,
+    closeStream,
   }
 })();
