@@ -70,7 +70,7 @@ if __name__ == "__main__":
         app.run(host=host, port=port, debug=debug)
         sys.exit(0)
     except Exception as e:
-        _ = input("Failed to run server.\n" + traceback.format_exc())
+        _ = input("Failed to run server!\n" + traceback.format_exc())
         sys.exit(1)
 
     r"""
