@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 from rjsmin import jsmin
 
 JS_ROOT: str = os.path.join("static", "js")
@@ -45,6 +46,7 @@ def save_bundle(bundle_content: dict[str,str]):
     mini = jsmin(content)
     mini_parts.append(f"// {filename}\n{mini}")
   as_text = "\n\n".join(mini_parts)
+  Path(BUNDLE_PATH).parent.mkdir(parents=True, exist_ok=True)
   with open(BUNDLE_PATH, "w", encoding="utf-8") as f:
     f.write(as_text)
 

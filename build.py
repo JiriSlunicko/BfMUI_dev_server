@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import zipfile
 from pathlib import Path
+from bundle import bundle
 
 # ---- CONFIG ----
 ENTRY_SCRIPT = "app.py"
@@ -64,4 +65,5 @@ def main():
     gather_files()
 
 if __name__ == "__main__":
+    bundle()
     main()
