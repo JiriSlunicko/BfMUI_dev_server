@@ -214,11 +214,17 @@ window.pages.controls = (function() {
       return;
     }
 
+    const ctrlrRole = _getActiveControllerRole();
     const kind = mapping.dataset.kind;
     const output = mapping.dataset.output;
-    const currentInput = mapping.dataset.mapping.split(/\s*,\s*/);
-    const mappingIsEnum = mapping.dataset.isEnum === "yes";
-    while (currentInput.length < 2) currentInput.push("unbound");
+    let currentMapping, currentInput;
+    if (kind === "axis") {
+      currentMapping = _controls.stagedAxisMappings[ctrlrRole][output];
+      currentInput = currentMapping?.inAxis.split(/\s*,\s*/) || ["unbound"];
+    } else {
+      currentMapping = _controls.stagedActionMappings[ctrlrRole][output];
+      currentInput = currentMapping?.button.split(/\s*,\s*/) || ["unbound"];
+    }
 
     const bg = document.createElement("div");
     bg.className = "modal-bg flex-c f-a-c";
@@ -228,36 +234,29 @@ window.pages.controls = (function() {
     fg.insertAdjacentHTML("beforeend", `
       <h3 class="hal-center break-word">${output.replace(/([A-Z]+)/g, "<wbr />$1")}</h3>
       <p class="hal-center mb16">Select ${kind === "button"
-          ? "0-2 buttons. If 2 are selected, both need to be pressed simultaneously."
-          : "input axis and its parameters."}</p>
+        ? "0-2 buttons. If 2 are selected, both need to be pressed simultaneously."
+        : "input axis and its parameters."}</p>
     `);
 
-    // selecting from an enum of possible bindings
-    if (mappingIsEnum) {
-      const enumSelect = _makeInputSelect(
-        "ctrl-input-enum",
-        _controls.restrictions[output],
-        mapping.dataset.mapping
-      );
+    // enum of possible bindings
+    if (mapping.dataset.isEnum === "yes") {
+      const enumSelect = _makeInputSelect("ctrl-input-enum", _controls.restrictions[output], currentInput);
       fg.appendChild(enumSelect);
-    // binding arbitrary buttons/axes
+    // arbitrary buttons/axes
     } else {
-      const priSelect = _makeInputSelect(
-        "ctrl-input-primary",
-        kind === "button" ? _controls.buttons : _controls.inAxes,
-        currentInput[0]
-      );
+      const priSelect = _makeInputSelect("ctrl-input-primary", kind === "axis" ? _controls.inAxes : _controls.buttons, currentInput[0]);
       fg.appendChild(priSelect);
 
       // buttons
       if (kind === "button") {
-        const secSelect = _makeInputSelect("ctrl-input-secondary", _controls.buttons, currentInput[1]);
+        const secSelect = _makeInputSelect("ctrl-input-secondary", _controls.buttons, currentInput[1] || "unbound");
         fg.appendChild(secSelect);
       // axes
       } else {
-        const inverted = mapping.dataset.inverted === "false" ? false : true;
-        const deadzone = mapping.dataset.deadzone;
-        const gain = mapping.dataset.gain;
+        const inverted = currentMapping?.invert || false;
+        const deadzone = currentMapping?.deadzone || 0;
+        const mode = currentMapping?.mode || "direct";
+        const gain = currentMapping?.gain || 0.1;
         fg.insertAdjacentHTML("beforeend", `
         <label for="ctrl-input-invert" class="flex-c f-g4 w100 mb16">
           <span>Axis direction</span>
@@ -267,43 +266,44 @@ window.pages.controls = (function() {
           </select>
         </label>
         ${ui.makeRangeTextInputPair("ctrl-input-deadzone", "Deadzone (0-1)", {
-            bounds: { min: _limits.axisDeadzone.min, max: _limits.axisDeadzone.max },
-            step: 0.01,
-            value: deadzone,
-            scaling: "linear",
-            textInputClassOverride: "w5ch"
-          },
+          bounds: { min: _limits.axisDeadzone.min, max: _limits.axisDeadzone.max },
+          step: 0.01,
+          value: deadzone,
+          scaling: "linear",
+          textInputClassOverride: "w5ch"
+        },
           "w100 mb16"
         )}
         <label for="ctrl-input-method" class="flex-c f-g4 w100 mb16">
           <span>Input processing</span>
           <select id="ctrl-input-method" class="ctrl-modal-options mb0">
-            <option class="ctrl-modal-option" value="direct"${gain < 0 ? " selected" : ""}>direct</option>
-            <option class="ctrl-modal-option" value="differential"${gain < 0 ? "" : " selected"}>differential</option>
+            <option class="ctrl-modal-option" value="direct"${mode === "direct" ? " selected" : ""}>direct</option>
+            <option class="ctrl-modal-option" value="differential"${mode === "differential" ? " selected" : ""}>differential</option>
           </select>
         </label>
         ${ui.makeRangeTextInputPair("ctrl-input-gain", "Gain", {
-            bounds: { min: _limits.axisGain.min, max: _limits.axisGain.max },
-            step: 0.01,
-            value: gain < 0 ? "0.01" : gain,
-            scaling: "logarithmic",
-            textInputClassOverride: "w7ch"
-          },
-          "w100 mb16" + (gain < 0 ? " hidden" : "")
+          bounds: { min: _limits.axisGain.min, max: _limits.axisGain.max },
+          step: 0.01,
+          value: gain < 0 ? "0.01" : gain,
+          scaling: "logarithmic",
+          textInputClassOverride: "w7ch"
+        },
+          "w100 mb16" + (mode === "direct" ? " hidden" : "")
         )}
       `);
       }
     }
 
+    // buttons
     fg.insertAdjacentHTML("beforeend", `
     <div class="flex-r f-j-c f-g8">
       <button type="button" class="btn" id="ctrl-modal-ok">Ok</button>
       <button type="button" class="btn" id="ctrl-modal-cancel">Cancel</button>
     </div>
-  `);
+    `);
 
     if (kind === "axis") {
-      // show/hide gain settings
+      // show/hide gain settings on switching input processing mode
       fg.querySelector("#ctrl-input-method").addEventListener("change", function() {
         const gainWrapper = fg.querySelector(`label[for="ctrl-input-gain-text"]`);
         if (this.value === "direct") {
@@ -313,8 +313,9 @@ window.pages.controls = (function() {
         }
       });
     }
+
     fg.querySelector("#ctrl-modal-ok").addEventListener("click", () => _applyCtrlMapping(kind));
-    fg.querySelector("#ctrl-modal-cancel").addEventListener("click", () => utils.qs(".modal-bg[data-output]")?.remove());
+    fg.querySelector("#ctrl-modal-cancel").addEventListener("click", () => utils.qs(".modal-bg[data-output")?.remove());
 
     bg.appendChild(fg);
     document.body.append(bg);

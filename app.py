@@ -8,6 +8,7 @@ from datetime import datetime
 ################################################################
 root = None
 config = {}
+debug = True
 
 # this is an .EXE
 if getattr(sys, "frozen", False):
@@ -43,7 +44,10 @@ except:
 ################################################################
 @app.route("/")
 def index():
-    return send_from_directory(str(root / "static"), "index.html")
+    if debug is True:
+        return send_from_directory(str(root / "static"), "dev-index.html")
+    else:
+        return send_from_directory(str(root / "static"), "index.html")
 
 @app.route("/<path:path>")
 def static_proxy(path: str):
@@ -56,7 +60,8 @@ if __name__ == "__main__":
     try:
         host = "127.0.0.1"
         port = int(config.get("port", "8000"))
-        debug = int(config.get("debug", "1")) == 1
+        if config.get("debug") is not None:
+            debug = int(config["debug"]) == 1
     except:
         _ = input("Invalid config. Make sure you followed the instructions.")
         sys.exit(1)

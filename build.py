@@ -15,6 +15,7 @@ ZIP_NAME = "BfMUI_desktop.zip"
 EXTRA_FILES = [
     "config.txt",
     "static/index.html",
+    "static/dev-index.html",
     "static/js/",
     "static/css/",
     "readme.md"

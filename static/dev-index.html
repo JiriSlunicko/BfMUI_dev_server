@@ -4,13 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/styles.css" />
-  <script src="/js/dist/app.bundle.js" defer type="application/javascript"></script>
+  <!--Debug imports start-->
+  <script src="/js/deps/lodash.min.js" defer type="application/javascript"></script>
+  <script src="/js/generic.js" defer type="application/javascript"></script>
+  <script src="/js/mainctrl.js" defer type="application/javascript"></script>
+  <script src="/js/ajax.js" defer type="application/javascript"></script>
+  <script src="/js/home.js" defer type="application/javascript"></script>
+  <script src="/js/status.js" defer type="application/javascript"></script>
+  <script src="/js/controls.js" defer type="application/javascript"></script>
+  <script src="/js/settings.js" defer type="application/javascript"></script>
+  <!--Debug imports end-->
   <title>Bloodfly MUI</title>
 </head>
 
 <body class="flex-c">
   <header class="f-noshrink">
     <nav>
+    <!--
+      <button type="button" id="goto-home" class="active">BfMUI</button>
+      <button type="button" id="goto-status">Status</button>
+      <button type="button" id="goto-controls">Controls</button>
+      <button type="button" id="goto-settings">Settings</button>
+
+      <button type="button" id="reload-app">♻</button>
+    -->
       <button type="button" id="goto-home" class="active" title="Home">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8.4666665 8.4666666">
           <g>
@@ -93,6 +110,7 @@
       <div class="view-tab flex-c" id="view-controls">
         <div id="controls-role-select-div">
           <label for="controls-role-select" class="flex-r f-a-c f-g8">
+            <!--<span>Controller role</span>-->
             <select id="controls-role-select">
             </select>
           </label>
