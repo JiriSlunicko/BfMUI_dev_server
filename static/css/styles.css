@@ -447,7 +447,10 @@ section .main-content .view-tab {
   #view-controls {
     display: grid;
     grid-template-columns: repeat(2, calc(50% - 16px));
-    grid-template-areas: "buttons axes" "interaction interaction";
+    grid-template-areas: "roleselect roleselect" "buttons axes" "interaction interaction";
+  }
+  #controls-role-select-div {
+    grid-area: roleselect;
   }
   #controls-buttons {
     grid-area: buttons;

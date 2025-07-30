@@ -321,9 +321,11 @@ section {
         display: grid;
         grid-template-columns: repeat(2, calc(50% - 16px));
         grid-template-areas:
+            "roleselect roleselect"
             "buttons axes"
             "interaction interaction";
     }
+    #controls-role-select-div { grid-area: roleselect; }
     #controls-buttons { grid-area: buttons; }
     #controls-axes { grid-area: axes; }
     #controls-btn-wrapper { grid-area: interaction; }
