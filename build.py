@@ -17,8 +17,9 @@ EXTRA_FILES = [
     "static/index.html",
     "static/dev-index.html",
     "static/js/",
+    "static/js/dist/",
     "static/css/",
-    "readme.md"
+    "readme.md",
 ]
 
 def clean():
