@@ -50,7 +50,7 @@ window.pages.settings = (function () {
     radioPAPlaceholder.outerHTML = ui.makeRangeTextInputPair(
       "settings-radio-pa", "Power amp level", {
         bounds: { min: 0, max: 3 }, step: 1, value: 0, scaling: "linear"
-      }
+      }, "f-grow"
     );
 
     // submit radio settings
@@ -60,7 +60,7 @@ window.pages.settings = (function () {
 
   /** Get serial port options and settings from the server.
    * @param {object} globalServer backend - .usingArduino will be updated
-   * @return {Boolean} true if we get a response indicating arduino is being used
+   * @return {boolean} true if we get a response indicating arduino is being used
    */
   async function _fetchSerialPortData(globalServer) {
     try {
@@ -86,7 +86,7 @@ window.pages.settings = (function () {
 
 
   /** Get current radio settings & save them to _radio.
-   * @returns {Boolean} success?
+   * @returns {boolean} success?
    */
   async function _fetchRadioData() {
     try {

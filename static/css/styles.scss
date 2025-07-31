@@ -1,11 +1,13 @@
 :root {
-    --bg-darkest: hsl(0,10%,10%);
-    --bg-darker: hsl(0,10%,20%);
-    --bg-dark: hsl(0,10%,30%);
-    --bg-medium: hsl(0,10%,45%);
-    --bg-bright: hsl(0,10%,60%);
-    --bg-brighter: hsl(0,10%,80%);
-    --bg-brightest: hsl(0,10%,90%);
+    --primary-hue: 0;
+
+    --bg-darkest: hsl(var(--primary-hue),10%,10%);
+    --bg-darker: hsl(var(--primary-hue),10%,20%);
+    --bg-dark: hsl(var(--primary-hue),10%,30%);
+    --bg-medium: hsl(var(--primary-hue),10%,45%);
+    --bg-bright: hsl(var(--primary-hue),10%,60%);
+    --bg-brighter: hsl(var(--primary-hue),10%,80%);
+    --bg-brightest: hsl(var(--primary-hue),10%,90%);
 
     --good: hsl(120,50%,75%);
     --bad: hsl(0,80%,80%);
@@ -285,9 +287,8 @@ section {
 .desktop-panel {
     @media only screen and (min-width: 751px) {
         padding: 12px 16px 16px;
-        box-shadow:
-            2px 2px 1px inset var(--bg-brighter),
-            -2px -2px 1px inset var(--bg-medium);
+        border: 1px solid var(--bg-medium);
+        box-shadow: 1px 1px 4px var(--bg-medium);
     }
     @media only screen and (max-width: 750px) {
         border-bottom: 1px solid var(--bg-medium);

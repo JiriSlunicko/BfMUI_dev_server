@@ -32,13 +32,13 @@ window.ajax = (function()
   /**
    * Attempt to make a POST request, failing after a specified timeout.
    * @param {string} url 
-   * @param {object|Array|null} payload 
+   * @param {object|array|null} payload 
    * @param {function|null} [successHandler=null]
    * function called when a JSON response is successfully retrieved, with the JSON data as an argument
    * @param {function|null} [failureHandler=null]
    * function called when anything fails, with Response|null and the error as arguments
    * @param {number} [timeout=5000]
-   * @returns {Promise<Boolean>}
+   * @returns {Promise<boolean>}
    */
   async function postWithTimeout(url, payload, successHandler=null, failureHandler=null, timeout=5000) {
     let raw = null;

@@ -12,9 +12,12 @@ IGNORE: list[str] = [
 
 DO_FIRST: list[str] = [
   os.path.join("deps", "lodash.min.js"),
-  "generic.js",
-  "mainctrl.js",
-  "ajax.js",
+  "010-utils.js",
+  "020-ui.js",
+  "030-entries.js",
+  "040-events.js",
+  "050-mainctrl.js",
+  "060-ajax.js",
 ]
 
 

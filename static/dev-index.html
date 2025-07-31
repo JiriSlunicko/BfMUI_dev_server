@@ -6,9 +6,12 @@
   <link rel="stylesheet" href="/css/styles.css" />
   <!--Debug imports start-->
   <script src="/js/deps/lodash.min.js" defer type="application/javascript"></script>
-  <script src="/js/generic.js" defer type="application/javascript"></script>
-  <script src="/js/mainctrl.js" defer type="application/javascript"></script>
-  <script src="/js/ajax.js" defer type="application/javascript"></script>
+  <script src="/js/010-utils.js" defer type="application/javascript"></script>
+  <script src="/js/020-ui.js" defer type="application/javascript"></script>
+  <script src="/js/030-entries.js" defer type="application/javascript"></script>
+  <script src="/js/040-events.js" defer type="application/javascript"></script>
+  <script src="/js/050-mainctrl.js" defer type="application/javascript"></script>
+  <script src="/js/060-ajax.js" defer type="application/javascript"></script>
   <script src="/js/home.js" defer type="application/javascript"></script>
   <script src="/js/status.js" defer type="application/javascript"></script>
   <script src="/js/controls.js" defer type="application/javascript"></script>
@@ -118,8 +121,8 @@
 
       <div class="view-tab flex-c" id="view-controls">
         <div id="controls-role-select-div">
-          <label for="controls-role-select" class="flex-r f-a-c f-g8">
-            <!--<span>Controller role</span>-->
+          <label for="controls-role-select">
+            <span>Controller role</span>
             <select id="controls-role-select">
             </select>
           </label>
