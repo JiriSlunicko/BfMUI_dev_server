@@ -55,7 +55,7 @@ window.pages.controls = (function() {
       // { action -> input (button or 2 ", " separated buttons), ... }
       _controls.restrictions = resp.ControlActionsRestrictions;
       // { role -> { input -> output, ... }, ... }
-      _setMappingsFromJsonResponse(resp);
+      ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);
 
       ui.makeToast("success", "Successfully loaded control options.");
       return true;
@@ -64,15 +64,6 @@ window.pages.controls = (function() {
       ui.makeToast("error", "Connection failed while loading control options.\n\n" + err, 5000);
       return false;
     }
-  }
-
-
-  function _setMappingsFromJsonResponse(resp) {
-    // server-side state reference
-    _controls.actionMappings = _convertActionMappings(resp.ControlActionsSettings);
-    _controls.axisMappings = _convertAxisMappings(resp.PlaneAxesSettings);
-    // deep copies for working state
-    _setStagedToCurrentlyStored();
   }
 
 
@@ -101,7 +92,7 @@ window.pages.controls = (function() {
         <button type="button" class="btn" id="controls-reset-btn">Discard changes</button>
       `;
 
-      _updateActiveController(selectedCtrlr);
+      ctrlHelpers.updateActiveController(_controls, selectedCtrlr);
     } else {
       utils.qs("#controls-buttons-inner").innerHTML = "<p>Failed to fetch options.</p>";
       utils.qs("#controls-axes-inner").innerHTML = "<p>Failed to fetch options.</p>";
@@ -120,87 +111,23 @@ window.pages.controls = (function() {
       const submitButton = e.target.closest("#controls-submit-btn");
       if (submitButton) {
         _submitMappings();
-        _updateActiveController();
+        ctrlHelpers.updateActiveController(_controls);
         return;
       }
 
       const cancelButton = e.target.closest("#controls-reset-btn");
       if (cancelButton) {
-        _setStagedToCurrentlyStored();
-        _updateActiveController();
+        ctrlHelpers.setStagedToCurrentlyStored(_controls);
+        ctrlHelpers.updateActiveController(_controls);
         return;
       }
     });
 
     utils.qs("#controls-role-select").addEventListener("change", function(e) {
-      _updateActiveController(this.value);
+      ctrlHelpers.updateActiveController(_controls, this.value);
     });
 
     _loaded = true;
-  }
-
-
-  /**
-   * Populate the relevant container with current input-output mappings.
-   * @param {string} controller which controller we're showing
-   * @param {"button"|"axis"} kind
-   */
-  function _makeMappingList(controller, kind) {
-    let container, outputs, mappings;
-    switch (kind) {
-      case "button":
-        container = utils.qs("#controls-buttons-inner");
-        outputs = _controls.actions;
-        mappings = _controls.stagedActionMappings[controller];
-        break;
-      case "axis":
-        container = utils.qs("#controls-axes-inner");
-        outputs = _controls.outAxes;
-        mappings = _controls.stagedAxisMappings[controller];
-        break;
-    }
-
-    Array.from(container.children).forEach(x => x.remove());
-    const mappingsWrapper = document.createDocumentFragment();
-    for (const output of outputs) {
-      const mapping = mappings[output];
-
-      const item = document.createElement("div");
-      item.className = "entry-wrapper ctrl-wrapper";
-      item.dataset.kind = kind;
-      item.dataset.output = output;
-      let mappingString;
-      let stagedChange;
-
-      if (kind === "axis") {
-        const mInAxis = mapping?.inAxis || "unbound";
-        const mInvert = mapping?.invert || false;
-        const mDeadzone = mapping?.deadzone || 0.0;
-        const mMode = mapping?.mode || "direct";
-        const mGain = typeof mapping?.gain === "number" ? mapping.gain : -1;
-        item.dataset.mapping = mInAxis;
-        item.dataset.inverted = mInvert;
-        item.dataset.deadzone = mDeadzone;
-        item.dataset.gain = mGain;
-        mappingString = _stringifyAxisMapping(mInAxis, mInvert, mDeadzone, mMode, mGain);
-        if (_hasAxisMappingChanged(controller, output))
-          stagedChange = true;
-      } else {
-        const mButton = mapping?.button || "unbound";
-        item.dataset.mapping = mButton;
-        item.dataset.isEnum = _controls.restrictions[output] ? "yes" : "";
-        mappingString = mButton;
-        if (_hasActionMappingChanged(controller, output))
-          stagedChange = true;
-      }
-
-      item.insertAdjacentHTML("beforeend", `
-      <div class="entry-header ctrl-output">${output}</div>
-      <div class="ctrl-input-current${stagedChange ? ' modified' : ''}">${mappingString}</div>
-    `);
-      mappingsWrapper.appendChild(item);
-    }
-    container.append(mappingsWrapper);
   }
 
 
@@ -214,15 +141,15 @@ window.pages.controls = (function() {
       return;
     }
 
-    const ctrlrRole = _getActiveControllerRole();
+    const activeRole = ctrlHelpers.getActiveControllerRole();
     const kind = mapping.dataset.kind;
     const output = mapping.dataset.output;
     let currentMapping, currentInput;
     if (kind === "axis") {
-      currentMapping = _controls.stagedAxisMappings[ctrlrRole][output];
+      currentMapping = _controls.stagedAxisMappings[activeRole][output];
       currentInput = currentMapping?.inAxis.split(/\s*,\s*/) || ["unbound"];
     } else {
-      currentMapping = _controls.stagedActionMappings[ctrlrRole][output];
+      currentMapping = _controls.stagedActionMappings[activeRole][output];
       currentInput = currentMapping?.button.split(/\s*,\s*/) || ["unbound"];
     }
 
@@ -266,13 +193,9 @@ window.pages.controls = (function() {
           </select>
         </label>
         ${ui.makeRangeTextInputPair("ctrl-input-deadzone", "Deadzone (0-1)", {
-          bounds: { min: _limits.axisDeadzone.min, max: _limits.axisDeadzone.max },
-          step: 0.01,
-          value: deadzone,
-          scaling: "linear",
-          textInputClassOverride: "w5ch"
-        },
-          "w100 mb16"
+            bounds: { min: _limits.axisDeadzone.min, max: _limits.axisDeadzone.max },
+            step: 0.01, value: deadzone, scaling: "linear", textInputClassOverride: "w5ch"
+          }, "w100 mb16"
         )}
         <label for="ctrl-input-method" class="flex-c f-g4 w100 mb16">
           <span>Input processing</span>
@@ -282,13 +205,9 @@ window.pages.controls = (function() {
           </select>
         </label>
         ${ui.makeRangeTextInputPair("ctrl-input-gain", "Gain", {
-          bounds: { min: _limits.axisGain.min, max: _limits.axisGain.max },
-          step: 0.01,
-          value: gain < 0 ? "0.01" : gain,
-          scaling: "logarithmic",
-          textInputClassOverride: "w7ch"
-        },
-          "w100 mb16" + (mode === "direct" ? " hidden" : "")
+            bounds: { min: _limits.axisGain.min, max: _limits.axisGain.max },
+            step: 0.01, value: gain < 0 ? "0.01" : gain, scaling: "logarithmic", textInputClassOverride: "w7ch"
+          }, "w100 mb16" + (mode === "direct" ? " hidden" : "")
         )}
       `);
       }
@@ -418,11 +337,12 @@ window.pages.controls = (function() {
 
     // update staged state
     const resolvedMapping = desiredMapping.join(", ");
+    const activeRole = ctrlHelpers.getActiveControllerRole();
     if (kind === "axis") {
       if (resolvedMapping === "unbound")
-        delete _controls.stagedAxisMappings[_getActiveControllerRole()][output];
+        delete _controls.stagedAxisMappings[activeRole][output];
       else {
-        _controls.stagedAxisMappings[_getActiveControllerRole()][output] = {
+        _controls.stagedAxisMappings[activeRole][output] = {
           inAxis: resolvedMapping,
           invert: newInvert,
           deadzone: newDeadzone,
@@ -431,19 +351,12 @@ window.pages.controls = (function() {
         }
       }
     } else {
-      _controls.stagedActionMappings[_getActiveControllerRole()][output] = {button: resolvedMapping};
+      _controls.stagedActionMappings[activeRole][output] = {button: resolvedMapping};
     }
 
-    _updateActiveController();
+    ctrlHelpers.updateActiveController(_controls);
 
     modal.remove();
-  }
-
-
-  /** Trivial helper for showing axis properties as a string. */
-  function _stringifyAxisMapping(axis, invert, deadzone, mode, gain) {
-    if (axis === "unbound") return axis;
-    return `${axis}, inv=${invert ? "1" : "0"}, dz=${deadzone}, ${mode === "direct" ? "direct" : ("gain=" + gain)}`;
   }
 
 
@@ -459,8 +372,9 @@ window.pages.controls = (function() {
       PlaneAxesSettings: {},
     };
 
-    const actionCtrlrRoles = onlyActive ? [_getActiveControllerRole()] : Object.keys(_controls.stagedActionMappings);
-    const axisCtrlrRoles = onlyActive ? [_getActiveControllerRole()] : Object.keys(_controls.stagedAxisMappings);
+    const activeRole = ctrlHelpers.getActiveControllerRole();
+    const actionCtrlrRoles = onlyActive ? [activeRole] : Object.keys(_controls.stagedActionMappings);
+    const axisCtrlrRoles = onlyActive ? [activeRole] : Object.keys(_controls.stagedAxisMappings);
 
     // buttons -> actions
     for (const ctrlrRole of actionCtrlrRoles) {
@@ -508,145 +422,11 @@ window.pages.controls = (function() {
       backend.baseurl + "/settings/control/",
       payload,
       (resp) => {
-        _setMappingsFromJsonResponse(resp);
-        _updateActiveController();
+        ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);
+        ctrlHelpers.updateActiveController(_controls);
         ui.makeToast("success", "Successfully updated.");
       }
     );
-  }
-
-
-  /** Convert response action mappings from server to:
-   * {
-   *  string controllerRole: {
-   *    string action: {
-   *      "button": string button || ", "-joined 2 buttons
-   *    },
-   *    ...
-   *  },
-   *  ...
-   * }
-   */
-  function _convertActionMappings(respMappings) {
-    if (!respMappings) {
-      throw new Error("invalid data for convertActionMappings");
-    }
-    const processedMappings = {};
-    for (const [ctrlrRole, ctrlrMappings] of Object.entries(respMappings)) {
-      const processedCtrlrMappings = {};
-      for (const [action, mapping] of Object.entries(ctrlrMappings)) {
-        processedCtrlrMappings[action] = { "button": mapping == "None" ? "unbound" : mapping };
-      }
-      processedMappings[ctrlrRole] = processedCtrlrMappings;
-    }
-    return processedMappings;
-  }
-
-
-  /** Convert response axis mappings from server to:
-   * {
-   *  string controllerRole: {
-   *    string outAxis: {
-   *      "inAxis": string inAxis,
-   *      "invert": bool,
-   *      "deadzone": number 0.0 - 1.0
-   *      "mode": "direct"|"differential"
-   *      "gain": null|number
-   *    },
-   *    ...
-   *  },
-   *  ...
-   * }
-   */
-  function _convertAxisMappings(respMappings) {
-    if (!respMappings) {
-      throw new Error("invalid data for convertAxisMappings");
-    }
-    const processedMappings = {};
-
-    for (const [ctrlrRole, ctrlrMappings] of Object.entries(respMappings)) {
-      const processedCtrlrMappings = {};
-      for (const [axis, mapping] of Object.entries(ctrlrMappings)) {
-        processedCtrlrMappings[axis] = {
-          inAxis: mapping.ControllerAxis,
-          invert: mapping.Inverted,
-          deadzone: mapping.ControllerAxisDeadBand,
-          mode: mapping.FinalValueAssigner.$type === "DifferenceValueAssigner"
-            ? "differential"
-            : mapping.FinalValueAssigner.$type === "DirectValueAssigner"
-              ? "direct"
-              : "undefined",
-          gain: mapping.FinalValueAssigner.Gain || null,
-        }
-      }
-      processedMappings[ctrlrRole] = processedCtrlrMappings;
-    }
-    return processedMappings;
-  }
-
-
-  function _hasActionMappingChanged(controller, action) {
-    return _controls.actionMappings[controller][action]?.button
-       !== _controls.stagedActionMappings[controller][action]?.button;
-  }
-
-  function _hasAxisMappingChanged(controller, axisRole) {
-    const stored = _controls.axisMappings[controller][axisRole];
-    const staged = _controls.stagedAxisMappings[controller][axisRole];
-
-    const storedUndef = stored === undefined;
-    const stagedUndef = staged === undefined;
-
-    // one undefined, the other not -> changed
-    if (storedUndef !== stagedUndef)
-      return true;
-
-    // both undefined -> not changed
-    if (storedUndef && stagedUndef)
-      return false;
-
-    // if the value of any key has changed -> changed
-    for (const key of Object.keys(staged)) {
-      if (stored[key] !== staged[key]) return true;
-    }
-    // else -> not changed
-    return false;
-  }
-
-
-  function _updateActiveController(controller = null) {
-    if (controller !== null) 
-      utils.qs("#controls-role-select").value = controller
-
-    const active = _getActiveControllerRole();
-    _makeMappingList(active, "button");
-    _makeMappingList(active, "axis");
-
-    const submitBtn = utils.qs("#controls-submit-btn");
-    const cancelBtn = utils.qs("#controls-reset-btn");
-    if (utils.qsa(".ctrl-wrapper .modified").length > 0) {
-      submitBtn.classList.add("primed-yes");
-      cancelBtn.classList.add("primed-no");
-    } else {
-      submitBtn.classList.remove("primed-yes");
-      cancelBtn.classList.remove("primed-no");
-    }
-  }
-
-
-  function _setStagedToCurrentlyStored(controller = null) {
-    if (controller === null) {
-      _controls.stagedActionMappings = JSON.parse(JSON.stringify(_controls.actionMappings));
-      _controls.stagedAxisMappings = JSON.parse(JSON.stringify(_controls.axisMappings));
-    } else {
-      _controls.stagedActionMappings[controller] = JSON.parse(JSON.stringify(_controls.actionMappings[controller]));
-      _controls.stagedAxisMappings[controller] = JSON.parse(JSON.stringify(_controls.axisMappings[controller]));
-    }
-  }
-
-
-  function _getActiveControllerRole() {
-    return utils.qs("#controls-role-select").value;
   }
 
 
