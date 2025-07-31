@@ -36,6 +36,14 @@
           </g>
         </svg>
       </button>
+      <button type="button" id="goto-plane" title="Plane">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32.000001 32.000001">
+          <path style="fill: none; stroke: currentColor; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: none" d="M 16,4 V 25" />
+          <path style="fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: none" d="M 16,11 3,16 16,15 29,16 Z" />
+          <path style="fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: none" d="m 12,28 4,-2 4,2 -4,-5 z" />
+          <path style="fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: none" d="M 16,29 V 26" />
+        </svg>
+      </button>
       <button type="button" id="goto-settings" title="Settings">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8.4666665 8.4666666">
           <g>
@@ -116,9 +124,25 @@
       </div>
 
 
+      <div class="view-tab flex-c" id="view-plane">
+        <div id="plane-angles">
+          <h2>Max surface angles</h2>
+          <div id="plane-angles-inner" class="flex-c f-g16">
+            <p>Connect to load options.</p>
+          </div>
+        </div>
+        <div id="plane-trim">
+          <h2>Surface trim values</h2>
+          <div id="plane-trim-inner" class="flex-c f-g16">
+            <p>Connect to load options.</p>
+          </div>
+        </div>
+      </div>
+
+
       <div class="view-tab flex-c" id="view-settings">
         <div class="flex-c">
-          <div id="settings-connection">
+          <div id="settings-connection" class="desktop-panel">
             <h2>Connection</h2>
             <p id="settings-connection-status">Currently not connected.</p>
             <label for="input-ip">
@@ -139,8 +163,10 @@
               </div>
             </label>
           </div>
+        </div>
 
-          <div id="settings-radio">
+        <div class="flex-c">
+          <div id="settings-radio" class="desktop-panel">
             <h2>Radio</h2>
             <div id="settings-radio-channel-placeholder"></div>
             <div class="flex-r f-g16 mb16">
@@ -157,17 +183,8 @@
               <button type="button" class="btn" id="settings-radio-apply-btn">Apply radio settings</button>
             </div>
           </div>
-        </div>
 
-        <div class="flex-c">
-          <div id="settings-surfaces">
-            <h2>Max. surface angles</h2>
-            <div id="settings-surfaces-inner" class="flex-c f-g16">
-              <p>Connect to load options.</p>
-            </div>
-          </div>
-
-          <div id="settings-misc">
+          <div id="settings-misc" class="desktop-panel">
             <h2>Miscellaneous</h2>
             <div class="flex-r">
               <button type="button" class="btn" id="settings-reset-btn">Reset app settings</button>

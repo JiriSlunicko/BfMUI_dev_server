@@ -16,12 +16,6 @@ window.pages.settings = (function () {
     baudRatePresets: [110, 300, 600, 1200, 2400, 4800, 9600, 14400,
       19200, 38400, 57600, 115200, 128000, 256000],
   }
-  let _maxSurfaceAngles = {
-    limits: {
-      min: 0, max: 90,
-    },
-    surfaces: {},
-  }
 
   function init() {
     // server & polling config
@@ -61,14 +55,6 @@ window.pages.settings = (function () {
 
     // submit radio settings
     utils.qs("#settings-radio-apply-btn").addEventListener("click", _submitRadioSettings);
-
-    // submit max surface angle config
-    utils.qs("#settings-surfaces-inner").addEventListener("click", function(e) {
-      const button = e.target.closest("#settings-surfaces-apply-btn");
-      if (button) {
-        _submitMSASettings();
-      }
-    });
   }
 
 
@@ -115,28 +101,6 @@ window.pages.settings = (function () {
       return true;
     } catch (err) {
       ui.makeToast("error", "Error fetching radio data.\n\n" + err.toString(), 5000);
-      return false;
-    }
-  }
-
-
-  /** Get max. surface angles - which surfaces we're dealing with.
-   * @returns {Boolean} success?
-   */
-  async function _fetchMaxSurfaceAnglesData() {
-    try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + "/settings/maxsurfaceangles/");
-      if (raw.status !== 200) {
-        throw new Error("/settings/maxsurfaceangles/ returned "+raw.status);
-      }
-      const resp = await raw.json();
-      _maxSurfaceAngles.surfaces = {};
-      for (const surface of resp.AvailableSurfaces) {
-        _maxSurfaceAngles.surfaces[surface] = resp.MaxSurfaceAngles[surface] || 0;
-      }
-      return true;
-    } catch (err) {
-      ui.makeToast("error", "Error fetching max. surface angles data.\n\n" + err.toString(), 5000);
       return false;
     }
   }
@@ -202,11 +166,8 @@ window.pages.settings = (function () {
           utils.qs("#settings-radio-feedback").value = _radio.feedback ? "yes" : "";
         }
 
-        // load max surface angles data
-        const msaSuccess = await _fetchMaxSurfaceAnglesData();
-        if (msaSuccess) {
-          _renderMSASettings();
-        }
+        // load max surface angles & trim data
+        const planeDataSuccess = await pages.plane.onConnected();
 
         // open event stream
         events.openStream(globalServer);
@@ -215,7 +176,8 @@ window.pages.settings = (function () {
           "Connected to server, polling.\n\n"
           +(globalServer.usingArduino ? `Using arduino, ${_arduino.availablePorts.length} available ports.\n\n` : "")
           +`Radio: ${radioSuccess ? "ok" : "ERROR"}\n\n`
-          +`Max. surf angles: ${msaSuccess ? "ok" : "ERROR"}`,
+          +`Max. surf angles: ${planeDataSuccess.maxSurfaceAngles ? "ok" : "ERROR"}\n\n`
+          +`Trim values: ${planeDataSuccess.trim ? "ok" : "ERROR"}`,
           5000
         );
       } else {
@@ -230,7 +192,7 @@ window.pages.settings = (function () {
   /** Initialise arduino settings section. */
   function _renderInitialArduinoSettings() {
     utils.qs("#settings-connection").insertAdjacentHTML("afterend", `
-      <div id="settings-arduino">
+      <div id="settings-arduino" class="desktop-panel">
         <h2>Arduino serial port</h2>
         <div class="flex-r mb16">
           <select id="settings-arduino-port" class="f-noshrink"></select>
@@ -312,56 +274,6 @@ window.pages.settings = (function () {
       (resp) => {
         _arduino.port = resp.Name;
         _arduino.baudRate = resp.BaudRate;
-        ui.makeToast("success", "Successfully updated.");
-      }
-    );
-  }
-
-
-  /** Render the settings interface for max. surface angles. */
-  function _renderMSASettings() {
-    const min = _maxSurfaceAngles.limits.min;
-    const max = _maxSurfaceAngles.limits.max;
-    const surfaces = _maxSurfaceAngles.surfaces;
-    const container = utils.qs("#settings-surfaces-inner");
-    let newHTML = "";
-    for (const [name, maxAngle] of Object.entries(surfaces)) {
-      newHTML += ui.makeRangeTextInputPair(
-        "settings-surfaces-"+name, name, {
-          bounds: { min: min, max: max }, step: 1, value: maxAngle, scaling: "linear"
-        }
-      );
-    };
-    newHTML += `
-    <div class="flex-r">
-      <button type="button" class="btn" id="settings-surfaces-apply-btn">Apply max angles settings</button>
-    </div>`;
-    container.innerHTML = newHTML;
-  }
-
-
-  /** POST max surface angles settings to server & process its response. */
-  async function _submitMSASettings() {
-    const payload = {};
-    _.toArray(utils.qsa("#settings-surfaces-inner input[type=text]")).forEach(el => {
-      const name = /settings-surfaces-(.+?)-text/.exec(el.id)?.[1];
-      if (name === undefined) {
-        throw new Error("Can't extract surface name from text input ID", el.id);
-      }
-      const val = Number(el.value);
-      payload[name] = val;
-    });
-    console.debug("submitMSASettings payload:", payload);
-
-    const postSuccess = await ajax.postWithTimeout(
-      backend.baseurl + "/settings/maxsurfaceangles/",
-      payload,
-      (resp) => {
-        _maxSurfaceAngles.surfaces = {};
-        for (const [surfName, surfMaxAngle] of Object.entries(resp)) {
-          _maxSurfaceAngles.surfaces[surfName] = surfMaxAngle;
-        }
-        _renderMSASettings();
         ui.makeToast("success", "Successfully updated.");
       }
     );

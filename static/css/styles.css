@@ -404,6 +404,18 @@ section .main-content .view-tab {
   color: hsl(0, 50%, 25%);
 }
 
+@media only screen and (min-width: 751px) {
+  .desktop-panel {
+    padding: 12px 16px 16px;
+    box-shadow: 2px 2px 1px inset var(--bg-brighter), -2px -2px 1px inset var(--bg-medium);
+  }
+}
+@media only screen and (max-width: 750px) {
+  .desktop-panel {
+    border-bottom: 1px solid var(--bg-medium);
+  }
+}
+
 /***************
  * HOME SCREEN *
  ***************/
@@ -482,38 +494,48 @@ section .main-content .view-tab {
   padding: 8px;
 }
 
-/*******************
- * SETTINGS SCREEN *
- *******************/
-#view-settings > div > div {
-  border-bottom: 1px solid var(--bg-medium);
+/****************
+ * PLANE SCREEN *
+ ****************/
+@media only screen and (max-width: 750px) {
+  #view-plane > div:not(:last-child) {
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--bg-medium);
+  }
 }
-
-#view-settings > div > div {
-  padding-bottom: 32px;
-}
-
-#view-settings > div > div:not(:first-child) {
-  padding-top: 16px;
-}
-
 @media only screen and (min-width: 751px) {
-  #view-settings {
+  #view-plane {
     display: grid;
     grid-template-columns: repeat(2, 376px);
     gap: 0;
   }
-  #view-settings > div > div {
+  #view-plane > div:not(:last-child) {
     padding-right: 16px;
-  }
-  #view-settings > div > div:last-child {
-    border-bottom: none;
-  }
-  #view-settings > div:not(:last-child) > div {
     border-right: 1px solid var(--bg-medium);
   }
-  #view-settings > div:not(:first-child) > div {
+  #view-plane > div:not(:first-child) {
     padding-left: 16px;
+  }
+}
+/*******************
+ * SETTINGS SCREEN *
+ *******************/
+@media only screen and (max-width: 750px) {
+  #view-settings {
+    gap: 0;
+  }
+  #view-settings > div > div {
+    padding-bottom: 24px;
+    margin-bottom: 16px;
+  }
+}
+@media only screen and (min-width: 751px) {
+  #view-settings {
+    display: grid;
+    grid-template-columns: repeat(2, 376px);
+  }
+  #view-settings, #view-settings > div {
+    gap: 8px;
   }
 }
 #input-ip {
