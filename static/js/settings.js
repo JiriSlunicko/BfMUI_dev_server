@@ -116,8 +116,10 @@ window.pages.settings = (function () {
   /**
    * Attempt connection to the backend server, start polling and everything.
    * @param {object} globalServer backend - will be updated on success
+   * @param {boolean} retry whether to retry on failure
+   * @param {string|null} lastFail if retrying, what failed last time
    */
-  async function _connect(globalServer) {
+  async function _connect(globalServer, retry=true, lastFail=null) {
     const ip = utils.qs("#input-ip").value;
     const port = utils.qs("#input-port").value;
 
@@ -131,60 +133,72 @@ window.pages.settings = (function () {
     utils.qs("#settings-poll-start-btn").disabled = true;
     utils.qs("#settings-poll-pause-btn").disabled = true;
 
-    ui.makeToast(null, "Attempting connection...", -1);
+    if (lastFail === null)
+      ui.makeToast(null, "Attempting connection...", -1);
+    else
+      ui.makeToast("error", "Retrying connection after the following problem:\n\n"+lastFail, -1);
+
     const baseurl = "http://" + ip + ":" + port;
     try {
       // get systeminfo
-      const raw = await ajax.fetchWithTimeout(baseurl + "/systeminfo/");
-      const resp = await raw.json();
-
+      let raw, resp;
+      try {
+        raw = await ajax.fetchWithTimeout(baseurl + "/systeminfo/");
+      } catch (err) { throw new Error("Fetch from server failed."); }
+      // to JSON
+      try {
+        resp = await raw.json();
+      } catch (err) { throw new Error("Can't process JSON from server - "+err.toString()); }
       // did we get an expected response format?
-      if (_.isArray(resp)) {
-        globalServer.baseurl = baseurl;
-        globalServer.info = resp;
-        localStorage.setItem("serverBaseurl", baseurl);
-
-        pages.home.initSysInfo();
-        utils.qs("#settings-connection-status").textContent = "Connected to " + baseurl;
-
-        _pollStart();
-
-        // check if serial port endpoints are supported
-        const arduinoSuccess = await _fetchSerialPortData(globalServer);
-        _removeArduinoSettings();
-        if (arduinoSuccess) {
-          _renderInitialArduinoSettings();
-        }
-
-        // load radio data
-        const radioSuccess = await _fetchRadioData();
-        if (radioSuccess) {
-          utils.qs("#settings-radio-channel-range").value = _radio.channel;
-          utils.qs("#settings-radio-channel-text").value = _radio.channel;
-          utils.qs("#settings-radio-pa-range").value = _radio.paLevel;
-          utils.qs("#settings-radio-pa-text").value = _radio.paLevel;
-          utils.qs("#settings-radio-feedback").value = _radio.feedback ? "yes" : "";
-        }
-
-        // load max surface angles & trim data
-        const planeDataSuccess = await pages.plane.onConnected();
-
-        // open event stream
-        events.openStream(globalServer);
-
-        ui.makeToast("success",
-          "Connected to server, polling.\n\n"
-          +(globalServer.usingArduino ? `Using arduino, ${_arduino.availablePorts.length} available ports.\n\n` : "")
-          +`Radio: ${radioSuccess ? "ok" : "ERROR"}\n\n`
-          +`Max. surf angles: ${planeDataSuccess.maxSurfaceAngles ? "ok" : "ERROR"}\n\n`
-          +`Trim values: ${planeDataSuccess.trim ? "ok" : "ERROR"}`,
-          5000
-        );
-      } else {
+      if (!_.isArray(resp)) {
         throw new Error("server did not return a JSON array");
       }
+
+      globalServer.baseurl = baseurl;
+      globalServer.info = resp;
+      localStorage.setItem("serverBaseurl", baseurl);
+
+      pages.home.initSysInfo();
+      utils.qs("#settings-connection-status").textContent = "Connected to " + baseurl;
+
+      _pollStart();
+
+      // check if serial port endpoints are supported
+      const arduinoSuccess = await _fetchSerialPortData(globalServer);
+      _removeArduinoSettings();
+      if (arduinoSuccess) {
+        _renderInitialArduinoSettings();
+      }
+
+      // load radio data
+      const radioSuccess = await _fetchRadioData();
+      if (radioSuccess) {
+        utils.qs("#settings-radio-channel-range").value = _radio.channel;
+        utils.qs("#settings-radio-channel-text").value = _radio.channel;
+        utils.qs("#settings-radio-pa-range").value = _radio.paLevel;
+        utils.qs("#settings-radio-pa-text").value = _radio.paLevel;
+        utils.qs("#settings-radio-feedback").value = _radio.feedback ? "yes" : "";
+      }
+
+      // load max surface angles & trim data
+      const planeDataSuccess = await pages.plane.onConnected();
+
+      // open event stream
+      events.openStream(globalServer);
+
+      ui.makeToast("success",
+        "Connected to server, polling.\n\n"
+        +(globalServer.usingArduino ? `Using arduino, ${_arduino.availablePorts.length} available ports.\n\n` : "")
+        +`Radio: ${radioSuccess ? "ok" : "ERROR"}\n\n`
+        +`Max. surf angles: ${planeDataSuccess.maxSurfaceAngles ? "ok" : "ERROR"}\n\n`
+        +`Trim values: ${planeDataSuccess.trim ? "ok" : "ERROR"}`,
+        5000
+      );
     } catch (err) {
-      ui.makeToast("error", "Connection failed.\n\n" + err, 5000);
+      if (!retry)
+        ui.makeToast("error", "Connection failed.\n\n" + err.toString(), 5000);
+      else
+        _connect(globalServer, retry, err.toString());
     }
   }
 
