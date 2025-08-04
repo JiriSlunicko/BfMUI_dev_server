@@ -132,6 +132,7 @@
             <p>Connect to load options.</p>
           </div>
         </div>
+
         <div id="plane-trim">
           <h2>Surface trim values</h2>
           <div id="plane-trim-inner" class="flex-c f-g16">
@@ -164,9 +165,7 @@
               </div>
             </label>
           </div>
-        </div>
 
-        <div class="flex-c">
           <div id="settings-radio" class="desktop-panel">
             <h2>Radio</h2>
             <div id="settings-radio-channel-placeholder"></div>
@@ -182,6 +181,29 @@
             </div>
             <div class="flex-r">
               <button type="button" class="btn" id="settings-radio-apply-btn">Apply radio settings</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex-c">
+          <div id="settings-configs" class="desktop-panel">
+            <h2>Saved configurations</h2>
+            <p>Plane and user configurations may be stored on the server.</p>
+            <p><b>plane</b> config = trim, max angles, radio</p>
+            <p><b>user</b> config = controls, arduino</p>
+            <div id="settings-configs-inner">
+              <label for="settings-configs-type-select" class="mb16">
+                <span>Config type</span>
+                <select id="settings-configs-type-select" class="w100"></select>
+              </label>
+              <label for="settings-configs-name-select" class="mb16">
+                <span>Configuration</span>
+                <select id="settings-configs-name-select" class="w100"></select>
+              </label>
+              <div class="flex-r f-g8">
+                <button type="button" class="btn" id="settings-configs-load">Load</button>
+                <button type="button" class="btn" id="settings-configs-save">Save</button>
+              </div>
             </div>
           </div>
 

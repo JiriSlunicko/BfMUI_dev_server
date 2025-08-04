@@ -35,21 +35,30 @@ window.pages.plane = (function() {
    * @returns {object} bool success per task
    */
   async function onConnected() {
-    const msaSuccess = await _fetchMaxSurfaceAnglesData();
-    if (msaSuccess) _renderMaxSurfaceAngleSettings();
-
-    const trimSuccess = await _fetchTrimData();
-    if (trimSuccess) _renderTrimSettings();
+    const msaSuccess = await getFreshMaxSurfaceAngles();
+    const trimSuccess = await getFreshTrim();
 
     return {
       maxSurfaceAngles: msaSuccess,
       trim: trimSuccess
-    }
+    };
+  }
+
+  async function getFreshMaxSurfaceAngles() {
+    const msaSuccess = await _fetchMaxSurfaceAnglesData();
+    if (msaSuccess) _renderMaxSurfaceAngleSettings();
+    return msaSuccess;
+  }
+
+  async function getFreshTrim() {
+    const trimSuccess = await _fetchTrimData();
+    if (trimSuccess) _renderTrimSettings();
+    return trimSuccess;
   }
 
 
   /** Get max. surface angles.
-   * @returns {boolean} success?
+   * @returns {Promise<boolean>} success?
    */
   async function _fetchMaxSurfaceAnglesData() {
     try {
@@ -64,7 +73,9 @@ window.pages.plane = (function() {
       }
       return true;
     } catch (err) {
-      ui.makeToast("error", "Error fetching max. surface angles data.\n\n" + err.toString(), 5000);
+      const errorString = "Error fetching max. surface angles data.\n\n" + err.toString();
+      console.error(errorString, err);
+      ui.makeToast("error", errorString, 5000);
       return false;
     }
   }
@@ -121,7 +132,7 @@ window.pages.plane = (function() {
 
 
   /** Get trim values.
-   * @returns {boolean} success?
+   * @returns {Promise<boolean>} success?
    */
   async function _fetchTrimData() {
     try {
@@ -136,7 +147,9 @@ window.pages.plane = (function() {
       }
       return true;
     } catch (err) {
-      ui.makeToast("error", "Error fetching trim data.\n\n" + err.toString(), 5000);
+      const errorString = "Error fetching trim data.\n\n" + err.toString();
+      console.error(errorString, err);
+      ui.makeToast("error", errorString, 5000);
       return false;
     }
   }
@@ -198,5 +211,7 @@ window.pages.plane = (function() {
     activate: () => {},
     deactivate: () => {},
     onConnected,
+    getFreshMaxSurfaceAngles,
+    getFreshTrim,
   }
 })();

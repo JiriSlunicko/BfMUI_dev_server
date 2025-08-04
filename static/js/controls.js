@@ -23,21 +23,36 @@ window.pages.controls = (function() {
   /** Lazy load the interface only when the user navigates to it. */
   function activate() {
     if (!_controls.actions.length && _loadInterval === null) {
-      _loadInterval = setInterval(() => {
+      const runIfBackendInfoExists = () => {
         if (backend.info) {
           _initControlsInterface();
-          clearInterval(_loadInterval);
-          _loadInterval = null;
+          if (_loadInterval !== null)
+            clearInterval(_loadInterval);
+            _loadInterval = null;
         }
-      }, 50);
+      };
+
+      _loadInterval = setInterval(() => {
+        runIfBackendInfoExists();
+      }, 200);
+      runIfBackendInfoExists();
+    }
+  }
+
+
+  /** Re-create the controls settings with fresh data. */
+  function getFreshControls() {
+    if (backend.info) {
+      _initControlsInterface();
     }
   }
 
 
   /** Load the current mappings from the server. Don't call on POST.
+   * @param {boolean} quiet if false, toasts are suppressed unless an error occurs
    * @returns {boolean} */
-  async function _fetchCtrlOptions() {
-    ui.makeToast(null, "Loading control options...", -1);
+  async function _fetchCtrlOptions(quiet = false) {
+    if (!quiet) ui.makeToast(null, "Loading control options...", -1);
     let raw, resp;
 
     try {
@@ -57,7 +72,7 @@ window.pages.controls = (function() {
       // { role -> { input -> output, ... }, ... }
       ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);
 
-      ui.makeToast("success", "Successfully loaded control options.");
+      if (!quiet) ui.makeToast("success", "Successfully loaded control options.");
       return true;
     } catch (err) {
       console.error("_fetchCtrlOptions failed:", err);
@@ -74,7 +89,8 @@ window.pages.controls = (function() {
       return;
     }
 
-    const loadSuccess = await _fetchCtrlOptions();
+    const isFirstRun = !_loaded;
+    const loadSuccess = await _fetchCtrlOptions(!isFirstRun);
 
     if (loadSuccess) {
       // populate the controller combobox
@@ -99,7 +115,7 @@ window.pages.controls = (function() {
       utils.qs("#controls-btn-wrapper").innerHTML = "";
     }
 
-    if (_loaded) return; // skip first time setup when returning here
+    if (!isFirstRun) return; // skip first time setup when returning here
 
     utils.qs("#view-controls").addEventListener("click", function(e) {
       const mapping = e.target.closest(".ctrl-wrapper");
@@ -436,6 +452,7 @@ window.pages.controls = (function() {
     activate,
     deactivate: () => {},
     hasLoaded: () => _loaded,
-    _controls //debug only
+    getFreshControls,
+    //_controls //debug only
   }
 })();

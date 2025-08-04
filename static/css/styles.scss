@@ -161,6 +161,7 @@ input[type=range]::-moz-range-thumb {
     width: 100%;
     height: 100%;
     background-color: rgba(0,0,0,0.6);
+    backdrop-filter: blur(2px);
 }
 .modal-fg {
     background-color: var(--bg-bright);
@@ -169,6 +170,9 @@ input[type=range]::-moz-range-thumb {
     max-width: 400px;
     border-radius: 3px;
     margin-top: 32px;
+    @media only screen and (min-width: 751px) {
+        margin-top: 64px;
+    }
 }
 
 .toast-container {
@@ -293,6 +297,9 @@ section {
     @media only screen and (max-width: 750px) {
         border-bottom: 1px solid var(--bg-medium);
     }
+    &.invalid {
+        background-color: var(--bad);
+    }
 }
 
 /***************
@@ -416,10 +423,14 @@ section {
 #input-poll-interval { width: 6ch; }
 
 #settings-connection .flex-r span,
+
 #settings-arduino .flex-r span {
     margin: 0.5ch;
     font-family: monospace;
     font-size: 16px;
 }
-
 #settings-arduino-port { width: 8ch; }
+#settings-arduino-warning {
+    color: hsl(0, 90%, 30%);
+    font-weight: 600;
+}

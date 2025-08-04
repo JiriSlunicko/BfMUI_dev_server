@@ -46,10 +46,10 @@ window.ui = (function () {
    * Create a custom alert/confirm modal. Returns a Promise if successful,
    * or false if another such window is open.
    * 
-   * @param {"alert"|"confirm"} type 'alert' or 'confirm'
+   * @param {"alert"|"confirm"|"prompt"} type which native popup to emulate
    * @param {string} msg the main text
    * @param {string|null} title optional heading
-   * @returns {Promise<boolean>|false}
+   * @returns {Promise<boolean>|Promise<string|null>|false}
    */
   function makePopup(type, msg, title = null) {
     if (utils.qs(".modal-bg")) {
@@ -66,9 +66,12 @@ window.ui = (function () {
       let html = "";
       if (title) html += `<h3>${title}</h3>`;
       html += `<p>${msg}</p>`;
+      if (type === "prompt") {
+        html += `<input type="text" id="modal-text-input" class="w100 mb16" placeholder="(your input here)" />`;
+      }
       html += `<div class="flex-r f-j-c f-g8">`;
       html += `<button type="button" class="btn" id="modal-ok-btn">Ok</button>`;
-      if (type === "confirm") {
+      if (type !== "alert") {
         html += `<button type="button" class="btn" id="modal-cancel-btn">Cancel</button>`;
       }
       html += `</div>`;
@@ -77,14 +80,37 @@ window.ui = (function () {
       bg.appendChild(fg);
       document.body.append(bg);
 
+      const focusElement = type === "prompt"
+        ? utils.qs("#modal-text-input")
+        : utils.qs("#modal-ok-btn");
+      focusElement.focus();
+
+      if (type !== "alert") {
+        bg.addEventListener("click", function(e) {
+          if (e.target === this) {
+            this.remove();
+            resolve(type === "prompt" ? null : false);
+          }
+        });
+      }
+
       fg.querySelector("#modal-ok-btn").onclick = () => {
-        bg.remove();
-        resolve(true);
+        if (type === "prompt") {
+          const userInput = utils.qs("#modal-text-input")?.value;
+          if (userInput === undefined)
+            console.error("Prompt modal resolved when it didn't exist.");
+
+          bg.remove();
+          resolve(userInput || "");
+        } else {
+          bg.remove();
+          resolve(true);
+        }
       }
       if (type === "confirm") {
         fg.querySelector("#modal-cancel-btn").onclick = () => {
           bg.remove();
-          resolve(false);
+          resolve(type === "prompt" ? null : false);
         }
       }
     });

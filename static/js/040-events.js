@@ -17,20 +17,21 @@ window.events = (function () {
       }
 
       if (asJson.Events && asJson.Events.length) {
-        _processEvents(asJson.Events);
+        _processEvents(globalServer, asJson.Events);
       }
     }
   }
 
 
   /** Handle any events that came with a message from the backend.
-   * @param {array<string>} eventArray
+   * @param {object} globalServer backend - will be updated
+   * @param {array<string>} eventArray list of event names
    */
-  function _processEvents(eventArray) {
+  function _processEvents(globalServer, eventArray) {
     for (const backendEvent of eventArray) {
       switch (backendEvent) {
         case "AvailableSerialPortsChanged":
-          pages.settings.updateArduinoSettings();
+          pages.settings.getFreshArduinoPortsAndSettings(globalServer);
           break;
       }
     }

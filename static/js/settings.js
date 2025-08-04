@@ -1,4 +1,4 @@
-window.pages.settings = (function () {
+window.pages.settings = (function() {
   let _polling = {
     delay: Number(localStorage.getItem("pollDelay") || 1000),
     interval: null,
@@ -55,12 +55,15 @@ window.pages.settings = (function () {
 
     // submit radio settings
     utils.qs("#settings-radio-apply-btn").addEventListener("click", _submitRadioSettings);
+
+    // config saving/loading
+    window.serverConfig.init();
   }
 
 
   /** Get serial port options and settings from the server.
    * @param {object} globalServer backend - .usingArduino will be updated
-   * @return {boolean} true if we get a response indicating arduino is being used
+   * @return {Promise<boolean>} true if we get a response indicating arduino is being used
    */
   async function _fetchSerialPortData(globalServer) {
     try {
@@ -79,6 +82,7 @@ window.pages.settings = (function () {
 
       return false;
     } catch (err) {
+      console.error("fetchSerialPortData error:", err);
       ui.makeToast("error", "Error fetching serial port data.\n\n" + err.toString(), 5000);
       return false;
     }
@@ -86,7 +90,7 @@ window.pages.settings = (function () {
 
 
   /** Get current radio settings & save them to _radio.
-   * @returns {boolean} success?
+   * @returns {Promise<boolean>} success?
    */
   async function _fetchRadioData() {
     try {
@@ -164,24 +168,16 @@ window.pages.settings = (function () {
       _pollStart();
 
       // check if serial port endpoints are supported
-      const arduinoSuccess = await _fetchSerialPortData(globalServer);
-      _removeArduinoSettings();
-      if (arduinoSuccess) {
-        _renderInitialArduinoSettings();
-      }
+      const arduinoSuccess = await _initArduinoSettings(globalServer);
 
       // load radio data
-      const radioSuccess = await _fetchRadioData();
-      if (radioSuccess) {
-        utils.qs("#settings-radio-channel-range").value = _radio.channel;
-        utils.qs("#settings-radio-channel-text").value = _radio.channel;
-        utils.qs("#settings-radio-pa-range").value = _radio.paLevel;
-        utils.qs("#settings-radio-pa-text").value = _radio.paLevel;
-        utils.qs("#settings-radio-feedback").value = _radio.feedback ? "yes" : "";
-      }
+      const radioSuccess = await getFreshRadioSettings();
 
       // load max surface angles & trim data
       const planeDataSuccess = await pages.plane.onConnected();
+
+      // load config storage data
+      serverConfig.getFreshServerConfigs();
 
       // open event stream
       events.openStream(globalServer);
@@ -195,6 +191,7 @@ window.pages.settings = (function () {
         5000
       );
     } catch (err) {
+      console.error("During connect:", err);
       if (!retry)
         ui.makeToast("error", "Connection failed.\n\n" + err.toString(), 5000);
       else
@@ -203,9 +200,13 @@ window.pages.settings = (function () {
   }
 
 
-  /** Initialise arduino settings section. */
-  function _renderInitialArduinoSettings() {
-    utils.qs("#settings-connection").insertAdjacentHTML("afterend", `
+  /** Initialise arduino settings section.
+   * @param {object} globalServer backend - .usingArduino will be updated
+   * @returns {Promise<boolean>} success
+   */
+  async function _initArduinoSettings(globalServer) {
+    _removeArduinoSettings();
+    utils.qs("#settings-radio").insertAdjacentHTML("afterend", `
       <div id="settings-arduino" class="desktop-panel">
         <h2>Arduino serial port</h2>
         <div class="flex-r mb16">
@@ -220,32 +221,43 @@ window.pages.settings = (function () {
         <button type="button" class="btn" id="settings-arduino-apply-btn">Apply serial port settings</button>
       </div>
     `);
-    const select = utils.qs("#settings-arduino-baudrate-select");
-    const textInput = utils.qs("#settings-arduino-baudrate-text");
+    const portSelect = utils.qs("#settings-arduino-port");
+    const baudRateSelect = utils.qs("#settings-arduino-baudrate-select");
+    const baudRateText = utils.qs("#settings-arduino-baudrate-text");
+
+    // serial port validation
+    portSelect.addEventListener("change", function() {
+      _validateArduinoPortSelection(this.value);
+    });
 
     // baudrate config
     for (const baudRate of _arduino.baudRatePresets) {
       const optText = baudRate < 1000 ? baudRate + " bps" : baudRate / 1000 + " kbps";
       const isSelected = baudRate === _arduino.baudRate;
-      select.insertAdjacentHTML("beforeend", `
+      baudRateSelect.insertAdjacentHTML("beforeend", `
         <option value="${baudRate}"${isSelected ? " selected" : ""}>${optText}</option>
       `);
     }
-    // update text input on select interaction
-    select.addEventListener("change", function () {
-      if (this.value !== "custom") { textInput.value = this.value; }
+    // update text input on baud rate select interaction
+    baudRateSelect.addEventListener("change", function() {
+      if (this.value !== "custom") { baudRateText.value = this.value; }
     });
-    // update select on text input
-    textInput.addEventListener("change", function () {
+    // update baud rate select on text input
+    baudRateText.addEventListener("change", function() {
       const val = parseInt(this.value);
-      select.value = _arduino.baudRatePresets.includes(val) ? val : "custom";
+      baudRateSelect.value = _arduino.baudRatePresets.includes(val) ? val : "custom";
     });
 
     // serial port selection
-    updateArduinoSettings();
+    const success = await getFreshArduinoPortsAndSettings(globalServer);
 
     // submit listener
-    utils.qs("#settings-arduino-apply-btn").addEventListener("click", _submitArduinoSettings);
+    utils.qs("#settings-arduino-apply-btn").addEventListener("click", function() {
+      if (!this.disabled)
+        _submitArduinoSettings();
+    });
+
+    return success;
   }
 
 
@@ -256,17 +268,42 @@ window.pages.settings = (function () {
   }
 
 
-  /** Re-render an existing arduino select & choose the currently active option. */
-  function updateArduinoSettings() {
+  /** Re-render an existing arduino select & choose the currently active option.
+   * @param {object} globalServer backend - .usingArduino will be updated
+   * @returns {Promise<boolean>} success
+   */
+  async function getFreshArduinoPortsAndSettings(globalServer) {
+    // if this is requested before the settings module was initialised, do a full init instead
+    if (utils.qs("#settings-arduino-port") === null)
+      return _initArduinoSettings(globalServer);
+
+    const success = await _fetchSerialPortData(globalServer);
+    if (!success) return false;
+
+    const arduinoPanel = utils.qs("#settings-arduino");
     const arduinoPortSelect = utils.qs("#settings-arduino-port");
-    if (arduinoPortSelect) {
-      arduinoPortSelect.innerHTML = "";
-      for (const opt of _arduino.availablePorts) {
-        arduinoPortSelect.insertAdjacentHTML("beforeend", `
-          <option value="${opt}"${opt === _arduino.port ? " selected" : ""}>${opt}</option>
-        `);
-      }
+    const arduinoBaudRateText = utils.qs("#settings-arduino-baudrate-text");
+    const prevWarning = utils.qs("#settings-arduino-warning");
+    if (prevWarning) prevWarning.remove();
+
+    // update port selection
+    arduinoPortSelect.innerHTML = "";
+    for (const opt of _arduino.availablePorts) {
+      arduinoPortSelect.insertAdjacentHTML("beforeend", `
+        <option value="${opt}"${opt === _arduino.port ? " selected" : ""}>${opt}</option>
+      `);
     }
+    if (_arduino.port && _arduino.port !== "null" && !_arduino.availablePorts.includes(_arduino.port)) {
+      arduinoPortSelect.insertAdjacentHTML("beforeend", `
+        <option value="${_arduino.port}" selected disabled>${_arduino.port}</option>`);
+    }
+    _validateArduinoPortSelection(_arduino.port);
+
+    // update baudrate selection
+    arduinoBaudRateText.value = _arduino.baudRate;
+    arduinoBaudRateText.dispatchEvent(new Event("change", { bubbles: true }));
+
+    return true;
   }
 
 
@@ -291,6 +328,36 @@ window.pages.settings = (function () {
         ui.makeToast("success", "Successfully updated.");
       }
     );
+  }
+
+
+  function _validateArduinoPortSelection(value) {
+    const arduinoPanel = utils.qs("#settings-arduino");
+
+    if (value && value !== "null" && !_arduino.availablePorts.includes(value)) {
+      arduinoPanel.classList.add("invalid");
+      arduinoPanel.querySelector("#settings-arduino-apply-btn").classList.add("hidden");
+      arduinoPanel.querySelector("#settings-arduino-apply-btn").insertAdjacentHTML("beforebegin", `
+        <p id="settings-arduino-warning" class="mb0"><b>WARNING:</b> port not available</p>`);
+    } else {
+      arduinoPanel.classList.remove("invalid");
+      arduinoPanel.querySelector("#settings-arduino-apply-btn").classList.remove("hidden");
+      arduinoPanel.querySelector("#settings-arduino-warning")?.remove();
+    }
+  }
+
+
+  /** Get fresh radio settings from the server, update the UI. */
+  async function getFreshRadioSettings() {
+    const radioSuccess = await _fetchRadioData();
+    if (radioSuccess) {
+      utils.qs("#settings-radio-channel-range").value = _radio.channel;
+      utils.qs("#settings-radio-channel-text").value = _radio.channel;
+      utils.qs("#settings-radio-pa-range").value = _radio.paLevel;
+      utils.qs("#settings-radio-pa-text").value = _radio.paLevel;
+      utils.qs("#settings-radio-feedback").value = _radio.feedback ? "yes" : "";
+    }
+    return radioSuccess;
   }
 
 
@@ -376,6 +443,7 @@ window.pages.settings = (function () {
     init,
     activate: ()=>{},
     deactivate: ()=>{},
-    updateArduinoSettings,
+    getFreshArduinoPortsAndSettings,
+    getFreshRadioSettings,
   }
 })();
