@@ -50,7 +50,7 @@ window.pages.controls = (function() {
 
   /** Load the current mappings from the server. Don't call on POST.
    * @param {boolean} quiet if false, toasts are suppressed unless an error occurs
-   * @returns {boolean} */
+   * @returns {Promise<boolean>} */
   async function _fetchCtrlOptions(quiet = false) {
     if (!quiet) ui.makeToast(null, "Loading control options...", -1);
     let raw, resp;

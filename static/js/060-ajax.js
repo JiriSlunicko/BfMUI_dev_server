@@ -57,6 +57,8 @@ window.ajax = (function()
 
     if (raw) {
       try {
+        if (raw.status !== 200)
+          throw new Error("HTTP status code "+raw.status);
         const resp = await raw.json();
         successHandler?.(resp);
         return true;

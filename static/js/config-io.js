@@ -65,6 +65,9 @@ window.serverConfig = (function()
   }
 
 
+  /** Load an existing stored configuration from the server.
+   * @returns {Promise<boolean>} success
+   */
   async function _loadConfig() {
     const cfgType = utils.qs("#settings-configs-type-select").value;
     const cfgName = utils.qs("#settings-configs-name-select").value;
@@ -87,13 +90,16 @@ window.serverConfig = (function()
           ui.makeToast("success", `Loaded ${cfgType} config '${cfgName}'.`);
           _applyConfig(cfgType);
         } else {
-          ui.makeToast("error", `Failed to load ${cfgType} config '${cfgName}'.\n\n${resp.Message}`, 5000);
+          ui.makeToast("error", `Failed to load ${cfgType} config '${cfgName}':\n\n`
+            + resp.Errors.join("\n"), 5000);
         }
       },
       (_, err) => {
         ui.makeToast("error", `Failed to load ${cfgType} config '${cfgName}'.\n\n` + err.toString(), 5000);
       }
     );
+
+    return success;
   }
 
 
@@ -115,6 +121,9 @@ window.serverConfig = (function()
   }
 
 
+  /** Save current (server-side!) configuration under an existing name, or prompt for a new one.
+   * @returns {Promise<boolean>} success
+   */
   async function _saveConfig() {
     const cfgType = utils.qs("#settings-configs-type-select").value;
     let cfgName = utils.qs("#settings-configs-name-select").value;
@@ -153,13 +162,16 @@ window.serverConfig = (function()
           success = true;
           ui.makeToast("success", `Saved ${cfgType} config '${cfgName}'.`);
         } else {
-          ui.makeToast("error", `Failed to save ${cfgType} config '${cfgName}'.\n\n${resp.Message}`, 5000);
+          ui.makeToast("error", `Failed to save ${cfgType} config '${cfgName}':\n\n`
+            + resp.Errors.join("\n"), 5000);
         }
       },
       (_, err) => {
         ui.makeToast("error", `Failed to save ${cfgType} config '${cfgName}'.\n\n` + err.toString(), 5000);
       }
     );
+
+    return success;
   }
 
 

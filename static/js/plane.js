@@ -32,7 +32,7 @@ window.pages.plane = (function() {
 
 
   /** Load max surface angle & trim data once connected to a server.
-   * @returns {object} bool success per task
+   * @returns {Promise<object>} bool success per task
    */
   async function onConnected() {
     const msaSuccess = await getFreshMaxSurfaceAngles();
