@@ -1,15 +1,21 @@
 /** An assortment of helpers for recurring UI features. */
 
 window.ui = (function () {
+  let _toastContainerInitialised = false;
+  let _rangeTextPairsInitialised = false;
+
   let _toastFadeTimeout = null;
   let _toastKillTimeout = null;
 
 
   /** Call this once on app load. */
   function initToastContainer() {
+    if (_toastContainerInitialised) return;
+
     const toastContainer = document.createElement("div");
     toastContainer.className = "toast-container";
     document.body.appendChild(toastContainer);
+    _toastContainerInitialised = true;
   }
 
 
@@ -197,6 +203,8 @@ window.ui = (function () {
 
   /** Call this once on DOM load to link range & text input pairs. */
   function initRangeTextPairLinks() {
+    if (_rangeTextPairsInitialised) return;
+
     // range -> text
     document.addEventListener("input", function (e) {
       const rangeInput = e.target.closest(".range-text-pair input[type=range]");
@@ -255,6 +263,8 @@ window.ui = (function () {
         })
       );
     });
+
+    _rangeTextPairsInitialised = true;
   }
 
 

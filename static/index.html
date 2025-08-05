@@ -183,6 +183,20 @@
               <button type="button" class="btn" id="settings-radio-apply-btn">Apply radio settings</button>
             </div>
           </div>
+
+          <div id="settings-arduino" class="desktop-panel">
+            <h2>Arduino serial port</h2>
+            <div class="flex-r mb16">
+              <select name="" id="settings-arduino-port" class="f-noshrink"></select>
+              <span class="f-noshrink">@</span>
+              <select id="settings-arduino-baudrate-select" class="f-noshrink">
+                <option value="custom">(custom)</option>
+              </select>
+              <input type="text" id="settings-arduino-baudrate-text" class="ml8"
+                pattern="^\d{1,8}$" placeholder="baud rate" />
+            </div>
+            <button type="button" class="btn" id="settings-arduino-apply-btn">Apply serial port settings</button>
+          </div>
         </div>
 
         <div class="flex-c">

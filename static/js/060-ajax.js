@@ -21,6 +21,7 @@ window.ajax = (function()
       clearTimeout(timeoutId);
       return raw;
     } catch (err) {
+      clearTimeout(timeoutId);
       throw (err.name === "AbortError"
         ? new Error(`Request timed out after ${timeout} ms.`)
         : err);

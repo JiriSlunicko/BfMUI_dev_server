@@ -43,6 +43,7 @@ window.pages.settings = (function() {
    * @param {string|null} lastFail if retrying, what failed last time
    */
   async function _connect(globalServer, retry=true, lastFail=null) {
+    console.debug("Attempting connection.", lastFail);
     const ip = utils.qs("#input-ip").value;
     const port = utils.qs("#input-port").value;
 
@@ -66,16 +67,16 @@ window.pages.settings = (function() {
       // get systeminfo
       let raw, resp;
       try {
-        raw = await ajax.fetchWithTimeout(baseurl + backend.endpoints.systemInfo);
+        raw = await ajax.fetchWithTimeout(baseurl + backend.endpoints.systemInfo
+          + "?_=" + Date.now() // cache-buster to avoid weird glitches
+        );
       } catch (err) { throw new Error("Fetch from server failed."); }
       // to JSON
       try {
         resp = await raw.json();
       } catch (err) { throw new Error("Can't process JSON from server - "+err.toString()); }
       // did we get an expected response format?
-      if (!_.isArray(resp)) {
-        throw new Error("server did not return a JSON array");
-      }
+      if (!_.isArray(resp)) { throw new Error("server did not return a JSON array"); }
 
       globalServer.baseurl = baseurl;
       globalServer.info = resp;
@@ -102,6 +103,9 @@ window.pages.settings = (function() {
         successMessage += success ? "\nOK: " : "\nERROR: ";
         successMessage += domain;
       }
+      successMessage += backend.usingArduino
+        ? "\n\nRunning in Arduino mode."
+        : "\n\nRunning without Arduino.";
 
       ui.makeToast("success", successMessage, 5000);
     } catch (err) {

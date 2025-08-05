@@ -38,8 +38,6 @@ window.ctrlHelpers = (function() {
         break;
     }
 
-    //console.debug(controller, mappings);
-
     Array.from(container.children).forEach(x => x.remove());
     const mappingsWrapper = document.createDocumentFragment();
     for (const output of outputs) {

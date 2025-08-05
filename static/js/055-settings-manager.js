@@ -48,7 +48,7 @@ window.settingsManager = (function()
       ui.makeToast("error", "CRITICAL ERROR:\n\nConfiguration domain interface validation failed.");
       return null;
     }
-    return _batchDelegate((domainObj) => domainObj.init(), configDomains);
+    return _batchDelegate(async (domainObj) => domainObj.init(), configDomains);
   }
 
   /** Ask the specified domains to load data from the server.
@@ -56,7 +56,7 @@ window.settingsManager = (function()
    * @returns {Promise<object>} dictionary of domain->success
    */
   async function load(configDomains = null) {
-    return _batchDelegate((domainObj) => domainObj.load(), configDomains);
+    return _batchDelegate(async (domainObj) => domainObj.load(), configDomains);
   }
 
   /** Ask the specified domains to push data to the server.
@@ -64,7 +64,7 @@ window.settingsManager = (function()
    * @returns {Promise<object>} dictionary of domain->success
    */
   async function save(configDomains = null) {
-    return _batchDelegate((domainObj) => domainObj.save(), configDomains);
+    return _batchDelegate(async (domainObj) => domainObj.save(), configDomains);
   }
 
   /** Ask whether any of the specified domains have pending changes.
