@@ -4,8 +4,16 @@ window.ui = (function () {
   let _toastFadeTimeout = null;
   let _toastKillTimeout = null;
 
-  /**
-   * Create a floating notification.
+
+  /** Call this once on app load. */
+  function initToastContainer() {
+    const toastContainer = document.createElement("div");
+    toastContainer.className = "toast-container";
+    document.body.appendChild(toastContainer);
+  }
+
+
+  /** Create a floating notification.
    * 
    * @param {"error"|"success"|null} type affects stripe colour only
    * @param {string} msg arbitrary text
@@ -42,9 +50,8 @@ window.ui = (function () {
   }
 
 
-  /**
-   * Create a custom alert/confirm modal. Returns a Promise if successful,
-   * or false if another such window is open.
+  /** Create a custom alert/confirm modal.
+   * Returns a Promise if successful, or false if another such window is open.
    * 
    * @param {"alert"|"confirm"|"prompt"} type which native popup to emulate
    * @param {string} msg the main text
@@ -117,8 +124,7 @@ window.ui = (function () {
   }
 
 
-  /**
-   * Prepare a linked range & text input pair for DOM insertion.
+  /** Prepare a linked range & text input pair for DOM insertion.
    * 
    * @param {string} valueName used for element IDs - will create "value-name-range" & "value-name-text"
    * @param {string} title display name of the UI element
@@ -169,7 +175,7 @@ window.ui = (function () {
       label.dataset.log = usesLogScaling ? "1" : "";
 
       textInput.setAttribute("value", Number(config.value).toFixed(stepDecimals));
-      rangeInput.setAttribute("value", utils.textToRange(
+      rangeInput.setAttribute("value", utils.textInputToRange(
         config.value, minScaled, maxScaled, usesLogScaling,
         usesLogScaling ? 1 : stepDecimals)
       );
@@ -204,7 +210,7 @@ window.ui = (function () {
 
       const textInput = pairWrapper.querySelector("input[type=text]");
       // apply scaled value to text input
-      textInput.value = utils.rangeToText(rangeInput.value,
+      textInput.value = utils.rangeToTextInput(rangeInput.value,
         isLog ? { min: minVal, max: maxVal } : null,
         decimals
       );
@@ -222,12 +228,12 @@ window.ui = (function () {
 
       const rangeInput = pairWrapper.querySelector("input[type=range]");
 
-      const newVal = utils.textToRange(textInput.value,
+      const newVal = utils.textInputToRange(textInput.value,
         minVal, maxVal, isLog, isLog ? 1 : decimals
       );
       if (newVal === null) {
         // revert text input to range value, which should by definition be safe
-        textInput.value = utils.rangeToText(rangeInput.value,
+        textInput.value = utils.rangeToTextInput(rangeInput.value,
           isLog ? { min: minVal, max: maxVal } : null,
           decimals
         );
@@ -241,6 +247,7 @@ window.ui = (function () {
 
   // public API
   return {
+    initToastContainer,
     makeToast,
     removeToast,
     makePopup,

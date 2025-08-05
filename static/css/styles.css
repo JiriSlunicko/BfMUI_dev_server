@@ -9,6 +9,7 @@
   --bg-brightest: hsl(var(--primary-hue),10%,90%);
   --good: hsl(120,50%,75%);
   --bad: hsl(0,80%,80%);
+  --warning: hsl(0,90%,30%);
   --modified: hsl(90,10%,50%);
   --shadow: hsla(0,10%,10%,0.75);
 }
@@ -131,6 +132,11 @@ h4 {
 
 .hidden {
   display: none !important;
+}
+
+p.warning {
+  color: var(--warning);
+  font-weight: 600;
 }
 
 label {
@@ -418,14 +424,20 @@ section .main-content .view-tab {
     border: 1px solid var(--bg-medium);
     box-shadow: 1px 1px 4px var(--bg-medium);
   }
+  .desktop-panel.invalid {
+    background-color: var(--bad);
+  }
 }
 @media only screen and (max-width: 750px) {
   .desktop-panel {
     border-bottom: 1px solid var(--bg-medium);
   }
-}
-.desktop-panel.invalid {
-  background-color: var(--bad);
+  .desktop-panel.invalid p.warning {
+    text-align: center;
+    background-color: var(--bad);
+    padding-bottom: 2px;
+    border: 1px solid var(--warning);
+  }
 }
 
 /***************
@@ -571,9 +583,4 @@ section .main-content .view-tab {
 
 #settings-arduino-port {
   width: 8ch;
-}
-
-#settings-arduino-warning {
-  color: hsl(0, 90%, 30%);
-  font-weight: 600;
 }

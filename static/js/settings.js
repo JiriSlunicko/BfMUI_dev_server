@@ -67,7 +67,7 @@ window.pages.settings = (function() {
    */
   async function _fetchSerialPortData(globalServer) {
     try {
-      const raw = await ajax.fetchWithTimeout(globalServer.baseurl + "/settings/serialport/");
+      const raw = await ajax.fetchWithTimeout(globalServer.baseurl + backend.endpoints.serialPortGet);
       globalServer.usingArduino = raw.status === 200;
       if (globalServer.usingArduino) {
         const resp = await raw.json();
@@ -94,7 +94,7 @@ window.pages.settings = (function() {
    */
   async function _fetchRadioData() {
     try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + "/settings/radio/");
+      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.radioGet);
       if (raw.status !== 200) {
         throw new Error("/settings/radio/ returned "+raw.status);
       }
@@ -117,8 +117,7 @@ window.pages.settings = (function() {
   }
 
 
-  /**
-   * Attempt connection to the backend server, start polling and everything.
+  /** Attempt connection to the backend server, start polling and everything.
    * @param {object} globalServer backend - will be updated on success
    * @param {boolean} retry whether to retry on failure
    * @param {string|null} lastFail if retrying, what failed last time
@@ -147,7 +146,7 @@ window.pages.settings = (function() {
       // get systeminfo
       let raw, resp;
       try {
-        raw = await ajax.fetchWithTimeout(baseurl + "/systeminfo/");
+        raw = await ajax.fetchWithTimeout(baseurl + backend.endpoints.systemInfo);
       } catch (err) { throw new Error("Fetch from server failed."); }
       // to JSON
       try {
@@ -268,7 +267,7 @@ window.pages.settings = (function() {
   }
 
 
-  /** Re-render an existing arduino select & choose the currently active option.
+  /** Update an existing arduino select & choose the currently active option.
    * @param {object} globalServer backend - .usingArduino will be updated
    * @returns {Promise<boolean>} success
    */
@@ -320,7 +319,7 @@ window.pages.settings = (function() {
     console.debug("submitArduinoSettings payload:", payload);
 
     const postSuccess = await ajax.postWithTimeout(
-      backend.baseurl + "/settings/serialport/",
+      backend.baseurl + backend.endpoints.serialPortPost,
       payload,
       (resp) => {
         _arduino.port = resp.Name;
@@ -331,6 +330,9 @@ window.pages.settings = (function() {
   }
 
 
+  /** Check if the selected port is valid and signal it visually.
+   * @param {string|null} value arduino port name
+   */
   function _validateArduinoPortSelection(value) {
     const arduinoPanel = utils.qs("#settings-arduino");
 
@@ -338,7 +340,7 @@ window.pages.settings = (function() {
       arduinoPanel.classList.add("invalid");
       arduinoPanel.querySelector("#settings-arduino-apply-btn").classList.add("hidden");
       arduinoPanel.querySelector("#settings-arduino-apply-btn").insertAdjacentHTML("beforebegin", `
-        <p id="settings-arduino-warning" class="mb0"><b>WARNING:</b> port not available</p>`);
+        <p id="settings-arduino-warning" class="warning mb0"><b>WARNING:</b> port not available</p>`);
     } else {
       arduinoPanel.classList.remove("invalid");
       arduinoPanel.querySelector("#settings-arduino-apply-btn").classList.remove("hidden");
@@ -371,7 +373,7 @@ window.pages.settings = (function() {
     console.debug("submitRadioSettings payload:", payload);
 
     const postSuccess = await ajax.postWithTimeout(
-      backend.baseurl + "/settings/radio/",
+      backend.baseurl + backend.endpoints.radioPost,
       payload,
       (resp) => {
         _radio.channel = resp.Channel;

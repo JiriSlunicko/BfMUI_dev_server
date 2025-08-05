@@ -4,9 +4,7 @@ window.pages.home = (function()
     hideIntro: Boolean(localStorage.getItem("hideIntro")),
   }
 
-  /**
-   * On DOM load, hide the intro text if desired & allow the user to hide it.
-   */
+  /** On DOM load, hide the intro text if desired & allow the user to hide it. */
   function init() {
     if (_userPreferences.hideIntro) {
       utils.qs("#home-intro").style.display = "none";

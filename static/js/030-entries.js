@@ -1,9 +1,7 @@
 /** Interface for 'entries', i.e. DOM representations of named key-value pair collections. */
 
 window.entries = (function () {
-  /**
-   * New system: use the (n+1)-th entry if available, otherwise create one 
-   * 
+  /** Use the (n+1)-th entry if available, otherwise create one 
    * @param {string} parentSelector immediate parent for the entry
    * @param {number} n index of the entry
    * @param {string} header heading of the section
@@ -57,9 +55,7 @@ window.entries = (function () {
   }
 
 
-  /**
-   * New system: remove UI entries that extend beyond the specified length.
-   * 
+  /** Remove UI entries that extend beyond the specified length.
    * @param {string} parentSelector immediate parent for the entries
    * @param {number} maxLength how many entries to keep in the DOM
    */
@@ -83,8 +79,6 @@ window.entries = (function () {
 
   // public API
   return {
-    //createOrUpdate,
-    //cleanUpDangling,
     reuseOrCreate,
     trimList,
   }

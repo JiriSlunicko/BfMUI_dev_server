@@ -15,7 +15,7 @@ window.serverConfig = (function()
   async function getFreshServerConfigs() {
     let resp;
     try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + "/config/list/");
+      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.configListGet);
       resp = await raw.json();
     } catch (err) {
       ui.makeToast("error", "Couldn't fetch a list of saved configs.\n\n" + err.toString(), 5000);
@@ -82,7 +82,7 @@ window.serverConfig = (function()
 
     let success = false;
     await ajax.postWithTimeout(
-      backend.baseurl + "/config/load/",
+      backend.baseurl + backend.endpoints.configLoadPost,
       payload,
       (resp) => {
         if (resp.Success) {
@@ -155,7 +155,7 @@ window.serverConfig = (function()
 
     let success = false;
     await ajax.postWithTimeout(
-      backend.baseurl + "/config/save/",
+      backend.baseurl + backend.endpoints.configSavePost,
       payload,
       (resp) => {
         if (resp.Success) {

@@ -1,13 +1,16 @@
 /** Interface for handling a server-side event stream. */
 
 window.events = (function () {
+  let _eventStream = null;
+
+  
   /** Connect to the backend server's event dispatcher.
-   * @param {object} globalServer backend - will be updated
+   * @param {object} globalServer backend - may be modified by some event handlers
    */
   function openStream(globalServer) {
-    closeStream(globalServer);
-    globalServer.eventStream = new EventSource(globalServer.baseurl + "/events/");
-    globalServer.eventStream.onmessage = (msg) => {
+    closeStream();
+    _eventStream = new EventSource(globalServer.baseurl + globalServer.endpoints.events);
+    _eventStream.onmessage = (msg) => {
       let asJson = null;
       try {
         asJson = JSON.parse(msg.data);
@@ -24,7 +27,7 @@ window.events = (function () {
 
 
   /** Handle any events that came with a message from the backend.
-   * @param {object} globalServer backend - will be updated
+   * @param {object} globalServer backend - may be modified
    * @param {array<string>} eventArray list of event names
    */
   function _processEvents(globalServer, eventArray) {
@@ -38,13 +41,11 @@ window.events = (function () {
   }
 
 
-  /** Close an open event stream.
-   * @param {object} globalServer backend - will be updated
-   */
-  function closeStream(globalServer) {
-    if (globalServer.eventStream) {
-      globalServer.eventStream?.close();
-      globalServer.eventStream = null;
+  /** Close an open event stream. */
+  function closeStream() {
+    if (_eventStream !== null) {
+      _eventStream?.close();
+      _eventStream = null;
     }
   }
 

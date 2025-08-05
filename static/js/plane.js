@@ -62,7 +62,7 @@ window.pages.plane = (function() {
    */
   async function _fetchMaxSurfaceAnglesData() {
     try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + "/settings/maxsurfaceangles/");
+      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.maxSurfaceAnglesGet);
       if (raw.status !== 200) {
         throw new Error("/settings/maxsurfaceangles/ returned " + raw.status);
       }
@@ -117,7 +117,7 @@ window.pages.plane = (function() {
     console.debug("submitMaxSurfaceAngleSettings payload:", payload);
 
     const postSuccess = await ajax.postWithTimeout(
-      backend.baseurl + "/settings/maxsurfaceangles/",
+      backend.baseurl + backend.endpoints.maxSurfaceAnglesPost,
       payload,
       (resp) => {
         _maxSurfaceAngles.surfaces = {};
@@ -136,7 +136,7 @@ window.pages.plane = (function() {
    */
   async function _fetchTrimData() {
     try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + "/settings/trim/");
+      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.trimGet);
       if (raw.status !== 200) {
         throw new Error("/settings/trim/ returned " + raw.status);
       }
@@ -191,7 +191,7 @@ window.pages.plane = (function() {
     console.debug("submitTrimSettings payload:", payload);
 
     const postSuccess = await ajax.postWithTimeout(
-      backend.baseurl + "/settings/trim/",
+      backend.baseurl + backend.endpoints.trimPost,
       payload,
       (resp) => {
         _trimValues.surfaces = {};

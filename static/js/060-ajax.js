@@ -4,8 +4,7 @@
 
 window.ajax = (function()
 {
-  /**
-   * Attempt to fetch a resource, failing after a specified timeout.
+  /** Attempt to fetch a resource, failing after a specified timeout.
    * @param {string} url 
    * @param {number} [timeout=5000] time limit in ms, default 5000
    * @param {object} [opts={}] standard fetch API options object
@@ -29,8 +28,7 @@ window.ajax = (function()
   }
 
 
-  /**
-   * Attempt to make a POST request, failing after a specified timeout.
+  /** Attempt to make a POST request, failing after a specified timeout.
    * @param {string} url 
    * @param {object|array|null} payload 
    * @param {function|null} [successHandler=null]

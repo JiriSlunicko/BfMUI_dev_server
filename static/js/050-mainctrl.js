@@ -16,7 +16,24 @@ window.backend =
   baseurl: localStorage.getItem("serverBaseurl") || "http://localhost:8080",
   info: null,
   usingArduino: null,
-  eventStream: null,
+  endpoints: {
+    events: "/events/",
+    configListGet: "/config/list/",
+    configLoadPost: "/config/load/",
+    configSavePost: "/config/save/",
+    controlsGet: "/settings/control/",
+    controlsPost: "/settings/control/",
+    maxSurfaceAnglesGet: "/settings/maxsurfaceangles/",
+    maxSurfaceAnglesPost: "/settings/maxsurfaceangles/",
+    radioGet: "/settings/radio/",
+    radioPost: "/settings/radio/",
+    serialPortGet: "/settings/serialport/",
+    serialPortPost: "/settings/serialport/",
+    systemInfo: "/systeminfo/",
+    telemetry: "/telemetry/",
+    trimGet: "/settings/trim/",
+    trimPost: "/settings/trim/",
+  },
 }
 
 
@@ -41,8 +58,8 @@ window.nav = (function()
 
     nav.gotoPage(_currentPage);
 
-    window.addEventListener("pagehide", () => events.closeStream(backend));
-    window.addEventListener("beforeunload", () => events.closeStream(backend));
+    window.addEventListener("pagehide", () => events.closeStream());
+    window.addEventListener("beforeunload", () => events.closeStream());
   }
 
 
@@ -50,7 +67,7 @@ window.nav = (function()
   async function reloadApp() {
     const consent = await ui.makePopup("confirm", "Reload the app?");
     if (consent) {
-      events.closeStream(backend);
+      events.closeStream();
       location.reload();
     }
   }
@@ -102,11 +119,10 @@ window.nav = (function()
 
 // this should be the ONLY DOMContentLoaded listener in the app
 document.addEventListener("DOMContentLoaded", () => {
-  // init toast stuff
-  const toastContainer = document.createElement("div");
-  toastContainer.className = "toast-container";
-  document.body.appendChild(toastContainer);
-
+  // init UI
+  ui.initToastContainer();
+  ui.initRangeTextPairLinks();
+  
   // init all page modules
   for (const pageName of Object.keys(pages)) {
     pages[pageName].init();
@@ -114,7 +130,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // init navigation
   nav.init();
-
-  // init range-text input pair listeners
-  ui.initRangeTextPairLinks();
 });

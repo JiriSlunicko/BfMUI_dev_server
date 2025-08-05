@@ -56,7 +56,7 @@ window.pages.controls = (function() {
     let raw, resp;
 
     try {
-      raw = await ajax.fetchWithTimeout(backend.baseurl + "/settings/control/");
+      raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.controlsGet);
       resp = await raw.json();
 
       // array of strings (enum)
@@ -147,8 +147,7 @@ window.pages.controls = (function() {
   }
 
 
-  /**
-   * Create a modal for mapping controller inputs to plane outputs.
+  /** Create a modal for mapping controller inputs to plane outputs.
    * @param {Element} mapping .ctrl-wrapper for the mapping in DOM
    */
   function _makeMappingModal(mapping) {
@@ -257,8 +256,7 @@ window.pages.controls = (function() {
   }
 
 
-  /**
-   * Trivial helper for _makeMappingModal - make a <select>.
+  /** Trivial helper for _makeMappingModal - make a <select>.
    * @param {string} id ID attribute to assign to the new select
    * @param {Array<string>} options list of options
    * @param {string} current which option is selected
@@ -282,8 +280,7 @@ window.pages.controls = (function() {
   }
 
 
-  /**
-   * Stage new mapping from modal (not committed to server).
+  /** Stage new mapping from modal (not committed to server).
    * @param {"button"|"axis"} kind are we mapping an action or an axis?
    */
   function _applyCtrlMapping(kind) {
@@ -435,7 +432,7 @@ window.pages.controls = (function() {
     console.debug("submitMappings payload:", payload);
 
     const postSuccess = await ajax.postWithTimeout(
-      backend.baseurl + "/settings/control/",
+      backend.baseurl + backend.endpoints.controlsPost,
       payload,
       (resp) => {
         ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);

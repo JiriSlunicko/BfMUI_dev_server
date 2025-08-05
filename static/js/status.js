@@ -16,7 +16,7 @@ window.pages.status = (function()
   async function fetchTelemetry() {
     let resp;
     try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + "/telemetry/");
+      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.telemetry);
       resp = await raw.json();
     } catch (err) {
       ui.makeToast("error", "Connection failed.\n\n" + err.toString(), 5000);
@@ -50,7 +50,7 @@ window.pages.status = (function()
       return;
     }
 
-    // new mechanism
+    // create serial timer health data entries
     for (let i = 0; i < sthdData.length; i++) {
       const dataEntry = sthdData[i];
       entries.reuseOrCreate(
@@ -69,7 +69,7 @@ window.pages.status = (function()
       return;
     }
 
-    // new mechanism
+    // create controller entries
     const ctrlKeys = _.toArray(Object.keys(ctrlData));
     for (let i = 0; i < ctrlKeys.length; i++) {
       const key = ctrlKeys[i];
@@ -83,7 +83,9 @@ window.pages.status = (function()
   }
 
 
-  /** Private helper for processing serial timer health data entries. */
+  /** Private helper for processing serial timer health data entries.
+   * @param {object} entry a SerialTimerHealthData object
+   */
   function _processSTHDEntry(entry) {
     const result = {};
     for (const [key, value] of Object.entries(entry)) {
