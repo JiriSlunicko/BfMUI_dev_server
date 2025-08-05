@@ -34,7 +34,7 @@ window.events = (function () {
     for (const backendEvent of eventArray) {
       switch (backendEvent) {
         case "AvailableSerialPortsChanged":
-          pages.settings.getFreshArduinoPortsAndSettings(globalServer);
+          settingsManager.load(["arduino"]);
           break;
       }
     }

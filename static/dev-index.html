@@ -11,14 +11,20 @@
   <script src="/js/030-entries.js" defer type="application/javascript"></script>
   <script src="/js/040-events.js" defer type="application/javascript"></script>
   <script src="/js/050-mainctrl.js" defer type="application/javascript"></script>
+  <script src="/js/055-settings-manager.js" defer type="application/javascript"></script>
   <script src="/js/060-ajax.js" defer type="application/javascript"></script>
   <script src="/js/070-controls-helpers.js" defer type="application/javascript"></script>
-  <script src="/js/home.js" defer type="application/javascript"></script>
-  <script src="/js/status.js" defer type="application/javascript"></script>
-  <script src="/js/controls.js" defer type="application/javascript"></script>
-  <script src="/js/plane.js" defer type="application/javascript"></script>
-  <script src="/js/settings.js" defer type="application/javascript"></script>
-  <script src="/js/config-io.js" defer type="application/javascript"></script>
+  <script src="/js/080-config-io.js" defer type="application/javascript"></script>
+  <script src="/js/settings-arduino.js" defer type="application/javascript"></script>
+  <script src="/js/settings-radio.js" defer type="application/javascript"></script>
+  <script src="/js/settings-controls.js" defer type="application/javascript"></script>
+  <script src="/js/settings-angles.js" defer type="application/javascript"></script>
+  <script src="/js/settings-trim.js" defer type="application/javascript"></script>
+  <script src="/js/page-home.js" defer type="application/javascript"></script>
+  <script src="/js/page-status.js" defer type="application/javascript"></script>
+  <script src="/js/page-controls.js" defer type="application/javascript"></script>
+  <script src="/js/page-plane.js" defer type="application/javascript"></script>
+  <script src="/js/page-settings.js" defer type="application/javascript"></script>
   <!--Debug imports end-->
   <title>Bloodfly MUI</title>
 </head>
@@ -205,6 +211,20 @@
             <div class="flex-r">
               <button type="button" class="btn" id="settings-radio-apply-btn">Apply radio settings</button>
             </div>
+          </div>
+
+          <div id="settings-arduino" class="desktop-panel">
+            <h2>Arduino serial port</h2>
+            <div class="flex-r mb16">
+              <select name="" id="settings-arduino-port" class="f-noshrink"></select>
+              <span class="f-noshrink">@</span>
+              <select id="settings-arduino-baudrate-select" class="f-noshrink">
+                <option value="custom">(custom)</option>
+              </select>
+              <input type="text" id="settings-arduino-baudrate-text" class="ml8"
+                pattern="^\d{1,8}$" placeholder="baud rate" />
+            </div>
+            <button type="button" class="btn" id="settings-arduino-apply-btn">Apply serial port settings</button>
           </div>
         </div>
 

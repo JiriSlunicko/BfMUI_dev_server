@@ -7,23 +7,6 @@ window.ctrlHelpers = (function() {
     // server-side state reference
     controls.actionMappings = _convertActionMappings(resp.ControlActionsSettings);
     controls.axisMappings = _convertAxisMappings(resp.PlaneAxesSettings);
-    // deep copies for working state
-    setStagedToCurrentlyStored(controls);
-  }
-
-
-  /** Assign deep copies of stored (server-side) controls settings to staged (working) settings.
-   * @param {object} controls the _controls property of window.pages.controls
-   * @param {string|null} [controller=null] if null, update all; else only the specified one
-   */
-  function setStagedToCurrentlyStored(controls, controller = null) {
-    if (controller === null) {
-      controls.stagedActionMappings = JSON.parse(JSON.stringify(controls.actionMappings));
-      controls.stagedAxisMappings = JSON.parse(JSON.stringify(controls.axisMappings));
-    } else {
-      controls.stagedActionMappings[controller] = JSON.parse(JSON.stringify(controls.actionMappings[controller]));
-      controls.stagedAxisMappings[controller] = JSON.parse(JSON.stringify(controls.axisMappings[controller]));
-    }
   }
 
 
@@ -35,49 +18,27 @@ window.ctrlHelpers = (function() {
   }
 
 
-  /** Refresh the controls UI to reflect settings for the specified controller, or the current one.
-   * @param {object} controls the _controls property of window.pages.controls
-   * @param {string|null} [controller=null] if null = refresh current; else switch
-   */
-  function updateActiveController(controls, controller = null) {
-    if (controller !== null)
-      utils.qs("#controls-role-select").value = controller
-
-    const active = ctrlHelpers.getActiveControllerRole();
-    _makeMappingList(controls, active, "button");
-    _makeMappingList(controls, active, "axis");
-
-    const submitBtn = utils.qs("#controls-submit-btn");
-    const cancelBtn = utils.qs("#controls-reset-btn");
-    if (utils.qsa(".ctrl-wrapper .modified").length > 0) {
-      submitBtn.classList.add("primed-yes");
-      cancelBtn.classList.add("primed-no");
-    } else {
-      submitBtn.classList.remove("primed-yes");
-      cancelBtn.classList.remove("primed-no");
-    }
-  }
-
-
   /** Populate the relevant container with current input-output mappings.
    * @param {object} controls the _controls property of window.pages.controls
    * @param {string} controller which controller we're showing
    * @param {"button"|"axis"} kind
    */
-  function _makeMappingList(controls, controller, kind) {
+  function makeMappingList(controls, staged, controller, kind) {
     let container, outputs, mappings;
     switch (kind) {
       case "button":
         container = utils.qs("#controls-buttons-inner");
         outputs = controls.actions;
-        mappings = controls.stagedActionMappings[controller];
+        mappings = staged.actionMappings[controller];
         break;
       case "axis":
         container = utils.qs("#controls-axes-inner");
         outputs = controls.outAxes;
-        mappings = controls.stagedAxisMappings[controller];
+        mappings = staged.axisMappings[controller];
         break;
     }
+
+    //console.debug(controller, mappings);
 
     Array.from(container.children).forEach(x => x.remove());
     const mappingsWrapper = document.createDocumentFragment();
@@ -98,12 +59,12 @@ window.ctrlHelpers = (function() {
         const mMode = mapping?.mode || "direct";
         const mGain = typeof mapping?.gain === "number" ? mapping.gain : -1;
         mappingString = _stringifyAxisMapping(mInAxis, mInvert, mDeadzone, mMode, mGain);
-        if (_hasAxisMappingChanged(controls, controller, output))
+        if (_hasAxisMappingChanged(controls, staged, controller, output))
           stagedChange = true;
       } else {
         item.dataset.isEnum = controls.restrictions[output] ? "yes" : "";
         mappingString = mapping?.button || "unbound";
-        if (_hasActionMappingChanged(controls, controller, output))
+        if (_hasActionMappingChanged(controls, staged, controller, output))
           stagedChange = true;
       }
 
@@ -199,9 +160,9 @@ window.ctrlHelpers = (function() {
    * @param {string} action name of the plane action we're mapping input for
    * @returns {boolean} whether the mapping is different
    */
-  function _hasActionMappingChanged(controls, controller, action) {
+  function _hasActionMappingChanged(controls, staged, controller, action) {
     return controls.actionMappings[controller][action]?.button
-       !== controls.stagedActionMappings[controller][action]?.button;
+       !== staged.actionMappings[controller][action]?.button;
   }
 
 
@@ -211,12 +172,12 @@ window.ctrlHelpers = (function() {
    * @param {string} axisRole name of the plane axis we're mapping a controller axis for
    * @returns {boolean} whether the mapping is different
    */
-  function _hasAxisMappingChanged(controls, controller, axisRole) {
-    const stored = controls.axisMappings[controller][axisRole];
-    const staged = controls.stagedAxisMappings[controller][axisRole];
+  function _hasAxisMappingChanged(controls, staged, controller, axisRole) {
+    const storedSetting = controls.axisMappings[controller][axisRole];
+    const stagedSetting = staged.axisMappings[controller][axisRole];
 
-    const storedUndef = stored === undefined;
-    const stagedUndef = staged === undefined;
+    const storedUndef = storedSetting === undefined;
+    const stagedUndef = stagedSetting === undefined;
 
     // one undefined, the other not -> changed
     if (storedUndef !== stagedUndef) return true;
@@ -225,8 +186,8 @@ window.ctrlHelpers = (function() {
     if (storedUndef && stagedUndef) return false;
 
     // if the value of any key has changed -> changed
-    for (const key of Object.keys(staged)) {
-      if (stored[key] !== staged[key]) return true;
+    for (const key of Object.keys(stagedSetting)) {
+      if (storedSetting[key] !== stagedSetting[key]) return true;
     }
     // else -> not changed
     return false;
@@ -236,8 +197,7 @@ window.ctrlHelpers = (function() {
   // public API
   return {
     setMappingsFromJsonResponse,
-    setStagedToCurrentlyStored,
     getActiveControllerRole,
-    updateActiveController,
+    makeMappingList,
   }
 })();

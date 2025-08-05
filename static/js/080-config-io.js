@@ -109,13 +109,10 @@ window.serverConfig = (function()
   async function _applyConfig(cfgType) {
     switch (cfgType) {
       case "plane":
-        pages.plane.getFreshTrim();
-        pages.plane.getFreshMaxSurfaceAngles();
-        pages.settings.getFreshRadioSettings();
+        await settingsManager.load(["radio", "maxSurfaceAngles", "trim"]);
         break;
       case "user":
-        pages.controls.getFreshControls();
-        pages.settings.getFreshArduinoPortsAndSettings(backend);
+        await settingsManager.load(["arduino", "controls"]);
         break;
     }
   }

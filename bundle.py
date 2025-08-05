@@ -17,8 +17,10 @@ DO_FIRST: list[str] = [
   "030-entries.js",
   "040-events.js",
   "050-mainctrl.js",
+  "055-settings-manager.js",
   "060-ajax.js",
   "070-controls-helpers.js",
+  "080-config-io.js",
 ]
 
 

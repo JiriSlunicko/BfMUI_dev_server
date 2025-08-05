@@ -130,4 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // init navigation
   nav.init();
+
+  // init settings manager
+  settingsManager.init();
 });

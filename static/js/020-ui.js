@@ -214,7 +214,14 @@ window.ui = (function () {
         isLog ? { min: minVal, max: maxVal } : null,
         decimals
       );
+      pairWrapper.dispatchEvent(
+        new CustomEvent("slider-change", {
+          detail: { value: textInput.value },
+          bubbles: true
+        })
+      );
     });
+
     // text -> range
     document.addEventListener("change", function (e) {
       const textInput = e.target.closest(".range-text-pair input[type=text]");
@@ -232,7 +239,7 @@ window.ui = (function () {
         minVal, maxVal, isLog, isLog ? 1 : decimals
       );
       if (newVal === null) {
-        // revert text input to range value, which should by definition be safe
+        // revert text input to range value, which should always be safe
         textInput.value = utils.rangeToTextInput(rangeInput.value,
           isLog ? { min: minVal, max: maxVal } : null,
           decimals
@@ -241,6 +248,12 @@ window.ui = (function () {
         // apply scaled value to range slider
         rangeInput.value = newVal;
       }
+      pairWrapper.dispatchEvent(
+        new CustomEvent("slider-change", {
+          detail: { value: textInput.value },
+          bubbles: true
+        })
+      );
     });
   }
 

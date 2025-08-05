@@ -1,6 +1,9 @@
-window.pages.controls = (function() {
-  let _loaded = false;
-  let _loadInterval = null;
+window.settings.controls = (function()
+{
+  let _staged = {
+    actionMappings: {},
+    axisMappings: {},
+  }
 
   let _controls = {
     buttons: [],
@@ -10,114 +13,16 @@ window.pages.controls = (function() {
     restrictions: {},
     actionMappings: {},
     axisMappings: {},
-    stagedActionMappings: {},
-    stagedAxisMappings: {},
-  };
+  }
 
   let _limits = {
-    axisGain: { min: 0.01, max: 100, },
-    axisDeadzone: { min: 0, max: 1, },
+    axisGain: { min: 0.01, max: 100 },
+    axisDeadzone: { min: 0, max: 1 },
   }
 
 
-  /** Lazy load the interface only when the user navigates to it. */
-  function activate() {
-    if (!_controls.actions.length && _loadInterval === null) {
-      const runIfBackendInfoExists = () => {
-        if (backend.info) {
-          _initControlsInterface();
-          if (_loadInterval !== null)
-            clearInterval(_loadInterval);
-            _loadInterval = null;
-        }
-      };
-
-      _loadInterval = setInterval(() => {
-        runIfBackendInfoExists();
-      }, 200);
-      runIfBackendInfoExists();
-    }
-  }
-
-
-  /** Re-create the controls settings with fresh data. */
-  function getFreshControls() {
-    if (backend.info) {
-      _initControlsInterface();
-    }
-  }
-
-
-  /** Load the current mappings from the server. Don't call on POST.
-   * @param {boolean} quiet if false, toasts are suppressed unless an error occurs
-   * @returns {Promise<boolean>} */
-  async function _fetchCtrlOptions(quiet = false) {
-    if (!quiet) ui.makeToast(null, "Loading control options...", -1);
-    let raw, resp;
-
-    try {
-      raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.controlsGet);
-      resp = await raw.json();
-
-      // array of strings (enum)
-      _controls.buttons = resp.AvailableControllerButtons;
-      // array of strings (enum)
-      _controls.inAxes = resp.AvailableControllerAxes;
-      // array of strings (enum)
-      _controls.actions = resp.AvailableControlActions;
-      // array of strings (enum)
-      _controls.outAxes = resp.AvailablePlaneAxes;
-      // { action -> input (button or 2 ", " separated buttons), ... }
-      _controls.restrictions = resp.ControlActionsRestrictions;
-      // { role -> { input -> output, ... }, ... }
-      ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);
-
-      if (!quiet) ui.makeToast("success", "Successfully loaded control options.");
-      return true;
-    } catch (err) {
-      console.error("_fetchCtrlOptions failed:", err);
-      ui.makeToast("error", "Connection failed while loading control options.\n\n" + err, 5000);
-      return false;
-    }
-  }
-
-
-  /** Load the current mappings from the server and render them. Only run this once. */
-  async function _initControlsInterface() {
-    if (!backend.baseurl) {
-      ui.makeToast("error", "You need to connect to a server before tinkering with this.", 3000);
-      return;
-    }
-
-    const isFirstRun = !_loaded;
-    const loadSuccess = await _fetchCtrlOptions(!isFirstRun);
-
-    if (loadSuccess) {
-      // populate the controller combobox
-      const ctrlrSelect = utils.qs("#controls-role-select");
-      Array.from(ctrlrSelect.children).forEach(x => x.remove());
-      let selectedCtrlr = null;
-      for (const controller of Object.keys(_controls.actionMappings)) {
-        ctrlrSelect.insertAdjacentHTML("beforeend",
-          `<option value="${controller}"${selectedCtrlr === null ? " selected" : ""}>${controller}</option>`);
-        selectedCtrlr = selectedCtrlr || controller;
-      }
-
-      utils.qs("#controls-btn-wrapper").innerHTML = `
-        <button type="button" class="btn" id="controls-submit-btn">Save changes</button>
-        <button type="button" class="btn" id="controls-reset-btn">Discard changes</button>
-      `;
-
-      ctrlHelpers.updateActiveController(_controls, selectedCtrlr);
-    } else {
-      utils.qs("#controls-buttons-inner").innerHTML = "<p>Failed to fetch options.</p>";
-      utils.qs("#controls-axes-inner").innerHTML = "<p>Failed to fetch options.</p>";
-      utils.qs("#controls-btn-wrapper").innerHTML = "";
-    }
-
-    if (!isFirstRun) return; // skip first time setup when returning here
-
-    utils.qs("#view-controls").addEventListener("click", function(e) {
+  async function init() {
+    utils.qs("#view-controls").addEventListener("click", function (e) {
       const mapping = e.target.closest(".ctrl-wrapper");
       if (mapping) {
         _makeMappingModal(mapping);
@@ -126,30 +31,161 @@ window.pages.controls = (function() {
 
       const submitButton = e.target.closest("#controls-submit-btn");
       if (submitButton) {
-        _submitMappings();
-        ctrlHelpers.updateActiveController(_controls);
+        save();
+        _updateActiveController();
         return;
       }
 
       const cancelButton = e.target.closest("#controls-reset-btn");
       if (cancelButton) {
-        ctrlHelpers.setStagedToCurrentlyStored(_controls);
-        ctrlHelpers.updateActiveController(_controls);
+        _setStagedToActual();
+        _updateActiveController();
         return;
       }
     });
 
-    utils.qs("#controls-role-select").addEventListener("change", function(e) {
-      ctrlHelpers.updateActiveController(_controls, this.value);
+    utils.qs("#controls-role-select").addEventListener("change", function (e) {
+      _updateActiveController(this.value);
     });
 
-    _loaded = true;
+    return true;
+  }
+
+
+  async function load() {
+    const controlsSuccess = await _fetchData();
+
+    if (controlsSuccess) {
+      // controller role select
+      const controllerSelect = utils.qs("#controls-role-select");
+      Array.from(controllerSelect.children).forEach(x => x.remove());
+      let selected = null;
+      for (const controller of Object.keys(_controls.actionMappings)) {
+        controllerSelect.insertAdjacentHTML("beforeend", `
+          <option value="${controller}"${selected === null ? " selected" : ""}>${controller}</option>`);
+        selected = selected || controller;
+      }
+
+      // buttons
+      utils.qs("#controls-btn-wrapper").innerHTML = `
+        <button type="button" class="btn" id="controls-submit-btn">Save changes</button>
+        <button type="button" class="btn" id="controls-reset-btn">Discard changes</button>
+      `;
+
+      _updateActiveController(selected);
+      return true;
+    } else {
+      utils.qs("#controls-buttons-inner").innerHTML = "<p>Failed to fetch options.</p>";
+      utils.qs("#controls-axes-inner").innerHTML = "<p>Failed to fetch options.</p>";
+      utils.qs("#controls-btn-wrapper").innerHTML = "";
+      return false;
+    }
+  }
+
+
+  async function save() {
+    if (!hasPendingChanges()) {
+      ui.makeToast(null, "No changes made!");
+      return;
+    }
+
+    const payload = {
+      ControlActionsSettings: {},
+      PlaneAxesSettings: {},
+    }
+
+    // buttons -> actions
+    for (const [controller, mappings] of Object.entries(_staged.actionMappings)) {
+      const processedMappings = {};
+      for (const [action, mapping] of Object.entries(mappings)) {
+        if (mapping.button === "unbound") continue;
+        processedMappings[action] = mapping.button;
+      }
+      payload.ControlActionsSettings[controller] = processedMappings;
+    }
+
+    // axes
+    for (const [controller, mappings] of Object.entries(_staged.axisMappings)) {
+      const processedMappings = {};
+      for (const [planeAxis, mapping] of Object.entries(mappings)) {
+        if (!mapping) continue;
+
+        mappingInfo = {
+          ControllerAxis: mapping.inAxis,
+          Inverted: mapping.invert,
+          ControllerAxisDeadBand: mapping.deadzone,
+          FinalValueAssigner: {}
+        }
+
+        if (mapping.mode === "direct") {
+          mappingInfo.FinalValueAssigner.$type = "DirectValueAssigner";
+        } else {
+          mappingInfo.FinalValueAssigner.$type = "DifferenceValueAssigner";
+          mappingInfo.FinalValueAssigner.Gain = mapping.gain;
+        }
+
+        processedMappings[planeAxis] = mappingInfo;
+      }
+      payload.PlaneAxesSettings[controller] = processedMappings;
+    }
+
+    console.debug("controls payload:", payload);
+
+    const postSuccess = await ajax.postWithTimeout(
+      backend.baseurl + backend.endpoints.controlsPost,
+      payload,
+      (resp) => {
+        ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);
+        _setStagedToActual();
+        _updateActiveController();
+        ui.makeToast("success", "Successfully updated.");
+      }
+    );
+
+    return postSuccess;
+  }
+
+
+  function hasPendingChanges() {
+    const result = (
+      !_.isEqual(_staged.actionMappings, _controls.actionMappings) ||
+      !_.isEqual(_staged.axisMappings, _controls.axisMappings)
+    );
+    return result;
+  }
+
+
+  async function _fetchData() {
+    try {
+      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.controlsGet);
+      const resp = await raw.json();
+
+      _controls.buttons = resp.AvailableControllerButtons; // string[]
+      _controls.inAxes = resp.AvailableControllerAxes; // string[]
+      _controls.actions = resp.AvailableControlActions; // string[]
+      _controls.outAxes = resp.AvailablePlaneAxes; // string[]
+      _controls.restrictions = resp.ControlActionsRestrictions; // Dictionary<string, List<string>>
+      ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);
+      _setStagedToActual();
+
+      return true;
+    } catch (err) {
+      console.error("Controls fetch error:", err);
+      return false;
+    }
+  }
+
+
+  function _setStagedToActual() {
+    // deep copies
+    _staged.actionMappings = JSON.parse(JSON.stringify(_controls.actionMappings));
+    _staged.axisMappings = JSON.parse(JSON.stringify(_controls.axisMappings));
   }
 
 
   /** Create a modal for mapping controller inputs to plane outputs.
-   * @param {Element} mapping .ctrl-wrapper for the mapping in DOM
-   */
+ * @param {Element} mapping .ctrl-wrapper for the mapping in DOM
+ */
   function _makeMappingModal(mapping) {
     if (utils.qs(".modal-bg")) {
       console.error("Tried to open a control mapping modal while another modal was open.");
@@ -161,10 +197,10 @@ window.pages.controls = (function() {
     const output = mapping.dataset.output;
     let currentMapping, currentInput;
     if (kind === "axis") {
-      currentMapping = _controls.stagedAxisMappings[activeRole][output];
+      currentMapping = _staged.axisMappings[activeRole][output];
       currentInput = currentMapping?.inAxis.split(/\s*,\s*/) || ["unbound"];
     } else {
-      currentMapping = _controls.stagedActionMappings[activeRole][output];
+      currentMapping = _staged.actionMappings[activeRole][output];
       currentInput = currentMapping?.button.split(/\s*,\s*/) || ["unbound"];
     }
 
@@ -184,7 +220,7 @@ window.pages.controls = (function() {
     if (mapping.dataset.isEnum === "yes") {
       const enumSelect = _makeInputSelect("ctrl-input-enum", _controls.restrictions[output], currentInput);
       fg.appendChild(enumSelect);
-    // arbitrary buttons/axes
+      // arbitrary buttons/axes
     } else {
       const priSelect = _makeInputSelect("ctrl-input-primary", kind === "axis" ? _controls.inAxes : _controls.buttons, currentInput[0]);
       fg.appendChild(priSelect);
@@ -193,7 +229,7 @@ window.pages.controls = (function() {
       if (kind === "button") {
         const secSelect = _makeInputSelect("ctrl-input-secondary", _controls.buttons, currentInput[1] || "unbound");
         fg.appendChild(secSelect);
-      // axes
+        // axes
       } else {
         const inverted = currentMapping?.invert || false;
         const deadzone = currentMapping?.deadzone || 0;
@@ -208,9 +244,9 @@ window.pages.controls = (function() {
           </select>
         </label>
         ${ui.makeRangeTextInputPair("ctrl-input-deadzone", "Deadzone (0-1)", {
-            bounds: { min: _limits.axisDeadzone.min, max: _limits.axisDeadzone.max },
-            step: 0.01, value: deadzone, scaling: "linear", textInputClassOverride: "w5ch"
-          }, "w100 mb16"
+          bounds: { min: _limits.axisDeadzone.min, max: _limits.axisDeadzone.max },
+          step: 0.01, value: deadzone, scaling: "linear", textInputClassOverride: "w5ch"
+        }, "w100 mb16"
         )}
         <label for="ctrl-input-method" class="flex-c f-g4 w100 mb16">
           <span>Input processing</span>
@@ -220,9 +256,9 @@ window.pages.controls = (function() {
           </select>
         </label>
         ${ui.makeRangeTextInputPair("ctrl-input-gain", "Gain", {
-            bounds: { min: _limits.axisGain.min, max: _limits.axisGain.max },
-            step: 0.01, value: gain < 0 ? "0.01" : gain, scaling: "logarithmic", textInputClassOverride: "w7ch"
-          }, "w100 mb16" + (mode === "direct" ? " hidden" : "")
+          bounds: { min: _limits.axisGain.min, max: _limits.axisGain.max },
+          step: 0.01, value: gain < 0 ? "0.01" : gain, scaling: "logarithmic", textInputClassOverride: "w7ch"
+        }, "w100 mb16" + (mode === "direct" ? " hidden" : "")
         )}
       `);
       }
@@ -233,12 +269,11 @@ window.pages.controls = (function() {
     <div class="flex-r f-j-c f-g8">
       <button type="button" class="btn" id="ctrl-modal-ok">Ok</button>
       <button type="button" class="btn" id="ctrl-modal-cancel">Cancel</button>
-    </div>
-    `);
+    </div>`);
 
     if (kind === "axis") {
       // show/hide gain settings on switching input processing mode
-      fg.querySelector("#ctrl-input-method").addEventListener("change", function() {
+      fg.querySelector("#ctrl-input-method").addEventListener("change", function () {
         const gainWrapper = fg.querySelector(`label[for="ctrl-input-gain-text"]`);
         if (this.value === "direct") {
           gainWrapper.classList.add("hidden");
@@ -273,7 +308,7 @@ window.pages.controls = (function() {
       const selected = current === opt;
       const optName = opt.replace(/\b(.)Input/g, "$1I").replace(/\s*,\s*/g, " + ");
       select.insertAdjacentHTML("beforeend",
-        `<option class="ctrl-modal-option" value="${opt}"${selected? ' selected' : ''}>${optName}</option>`
+        `<option class="ctrl-modal-option" value="${opt}"${selected ? ' selected' : ''}>${optName}</option>`
       );
     }
     return select;
@@ -305,7 +340,7 @@ window.pages.controls = (function() {
     if (enumInput) {
       const enumButtons = enumInput.value.split(/\s*,\s*/);
       [input1, input2] = enumButtons.length === 2 ? enumButtons : ["unbound", "unbound"];
-    // otherwise grab primary & secondary inputs
+      // otherwise grab primary & secondary inputs
     } else {
       input1 = modal.querySelector("#ctrl-input-primary").value;
       input2 = kind === "button" ? modal.querySelector("#ctrl-input-secondary").value : "unbound";
@@ -353,9 +388,9 @@ window.pages.controls = (function() {
     const activeRole = ctrlHelpers.getActiveControllerRole();
     if (kind === "axis") {
       if (resolvedMapping === "unbound")
-        delete _controls.stagedAxisMappings[activeRole][output];
+        delete _staged.axisMappings[activeRole][output];
       else {
-        _controls.stagedAxisMappings[activeRole][output] = {
+        _staged.axisMappings[activeRole][output] = {
           inAxis: resolvedMapping,
           invert: newInvert,
           deadzone: newDeadzone,
@@ -364,92 +399,39 @@ window.pages.controls = (function() {
         }
       }
     } else {
-      _controls.stagedActionMappings[activeRole][output] = {button: resolvedMapping};
+      _staged.actionMappings[activeRole][output] = { button: resolvedMapping };
     }
 
-    ctrlHelpers.updateActiveController(_controls);
+    _updateActiveController();
 
     modal.remove();
   }
 
 
-  /** POST settings to server & get new server-side mappings. */
-  async function _submitMappings(onlyActive = false) {
-    if (!utils.qs(".ctrl-wrapper .modified")) {
-      ui.makeToast(null, "No changes made, not submitting.");
-      return;
+  function _updateActiveController(controller = null) {
+    if (controller) utils.qs("#controls-role-select").value = controller;
+
+    const active = ctrlHelpers.getActiveControllerRole();
+    ctrlHelpers.makeMappingList(_controls, _staged, active, "button");
+    ctrlHelpers.makeMappingList(_controls, _staged, active, "axis");
+
+    const submitBtn = utils.qs("#controls-submit-btn");
+    const cancelBtn = utils.qs("#controls-reset-btn");
+    if (hasPendingChanges()) {
+      submitBtn.classList.add("primed-yes");
+      cancelBtn.classList.add("primed-no");
+    } else {
+      submitBtn.classList.remove("primed-yes");
+      cancelBtn.classList.remove("primed-no");
     }
-
-    const payload = {
-      ControlActionsSettings: {},
-      PlaneAxesSettings: {},
-    };
-
-    const activeRole = ctrlHelpers.getActiveControllerRole();
-    const actionCtrlrRoles = onlyActive ? [activeRole] : Object.keys(_controls.stagedActionMappings);
-    const axisCtrlrRoles = onlyActive ? [activeRole] : Object.keys(_controls.stagedAxisMappings);
-
-    // buttons -> actions
-    for (const ctrlrRole of actionCtrlrRoles) {
-      const ctrlrMappings = _controls.stagedActionMappings[ctrlrRole];
-      const processedCtrlrMappings = {};
-      for (const [action, mapping] of Object.entries(ctrlrMappings)) {
-        if (mapping.button === "unbound") continue;
-        
-        processedCtrlrMappings[action] = mapping.button;
-      }
-
-      payload.ControlActionsSettings[ctrlrRole] = processedCtrlrMappings;
-    }
-
-    // axes
-    for (const ctrlrRole of axisCtrlrRoles) {
-      const ctrlrMappings = _controls.stagedAxisMappings[ctrlrRole];
-      const processedCtrlrMappings = {};
-      for (const [planeAxis, mapping] of Object.entries(ctrlrMappings)) {
-        if (!mapping) continue;
-
-        mappingInfo = {
-          ControllerAxis: mapping.inAxis,
-          Inverted: mapping.invert,
-          ControllerAxisDeadBand: mapping.deadzone,
-          FinalValueAssigner: {}
-        }
-
-        if (mapping.mode === "direct") {
-          mappingInfo.FinalValueAssigner.$type = "DirectValueAssigner";
-        } else {
-          mappingInfo.FinalValueAssigner.$type = "DifferenceValueAssigner";
-          mappingInfo.FinalValueAssigner.Gain = mapping.gain;
-        }
-
-        processedCtrlrMappings[planeAxis] = mappingInfo;
-      }
-
-      payload.PlaneAxesSettings[ctrlrRole] = processedCtrlrMappings;
-    }
-
-    console.debug("submitMappings payload:", payload);
-
-    const postSuccess = await ajax.postWithTimeout(
-      backend.baseurl + backend.endpoints.controlsPost,
-      payload,
-      (resp) => {
-        ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);
-        ctrlHelpers.updateActiveController(_controls);
-        ui.makeToast("success", "Successfully updated.");
-      }
-    );
   }
 
 
   // public API
   return {
-    init: () => {},
-    activate,
-    deactivate: () => {},
-    hasLoaded: () => _loaded,
-    getFreshControls,
-    //_controls //debug only
+    init,
+    load,
+    save,
+    hasPendingChanges,
   }
 })();
