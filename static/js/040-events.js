@@ -4,12 +4,10 @@ window.events = (function () {
   let _eventStream = null;
 
   
-  /** Connect to the backend server's event dispatcher.
-   * @param {object} globalServer backend - may be modified by some event handlers
-   */
-  function openStream(globalServer) {
+  /** Connect to the backend server's event dispatcher. */
+  function openStream() {
     closeStream();
-    _eventStream = new EventSource(globalServer.baseurl + globalServer.endpoints.events);
+    _eventStream = new EventSource(backend.baseurl + backend.endpoints.events);
     _eventStream.onmessage = (msg) => {
       let asJson = null;
       try {
@@ -20,24 +18,47 @@ window.events = (function () {
       }
 
       if (asJson.Events && asJson.Events.length) {
-        _processEvents(globalServer, asJson.Events);
+        _processEvents(asJson.Events);
       }
     }
   }
 
 
   /** Handle any events that came with a message from the backend.
-   * @param {object} globalServer backend - may be modified
-   * @param {array<string>} eventArray list of event names
+   * @param {string[]} eventArray list of event names
    */
-  function _processEvents(globalServer, eventArray) {
+  function _processEvents(eventArray) {
+    let changedDomains = new Set();
+
     for (const backendEvent of eventArray) {
+      console.debug(new Date().toLocaleString(), backendEvent);
+
       switch (backendEvent) {
         case "AvailableSerialPortsChanged":
-          settingsManager.load(["arduino"]);
+        case "SerialPortParametersChanged":
+          changedDomains.add("arduino");
+          break;
+
+        case "ControlActionSettingsChanged":
+        case "PlaneAxisSettingsChanged":
+          changedDomains.add("controls");
+          break;
+
+        case "MaxAnglesChanged":
+          changedDomains.add("maxSurfaceAngles");
+          break;
+
+        case "RadioSettingsChanged":
+          changedDomains.add("radio");
+          break;
+
+        case "TrimValuesChanged":
+          changedDomains.add("trim");
           break;
       }
     }
+
+    settingsManager.load(Array.from(changedDomains));
   }
 
 
