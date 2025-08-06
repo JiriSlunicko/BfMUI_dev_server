@@ -64,7 +64,11 @@ window.settingsManager = (function()
    * @returns {Promise<object>} dictionary of domain->success
    */
   async function save(configDomains = null) {
-    return _batchDelegate(async (domainObj) => domainObj.save(), configDomains);
+    return _batchDelegate(async (domainObj) => {
+      if (domainObj.hasPendingChanges()) {
+        await domainObj.save();
+      }
+    }, configDomains);
   }
 
   /** Ask whether any of the specified domains have pending changes.
