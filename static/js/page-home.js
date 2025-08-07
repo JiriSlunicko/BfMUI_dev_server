@@ -15,7 +15,7 @@ window.pages.home = (function()
       _userPreferences.hideIntro = true;
       utils.qs("#home-intro").style.display = "none";
       ui.makeToast("success", "The intro text won't show again unless you reset the app settings.", 3000);
-    })
+    });
   }
 
 
@@ -26,7 +26,6 @@ window.pages.home = (function()
       return;
     }
 
-    // new mechanism
     utils.qs("#home-sysinfo-inner > p")?.remove();
     const sysInfo = backend.info;
     for (let i = 0; i < sysInfo.length; i++) {
@@ -36,12 +35,33 @@ window.pages.home = (function()
     entries.trimList("#home-sysinfo-inner", sysInfo.length);
   }
 
+
+  function updateChecklist(checklistData) {
+    utils.qs("#home-checklist-inner > p")?.remove();
+    entries.reuseOrCreate("#home-checklist-inner", 0, "System status", checklistData);
+    entries.trimList("#home-checklist-inner", 1);
+
+    const notOkCount = _.countBy(Object.values(checklistData))["NotOk"] || 0;
+
+    const statusBar = utils.qs("#status-can-fly");
+    if (notOkCount > 0) {
+      statusBar.innerText = notOkCount + " systems not ready";
+      statusBar.classList.remove("all-ok");
+      statusBar.classList.add("not-ok");
+    } else {
+      statusBar.innerText = "all systems ready";
+      statusBar.classList.remove("not-ok");
+      statusBar.classList.add("all-ok");
+    }
+  }
+
   
   // public API
   return {
     init,
     activate: ()=>{},
     deactivate: ()=>{},
-    initSysInfo
+    initSysInfo,
+    updateChecklist,
   }
 })();

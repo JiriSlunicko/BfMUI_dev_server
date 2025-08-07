@@ -68,7 +68,7 @@
     <div class="main-content">
 
       <div class="view-tab flex-c" id="view-home">
-        <div id="home-intro">
+        <div id="home-intro" class="desktop-panel">
           <h2>Bloodfly MUI</h2>
           <p>Welcome to the Bloodfly Mobile UI app.</p>
           <p>If the app fails to connect and start polling automatically,
@@ -76,6 +76,11 @@
             point to a Bloodfly Control server running via HTTP (not HTTPS).</p>
           <p>Enjoy. It's awesome.</p>
           <button type="button" class="btn" id="home-hide-intro-btn">Hide & don't show again</button>
+        </div>
+
+        <div id="home-checklist">
+          <h2>Flight checklist</h2>
+          <div id="home-checklist-inner" class="flex-c f-g12"><p>Not connected.</p></div>
         </div>
 
         <div id="home-sysinfo">
@@ -232,4 +237,8 @@
 
     </div>
   </section>
+
+  <footer class="f-noshrink">
+    <a id="status-can-fly" href="javascript:;">status unknown</a>
+  </footer>
 </body>

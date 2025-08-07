@@ -58,6 +58,10 @@ window.nav = (function()
 
     nav.gotoPage(_currentPage);
 
+    utils.qs("#status-can-fly").addEventListener("click", () => {
+      nav.gotoPage("home");
+    });
+
     window.addEventListener("pagehide", () => events.closeStream());
     window.addEventListener("beforeunload", () => events.closeStream());
   }

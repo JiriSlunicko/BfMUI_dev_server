@@ -32,8 +32,11 @@ window.pages.settings = (function() {
 
   /** Reset app settings to defaults (clear localStorage) if the user confirms. */
   async function _resetSettings() {
-    const consent = await ui.makePopup("confirm", "Are you sure you want to reset all app settings, including server IP etc?");
-    if (consent) { localStorage.clear(); }
+    const consent = await ui.makePopup("confirm", "Are you sure you want to reset all app settings, including server IP etc?\n\nThis will reload the app.");
+    if (consent) {
+      localStorage.clear();
+      location.reload();
+    }
   }
 
 

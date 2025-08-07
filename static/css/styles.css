@@ -397,6 +397,7 @@ section .main-content .view-tab {
   color: var(--bg-darker);
   font-size: 16px;
   padding: 4px 0;
+  overflow: clip;
 }
 .entry-wrapper .entry-items {
   background-color: var(--bg-dark);
@@ -447,6 +448,27 @@ section .main-content .view-tab {
   max-width: 480px;
 }
 
+@media only screen and (max-width: 750px) {
+  #home-hide-intro-btn {
+    margin-bottom: 24px;
+  }
+}
+#status-can-fly {
+  display: block;
+  text-align: center;
+  color: var(--bg-bright);
+  background-color: var(--bg-dark);
+  border-top: 1px solid var(--bg-medium);
+  padding: 2px 8px;
+}
+#status-can-fly.all-ok {
+  color: var(--good);
+}
+#status-can-fly.not-ok {
+  color: var(--bad);
+  background-color: var(--warning);
+}
+
 /*****************
  * STATUS SCREEN *
  *****************/
@@ -457,8 +479,8 @@ section .main-content .view-tab {
   }
 }
 .health {
-  width: 16px;
-  height: 16px;
+  font-size: 12px;
+  padding: 0 6px;
   background-color: white;
   border: 1px solid var(--bg-medium);
   border-radius: 8px;

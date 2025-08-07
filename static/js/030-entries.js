@@ -36,7 +36,7 @@ window.entries = (function () {
     const healthClassName = health ? ("health " + health.toLowerCase() + " f-noshrink mla") : "";
     entry.querySelector(".entry-header").innerHTML = `
     <span>${header}</span>
-    ${health ? '<span class="' + healthClassName + '"></span>' : ''}`;
+    ${health ? '<span class="' + healthClassName + '">' + health +'</span>' : ''}`;
 
     // update items
     const items = entry.querySelector(".entry-items");

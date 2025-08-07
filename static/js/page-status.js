@@ -37,6 +37,8 @@ window.pages.status = (function()
     if (nav.getCurrentPage() === "status") {
       _renderTelemetry();
     }
+
+    pages.home.updateChecklist(resp.FlightChecklist);
   }
 
 
@@ -92,6 +94,7 @@ window.pages.status = (function()
       switch (key) {
         case "SerialTimerName":
         case "LatestErrorMessage":
+        case "Health":
           break;
         case "Frequency":
           result[key] = (value === null ? "–" : value.toFixed(1));
