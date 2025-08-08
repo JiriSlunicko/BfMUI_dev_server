@@ -1,5 +1,7 @@
 window.settings.arduino = (function()
 {
+  let _initialised = false;
+
   let _staged = {
     port: null,
     baudRate: null,
@@ -36,18 +38,18 @@ window.settings.arduino = (function()
     // update text input on baud rate select interaction
     baudRateSelect.addEventListener("change", function () {
       if (this.value !== "custom") { baudRateText.value = this.value; }
-      _staged.baudRate = parseInt(baudRateText.value);
+      _staged.baudRate = baudRateText.value === "" ? null : parseInt(baudRateText.value);
     });
     // update baud rate select on text input
     baudRateText.addEventListener("change", function () {
       const val = parseInt(this.value);
       baudRateSelect.value = _arduino.baudRatePresets.includes(val) ? val : "custom";
-      _staged.baudRate = val;
+      _staged.baudRate = isNaN(val) ? null : val;
     });
 
     // submit listener
     utils.qs("#settings-arduino-apply-btn").addEventListener("click", function () {
-      if (!this.disabled)
+      if (hasPendingChanges())
         save();
     });
 
@@ -69,39 +71,47 @@ window.settings.arduino = (function()
 
     // if we're here, arduino is enabled
     arduinoPanel.classList.remove("hidden");
-    const arduinoPortSelect = arduinoPanel.querySelector("#settings-arduino-port");
-    const arduinoBaudRateText = arduinoPanel.querySelector("#settings-arduino-baudrate-text");
+    const portSelect = arduinoPanel.querySelector("#settings-arduino-port");
+    const baudRateText = arduinoPanel.querySelector("#settings-arduino-baudrate-text");
+    const baudRateSelect = arduinoPanel.querySelector("#settings-arduino-baudrate-select");
     const prevWarning = arduinoPanel.querySelector("#settings-arduino-warning");
     if (prevWarning) prevWarning.remove();
 
+    const resolvedPort = _staged.port ?? _arduino.port;
+    const resolvedBaudRate = _staged.baudRate ?? _arduino.baudRate;
+
     // update port selection
-    arduinoPortSelect.innerHTML = "";
+    portSelect.innerHTML = "";
     for (const opt of _arduino.availablePorts) {
-      arduinoPortSelect.insertAdjacentHTML("beforeend", `
-        <option value="${opt}"${opt === _arduino.port ? " selected" : ""}>${opt}</option>
+      portSelect.insertAdjacentHTML("beforeend", `
+        <option value="${opt}"${opt === resolvedPort ? " selected" : ""}>${opt}</option>
       `);
     }
-    if (_arduino.port && _arduino.port !== "null" && !_arduino.availablePorts.includes(_arduino.port)) {
-      arduinoPortSelect.insertAdjacentHTML("beforeend", `
-        <option value="${_arduino.port}" selected disabled>${_arduino.port}</option>`);
+    const isPortValid = _validatePortSelection(resolvedPort);
+
+    if (!isPortValid) {
+      portSelect.insertAdjacentHTML("beforeend", `
+        <option value="${resolvedPort}" selected disabled>${resolvedPort}</option>`);
     }
-    _validatePortSelection(_arduino.port);
 
     // update baudrate selection
-    arduinoBaudRateText.value = _arduino.baudRate;
-    arduinoBaudRateText.dispatchEvent(new Event("change", { bubbles: true }));
+    baudRateText.value = resolvedBaudRate;
+    baudRateSelect.value = _arduino.baudRatePresets.includes(resolvedBaudRate) ? resolvedBaudRate : "custom";
 
     return true;
   }
 
 
   async function save() {
-    if (!/^\d+$/.test(_staged.baudRate)) {
+    const resolvedPort = _staged.port ?? _arduino.port;
+    const resolvedBaudRate = _staged.baudRate ?? _arduino.baudRate;
+
+    if (!/^\d+$/.test(resolvedBaudRate)) {
       ui.makeToast("error", "Invalid baud rate. Must be a non-negative integer.", 3000);
       return;
     }
 
-    const payload = { Name: _staged.port, BaudRate: parseInt(_staged.baudRate) };
+    const payload = { Name: resolvedPort, BaudRate: parseInt(resolvedBaudRate) };
     console.debug("arduino payload:", payload);
 
     const postSuccess = await ajax.postWithTimeout(
@@ -110,7 +120,8 @@ window.settings.arduino = (function()
       (resp) => {
         _arduino.port = resp.Name;
         _arduino.baudRate = resp.BaudRate;
-        _setStagedToActual();
+        _staged.port = null;
+        _staged.baudRate = null;
         ui.makeToast("success", "Successfully updated.");
       }
     );
@@ -121,8 +132,8 @@ window.settings.arduino = (function()
 
   function hasPendingChanges() {
     return (
-      _staged.port !== _arduino.port ||
-      _staged.baudRate !== _arduino.baudRate
+      (_staged.port !== null && _staged.port !== _arduino.port) ||
+      (_staged.baudRate !== null && _staged.baudRate !== _arduino.baudRate)
     );
   }
 
@@ -141,7 +152,6 @@ window.settings.arduino = (function()
         _arduino.port = resp.SerialPortParameters?.Name || null;
         _arduino.baudRate = resp.SerialPortParameters?.BaudRate || null;
         _arduino.availablePorts = resp.availablePorts || [];
-        _setStagedToActual();
         return true;
       } else {
         console.debug("Server is not using arduino.");
@@ -156,26 +166,31 @@ window.settings.arduino = (function()
 
   /** Check if the selected port is valid and signal it visually.
    * @param {string|null} value arduino port name
+   * @returns {boolean} whether valid
    */
   function _validatePortSelection(value) {
     const arduinoPanel = utils.qs("#settings-arduino");
+    let returnValue = null;
 
     if (value && value !== "null" && !_arduino.availablePorts.includes(value)) {
       arduinoPanel.classList.add("invalid");
       arduinoPanel.querySelector("#settings-arduino-apply-btn").classList.add("hidden");
       arduinoPanel.querySelector("#settings-arduino-apply-btn").insertAdjacentHTML("beforebegin", `
         <p id="settings-arduino-warning" class="warning mb0"><b>WARNING:</b> port not available</p>`);
+      
+      _staged.port = null;
+      returnValue = false;
     } else {
       arduinoPanel.classList.remove("invalid");
       arduinoPanel.querySelector("#settings-arduino-apply-btn").classList.remove("hidden");
       arduinoPanel.querySelector("#settings-arduino-warning")?.remove();
+      
+      if (_initialised) _staged.port = value;
+      returnValue = true;
     }
-  }
 
-
-  function _setStagedToActual() {
-    _staged.port = _arduino.port;
-    _staged.baudRate = _arduino.baudRate;
+    _initialised = true;
+    return returnValue;
   }
 
 

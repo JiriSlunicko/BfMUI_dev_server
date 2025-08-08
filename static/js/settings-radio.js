@@ -52,12 +52,16 @@ window.settings.radio = (function()
     const radioSuccess = await _fetchData();
     
     if (radioSuccess) {
+      const resolvedChannel = _staged.channel ?? _radio.channel;
+      const resolvedPALevel = _staged.paLevel ?? _radio.paLevel;
+      const resolvedFeedback = _staged.feedback ?? _radio.feedback;
+
       const radioPanel = utils.qs("#settings-radio");
-      radioPanel.querySelector("#settings-radio-channel-range").value = _radio.channel;
-      radioPanel.querySelector("#settings-radio-channel-text").value = _radio.channel;
-      radioPanel.querySelector("#settings-radio-pa-range").value = _radio.paLevel;
-      radioPanel.querySelector("#settings-radio-pa-text").value = _radio.paLevel;
-      radioPanel.querySelector("#settings-radio-feedback").value = _radio.feedback ? "yes" : "";
+      radioPanel.querySelector("#settings-radio-channel-range").value = resolvedChannel;
+      radioPanel.querySelector("#settings-radio-channel-text").value = resolvedChannel;
+      radioPanel.querySelector("#settings-radio-pa-range").value = resolvedPALevel;
+      radioPanel.querySelector("#settings-radio-pa-text").value = resolvedPALevel;
+      radioPanel.querySelector("#settings-radio-feedback").value = resolvedFeedback ? "yes" : "";
     }
 
     return radioSuccess;
@@ -66,9 +70,9 @@ window.settings.radio = (function()
 
   async function save() {
     const payload = {
-      Channel: Number(utils.qs("#settings-radio-channel-range").value),
-      PALevel: Number(utils.qs("#settings-radio-pa-range").value),
-      IsPlaneFeedbackEnabled: utils.qs("#settings-radio-feedback").value === "yes",
+      Channel: _staged.channel ?? _radio.channel,
+      PALevel: _staged.paLevel ?? _radio.paLevel,
+      IsPlaneFeedbackEnabled: _staged.feedback ?? _radio.feedback,
     };
     console.debug("radio payload:", payload);
 
@@ -79,7 +83,9 @@ window.settings.radio = (function()
         _radio.channel = resp.Channel;
         _radio.paLevel = resp.PALevel;
         _radio.feedback = resp.IsPlaneFeedbackEnabled;
-        _setStagedToActual();
+        _staged.channel = null;
+        _staged.paLevel = null;
+        _staged.feedback = null;
         ui.makeToast("success", "Successfully updated.");
       }
     );
@@ -90,9 +96,9 @@ window.settings.radio = (function()
 
   function hasPendingChanges() {
     return (
-      _staged.channel !== _radio.channel ||
-      _staged.paLevel !== _radio.paLevel ||
-      _staged.feedback !== _radio.feedback
+      (_staged.channel !== null && _staged.channel !== _radio.channel) ||
+      (_staged.paLevel !== null && _staged.paLevel !== _radio.paLevel) ||
+      (_staged.feedback !== null && _staged.feedback !== _radio.feedback)
     );
   }
 
@@ -110,20 +116,12 @@ window.settings.radio = (function()
       _radio.channel = resp.Channel;
       _radio.paLevel = resp.PALevel;
       _radio.feedback = resp.IsPlaneFeedbackEnabled;
-      _setStagedToActual();
 
       return true;
     } catch (err) {
       console.error("Radio fetch error:", err);
       return false;
     }
-  }
-
-
-  function _setStagedToActual() {
-    _staged.channel = _radio.channel;
-    _staged.paLevel = _radio.paLevel;
-    _staged.feedback = _radio.feedback;
   }
 
 

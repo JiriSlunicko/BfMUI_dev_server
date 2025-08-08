@@ -1,5 +1,7 @@
 window.settings.trim = (function()
 {
+  let _initialised = false;
+
   let _staged = {};
 
   let _trimValues = {
@@ -14,7 +16,8 @@ window.settings.trim = (function()
   async function init() {
     utils.qs("#plane-trim-inner").addEventListener("click", function (e) {
       const button = e.target.closest("#plane-trim-apply-btn");
-      if (button) save();
+      if (button && hasPendingChanges())
+        save();
     });
 
     utils.qs("#plane-trim-inner").addEventListener("slider-change", function(e) {
@@ -35,23 +38,38 @@ window.settings.trim = (function()
     const success = await _fetchData();
 
     const container = utils.qs("#plane-trim-inner");
+
     if (success) {
       const min = _trimValues.limits.min;
       const max = _trimValues.limits.max;
-      const surfaces = _trimValues.surfaces;
-      let newHTML = "";
-      for (const [name, trim] of Object.entries(surfaces)) {
-        newHTML += ui.makeRangeTextInputPair(
-          "plane-trim-" + name, name, {
-          bounds: { min: min, max: max }, step: 1, value: trim, scaling: "linear"
+      container.querySelector("p")?.remove();
+
+      for (const [surface, serverValue] of Object.entries(_trimValues.surfaces)) {
+        const trimValue = _staged[surface] ?? serverValue;
+        let myWrapper = container.querySelector(`label[for="plane-trim-${surface}-text"]`);
+
+        if (myWrapper === null) {
+          // create the UI element if not exists
+          container.innerHTML += ui.makeRangeTextInputPair(
+            "plane-trim-" + surface, surface, {
+              bounds: { min: min, max: max }, step: 1, value: trimValue, scaling: "linear"
+            }
+          );
+        } else {
+          // or update an existing element
+          const textInput = myWrapper.querySelector("input[type=text]");
+          textInput.value = trimValue;
+          textInput.dispatchEvent(new Event("input", { bubbles: true }));
         }
-        );
-      };
-      newHTML += `
-        <div class="flex-r">
-          <button type="button" class="btn" id="plane-trim-apply-btn">Apply trim settings</button>
-        </div>`;
-      container.innerHTML = newHTML;
+      }
+
+      // make apply button if not exists
+      if (container.querySelector("#plane-trim-apply-btn") === null) {
+        container.insertAdjacentHTML("beforeend", `
+          <div class="flex-r">
+            <button type="button" class="btn" id="plane-trim-apply-btn">Apply trim settings</button>
+          </div>`);
+      }
     } else {
       container.innerHTML = `<p>Failed to fetch data.</p>`;
     }
@@ -61,7 +79,10 @@ window.settings.trim = (function()
 
 
   async function save() {
-    const payload = _staged;
+    const payload = {};
+    for (const [surface, serverValue] of Object.entries(_trimValues.surfaces)) {
+      payload[surface] = _staged[surface] ?? serverValue;
+    }
     console.debug("trim payload:", payload);
 
     const postSuccess = await ajax.postWithTimeout(
@@ -71,6 +92,7 @@ window.settings.trim = (function()
         _trimValues.surfaces = {};
         for (const [surfName, surfTrim] of Object.entries(resp)) {
           _trimValues.surfaces[surfName] = surfTrim;
+          _staged[surfName] = null;
         }
         ui.makeToast("success", "Successfully updated.");
       }
@@ -81,7 +103,11 @@ window.settings.trim = (function()
 
 
   function hasPendingChanges() {
-    return !_.isEqual(_staged, _trimValues.surfaces);
+    for (const [surface, serverValue] of Object.entries(_trimValues.surfaces)) {
+      if (_staged[surface] !== null && _staged[surface] !== serverValue)
+        return true;
+    }
+    return false;
   }
 
 
@@ -95,8 +121,10 @@ window.settings.trim = (function()
       _trimValues.surfaces = {};
       for (const surface of resp.AvailableSurfaces) {
         _trimValues.surfaces[surface] = resp.TrimValues[surface] || 0;
+        if (!_initialised)
+          _staged[surface] = null;
       }
-      _setStagedToActual();
+      _initialised = true;
       return true;
     } catch (err) {
       const errorString = "Error fetching trim data.\n\n" + err.toString();
@@ -104,11 +132,6 @@ window.settings.trim = (function()
       ui.makeToast("error", errorString, 5000);
       return false;
     }
-  }
-
-
-  function _setStagedToActual() {
-    _staged = JSON.parse(JSON.stringify(_trimValues.surfaces));
   }
 
 

@@ -20,35 +20,34 @@ window.ctrlHelpers = (function() {
 
   /** Populate the relevant container with current input-output mappings.
    * @param {object} controls the _controls property of window.pages.controls
+   * @param {object} staged the _staged property of window.pages.controls
    * @param {string} controller which controller we're showing
    * @param {"button"|"axis"} kind
    */
   function makeMappingList(controls, staged, controller, kind) {
-    let container, outputs, mappings;
+    let container, outputs;
     switch (kind) {
       case "button":
         container = utils.qs("#controls-buttons-inner");
         outputs = controls.actions;
-        mappings = staged.actionMappings[controller];
         break;
       case "axis":
         container = utils.qs("#controls-axes-inner");
         outputs = controls.outAxes;
-        mappings = staged.axisMappings[controller];
         break;
     }
 
     Array.from(container.children).forEach(x => x.remove());
     const mappingsWrapper = document.createDocumentFragment();
     for (const output of outputs) {
-      const mapping = mappings[output];
+      const mapping = getResolvedMapping(controls, staged, controller, output, kind);
 
       const item = document.createElement("div");
       item.className = "entry-wrapper ctrl-wrapper";
       item.dataset.kind = kind;
       item.dataset.output = output;
       let mappingString;
-      let stagedChange;
+      let stagedChange = false;
 
       if (kind === "axis") {
         const mInAxis = mapping?.inAxis || "unbound";
@@ -57,19 +56,19 @@ window.ctrlHelpers = (function() {
         const mMode = mapping?.mode || "direct";
         const mGain = typeof mapping?.gain === "number" ? mapping.gain : -1;
         mappingString = _stringifyAxisMapping(mInAxis, mInvert, mDeadzone, mMode, mGain);
-        if (_hasAxisMappingChanged(controls, staged, controller, output))
+        if (staged.axisMappings[controller][output])
           stagedChange = true;
       } else {
         item.dataset.isEnum = controls.restrictions[output] ? "yes" : "";
         mappingString = mapping?.button || "unbound";
-        if (_hasActionMappingChanged(controls, staged, controller, output))
+        if (staged.actionMappings[controller][output])
           stagedChange = true;
       }
 
       item.insertAdjacentHTML("beforeend", `
-      <div class="entry-header ctrl-output">${output}</div>
-      <div class="ctrl-input-current${stagedChange ? ' modified' : ''}">${mappingString}</div>
-    `);
+        <div class="entry-header ctrl-output">${output}</div>
+        <div class="ctrl-input-current${stagedChange ? ' modified' : ''}">${mappingString}</div>
+      `);
       mappingsWrapper.appendChild(item);
     }
     container.append(mappingsWrapper);
@@ -87,7 +86,7 @@ window.ctrlHelpers = (function() {
  * {
  *  string controllerRole: {
  *    string action: {
- *      "button": string button || ", "-joined 2 buttons
+ *      "button": string // button or 2 buttons joined by ", "
  *    },
  *    ...
  *  },
@@ -114,11 +113,11 @@ window.ctrlHelpers = (function() {
    * {
    *  string controllerRole: {
    *    string outAxis: {
-   *      "inAxis": string inAxis,
+   *      "inAxis": string,
    *      "invert": bool,
-   *      "deadzone": number 0.0 - 1.0
+   *      "deadzone": number 0.0-1.0
    *      "mode": "direct"|"differential"
-   *      "gain": null|number
+   *      "gain": null|number 0.01+
    *    },
    *    ...
    *  },
@@ -152,43 +151,19 @@ window.ctrlHelpers = (function() {
   }
 
 
-  /** Find out if the staged mapping for an action differs from current server settings.
+  /** Get the staged mapping if one exists, otherwise the last known server mapping.
    * @param {object} controls the _controls property of window.pages.controls
-   * @param {string} controller name of the controller role we're editing
-   * @param {string} action name of the plane action we're mapping input for
-   * @returns {boolean} whether the mapping is different
+   * @param {object} staged the _staged property of window.pages.controls
+   * @param {string} controller which controller we're interested in
+   * @param {string} output which action or plane axis we're interested in
+   * @param {"button"|"axis"} kind 
+   * @returns {object} a mapping for an action or an axis
    */
-  function _hasActionMappingChanged(controls, staged, controller, action) {
-    return controls.actionMappings[controller][action]?.button
-       !== staged.actionMappings[controller][action]?.button;
-  }
+  function getResolvedMapping(controls, staged, controller, output, kind) {
+    const mappingsKey = kind === "axis" ? "axisMappings" : "actionMappings";
 
-
-  /** Find out if the staged mapping for an axis differs from current server settings.
-   * @param {object} controls the _controls property of window.pages.controls
-   * @param {string} controller name of the controller role we're editing
-   * @param {string} axisRole name of the plane axis we're mapping a controller axis for
-   * @returns {boolean} whether the mapping is different
-   */
-  function _hasAxisMappingChanged(controls, staged, controller, axisRole) {
-    const storedSetting = controls.axisMappings[controller][axisRole];
-    const stagedSetting = staged.axisMappings[controller][axisRole];
-
-    const storedUndef = storedSetting === undefined;
-    const stagedUndef = stagedSetting === undefined;
-
-    // one undefined, the other not -> changed
-    if (storedUndef !== stagedUndef) return true;
-
-    // both undefined -> not changed
-    if (storedUndef && stagedUndef) return false;
-
-    // if the value of any key has changed -> changed
-    for (const key of Object.keys(stagedSetting)) {
-      if (storedSetting[key] !== stagedSetting[key]) return true;
-    }
-    // else -> not changed
-    return false;
+    return staged[mappingsKey][controller][output]
+      ?? controls[mappingsKey][controller][output];
   }
 
 
@@ -197,5 +172,6 @@ window.ctrlHelpers = (function() {
     setMappingsFromJsonResponse,
     getActiveControllerRole,
     makeMappingList,
+    getResolvedMapping,
   }
 })();

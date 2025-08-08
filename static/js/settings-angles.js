@@ -1,5 +1,7 @@
 window.settings.maxSurfaceAngles = (function()
 {
+  let _initialised = false;
+
   let _staged = {};
 
   let _maxSurfaceAngles = {
@@ -14,7 +16,8 @@ window.settings.maxSurfaceAngles = (function()
   async function init() {
     utils.qs("#plane-angles-inner").addEventListener("click", function (e) {
       const button = e.target.closest("#plane-angles-apply-btn");
-      if (button) save();
+      if (button && hasPendingChanges())
+        save();
     });
 
     utils.qs("#plane-angles-inner").addEventListener("slider-change", function (e) {
@@ -25,7 +28,7 @@ window.settings.maxSurfaceAngles = (function()
       if (!surface) return;
 
       _staged[surface] = parseInt(e.detail.value);
-    })
+    });
 
     return true;
   }
@@ -35,23 +38,38 @@ window.settings.maxSurfaceAngles = (function()
     const success = await _fetchData();
 
     const container = utils.qs("#plane-angles-inner");
+
     if (success) {
       const min = _maxSurfaceAngles.limits.min;
       const max = _maxSurfaceAngles.limits.max;
-      const surfaces = _maxSurfaceAngles.surfaces;
-      let newHTML = "";
-      for (const [name, maxAngle] of Object.entries(surfaces)) {
-        newHTML += ui.makeRangeTextInputPair(
-          "plane-angles-" + name, name, {
-          bounds: { min: min, max: max }, step: 1, value: maxAngle, scaling: "linear"
+      container.querySelector("p")?.remove();
+
+      for (const [surface, serverValue] of Object.entries(_maxSurfaceAngles.surfaces)) {
+        const maxAngle = _staged[surface] ?? serverValue;
+        let myWrapper = container.querySelector(`label[for="plane-angles-${surface}-text"]`);
+        
+        if (myWrapper === null) {
+          // create the UI element if not exists
+          container.innerHTML += ui.makeRangeTextInputPair(
+            "plane-angles-" + surface, surface, {
+              bounds: { min: min, max: max }, step: 1, value: maxAngle, scaling: "linear"
+            }
+          );
+        } else {
+          // or update an existing element
+          const textInput = myWrapper.querySelector("input[type=text]");
+          textInput.value = maxAngle;
+          textInput.dispatchEvent(new Event("input", { bubbles: true }));
         }
-        );
-      };
-      newHTML += `
-        <div class="flex-r">
-          <button type="button" class="btn" id="plane-angles-apply-btn">Apply max angles settings</button>
-        </div>`;
-      container.innerHTML = newHTML;
+      }
+
+      // make apply button if not exists
+      if (container.querySelector("#plane-angles-apply-btn") === null) {
+        container.insertAdjacentHTML("beforeend", `
+          <div class="flex-r">
+            <button type="button" class="btn" id="plane-angles-apply-btn">Apply max angles settings</button>
+          </div>`);
+      }
     } else {
       container.innerHTML = `<p>Failed to fetch data.</p>`;
     }
@@ -61,7 +79,10 @@ window.settings.maxSurfaceAngles = (function()
 
 
   async function save() {
-    const payload = _staged;
+    const payload = {};
+    for (const [surface, serverValue] of Object.entries(_maxSurfaceAngles.surfaces)) {
+      payload[surface] = _staged[surface] ?? serverValue;
+    }
     console.debug("max angles payload:", payload);
 
     const postSuccess = await ajax.postWithTimeout(
@@ -71,6 +92,7 @@ window.settings.maxSurfaceAngles = (function()
         _maxSurfaceAngles.surfaces = {};
         for (const [surfName, surfMaxAngle] of Object.entries(resp)) {
           _maxSurfaceAngles.surfaces[surfName] = surfMaxAngle;
+          _staged[surfName] = null;
         }
         ui.makeToast("success", "Successfully updated.");
       }
@@ -81,7 +103,11 @@ window.settings.maxSurfaceAngles = (function()
 
 
   function hasPendingChanges() {
-    return !_.isEqual(_staged, _maxSurfaceAngles.surfaces);
+    for (const [surface, serverValue] of Object.entries(_maxSurfaceAngles.surfaces)) {
+      if (_staged[surface] !== null && _staged[surface] !== serverValue)
+        return true;
+    }
+    return false;
   }
 
 
@@ -95,8 +121,10 @@ window.settings.maxSurfaceAngles = (function()
       _maxSurfaceAngles.surfaces = {};
       for (const surface of resp.AvailableSurfaces) {
         _maxSurfaceAngles.surfaces[surface] = resp.MaxSurfaceAngles[surface] || 0;
+        if (!_initialised)
+          _staged[surface] = null;
       }
-      _setStagedToActual();
+      _initialised = true;
       return true;
     } catch (err) {
       const errorString = "Error fetching max. surface angles data.\n\n" + err.toString();
@@ -104,11 +132,6 @@ window.settings.maxSurfaceAngles = (function()
       ui.makeToast("error", errorString, 5000);
       return false;
     }
-  }
-
-
-  function _setStagedToActual() {
-    _staged = JSON.parse(JSON.stringify(_maxSurfaceAngles.surfaces));
   }
 
 
