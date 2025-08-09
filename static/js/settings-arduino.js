@@ -151,7 +151,7 @@ window.settings.arduino = (function()
         const resp = await raw.json();
         _arduino.port = resp.SerialPortParameters?.Name || null;
         _arduino.baudRate = resp.SerialPortParameters?.BaudRate || null;
-        _arduino.availablePorts = resp.availablePorts || [];
+        _arduino.availablePorts = resp.AvailablePorts || [];
         return true;
       } else {
         console.debug("Server is not using arduino.");
