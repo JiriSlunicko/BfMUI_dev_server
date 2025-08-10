@@ -221,12 +221,8 @@ window.settings.controls = (function()
     const kind = mapping.dataset.kind;
     const output = mapping.dataset.output;
     const currentMapping = ctrlHelpers.getResolvedMapping(_controls, _staged, activeRole, output, kind);
-    let currentInput;
-    if (kind === "axis") {
-      currentInput = currentMapping?.inAxis?.split(/\s*,\s*/) || ["unbound"];
-    } else {
-      currentInput = currentMapping?.button?.split(/\s*,\s*/) || ["unbound"];
-    }
+    const mappingMainProperty = kind === "axis" ? "inAxis" : "button";
+    let currentInput = currentMapping?.[mappingMainProperty]?.split(/\s*,\s*/) || ["unbound"];
 
     const bg = document.createElement("div");
     bg.className = "modal-bg flex-c f-a-c";
@@ -242,7 +238,7 @@ window.settings.controls = (function()
 
     if (mapping.dataset.isEnum === "yes") {
       // enum of possible bindings
-      const enumSelect = _makeInputSelect("ctrl-input-enum", _controls.restrictions[output], currentInput);
+      const enumSelect = _makeInputSelect("ctrl-input-enum", _controls.restrictions[output], currentMapping?.[mappingMainProperty]);
       fg.appendChild(enumSelect);
     } else {
       // arbitrary buttons/axes
