@@ -34,14 +34,12 @@ window.settings.controls = (function()
       const submitButton = e.target.closest("#controls-submit-btn");
       if (submitButton) {
         save();
-        _updateActiveController();
         return;
       }
 
       const cancelButton = e.target.closest("#controls-reset-btn");
       if (cancelButton) {
-        _clearStaged();
-        _updateActiveController();
+        reset();
         return;
       }
     });
@@ -73,8 +71,8 @@ window.settings.controls = (function()
 
       // buttons
       utils.qs("#controls-btn-wrapper").innerHTML = `
-        <button type="button" class="btn" id="controls-submit-btn">Save changes</button>
-        <button type="button" class="btn" id="controls-reset-btn">Discard changes</button>
+        <button type="button" class="btn" id="controls-submit-btn">Apply</button>
+        <button type="button" class="btn" id="controls-reset-btn">Cancel</button>
       `;
 
       _updateActiveController(ctrlHelpers.getActiveControllerRole());
@@ -85,6 +83,12 @@ window.settings.controls = (function()
     }
     
     return controlsSuccess;
+  }
+
+
+  function reset() {
+    _clearStaged();
+    _updateActiveController();
   }
 
 
@@ -451,9 +455,10 @@ window.settings.controls = (function()
   return {
     init,
     load,
+    reset,
     save,
     hasPendingChanges,
-    _controls,
-    _staged,
+    _controls, // debug export
+    _staged, // debug export
   }
 })();

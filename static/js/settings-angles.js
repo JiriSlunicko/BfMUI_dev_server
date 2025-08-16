@@ -4,6 +4,8 @@ window.settings.maxSurfaceAngles = (function()
 
   let _staged = {};
 
+  let _lastFetchOk = null;
+
   let _maxSurfaceAngles = {
     limits: {
       min: 0,
@@ -15,9 +17,17 @@ window.settings.maxSurfaceAngles = (function()
 
   async function init() {
     utils.qs("#plane-angles-inner").addEventListener("click", function (e) {
-      const button = e.target.closest("#plane-angles-apply-btn");
-      if (button && hasPendingChanges())
+      const applyButton = e.target.closest("#plane-angles-submit-btn");
+      if (applyButton && hasPendingChanges()) {
         save();
+        return;
+      }
+
+      const resetButton = e.target.closest("#plane-angles-reset-btn");
+      if (resetButton) {
+        reset();
+        return;
+      }
     });
 
     utils.qs("#plane-angles-inner").addEventListener("slider-change", function (e) {
@@ -35,46 +45,17 @@ window.settings.maxSurfaceAngles = (function()
 
 
   async function load() {
-    const success = await _fetchData();
+    _lastFetchOk = await _fetchData();
+    _render();
+    return _lastFetchOk;
+  }
 
-    const container = utils.qs("#plane-angles-inner");
 
-    if (success) {
-      const min = _maxSurfaceAngles.limits.min;
-      const max = _maxSurfaceAngles.limits.max;
-      container.querySelector("p")?.remove();
-
-      for (const [surface, serverValue] of Object.entries(_maxSurfaceAngles.surfaces)) {
-        const maxAngle = _staged[surface] ?? serverValue;
-        let myWrapper = container.querySelector(`label[for="plane-angles-${surface}-text"]`);
-        
-        if (myWrapper === null) {
-          // create the UI element if not exists
-          container.innerHTML += ui.makeRangeTextInputPair(
-            "plane-angles-" + surface, surface, {
-              bounds: { min: min, max: max }, step: 1, value: maxAngle, scaling: "linear"
-            }
-          );
-        } else {
-          // or update an existing element
-          const textInput = myWrapper.querySelector("input[type=text]");
-          textInput.value = maxAngle;
-          textInput.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-      }
-
-      // make apply button if not exists
-      if (container.querySelector("#plane-angles-apply-btn") === null) {
-        container.insertAdjacentHTML("beforeend", `
-          <div class="flex-r">
-            <button type="button" class="btn" id="plane-angles-apply-btn">Apply max angles settings</button>
-          </div>`);
-      }
-    } else {
-      container.innerHTML = `<p>Failed to fetch data.</p>`;
+  function reset() {
+    for (const surface of Object.keys(_staged)) {
+      _staged[surface] = null;
     }
-
-    return success;
+    _render();
   }
 
 
@@ -135,10 +116,53 @@ window.settings.maxSurfaceAngles = (function()
   }
 
 
+  function _render() {
+    const container = utils.qs("#plane-angles-inner");
+
+    if (!_lastFetchOk) {
+      container.innerHTML = `<p>Failed to fetch data.</p>`;
+      return;
+    }
+
+    const min = _maxSurfaceAngles.limits.min;
+    const max = _maxSurfaceAngles.limits.max;
+    container.querySelector("p")?.remove();
+
+    for (const [surface, serverValue] of Object.entries(_maxSurfaceAngles.surfaces)) {
+      const maxAngle = _staged[surface] ?? serverValue;
+      let myWrapper = container.querySelector(`label[for="plane-angles-${surface}-text"]`);
+
+      if (myWrapper === null) {
+        // create the UI element if not exists
+        container.innerHTML += ui.makeRangeTextInputPair(
+          "plane-angles-" + surface, surface, {
+          bounds: { min: min, max: max }, step: 1, value: maxAngle, scaling: "linear"
+        }
+        );
+      } else {
+        // or update an existing element
+        const textInput = myWrapper.querySelector("input[type=text]");
+        textInput.value = maxAngle;
+        textInput.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+
+    // make apply button if not exists
+    if (container.querySelector("#plane-angles-submit-btn") === null) {
+      container.insertAdjacentHTML("beforeend", `
+          <div class="flex-r f-g8">
+            <button type="button" class="btn" id="plane-angles-submit-btn">Apply</button>
+            <button type="button" class="btn" id="plane-angles-reset-btn">Cancel</button>
+          </div>`);
+    }
+  }
+
+
   // public API
   return {
     init,
     load,
+    reset,
     save,
     hasPendingChanges,
   }

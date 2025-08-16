@@ -62,7 +62,7 @@ window.ajax = (function()
         successHandler?.(resp);
         return true;
       } catch (err) {
-        console.error(url, err);
+        console.error(url, err, payload);
         failureHandler?.(raw, err);
         ui.makeToast("error", raw.ok
           ? `POST ${url} succeeded, but can't process response\n\n${err.toString()}`

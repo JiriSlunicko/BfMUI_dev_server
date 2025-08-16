@@ -4,6 +4,8 @@ window.settings.trim = (function()
 
   let _staged = {};
 
+  let _lastFetchOk = null;
+
   let _trimValues = {
     limits: {
       min: -90,
@@ -15,9 +17,17 @@ window.settings.trim = (function()
 
   async function init() {
     utils.qs("#plane-trim-inner").addEventListener("click", function (e) {
-      const button = e.target.closest("#plane-trim-apply-btn");
-      if (button && hasPendingChanges())
+      const applyButton = e.target.closest("#plane-trim-submit-btn");
+      if (applyButton && hasPendingChanges()) {
         save();
+        return;
+      }
+
+      const resetButton = e.target.closest("#plane-trim-reset-btn");
+      if (resetButton) {
+        reset();
+        return;
+      }
     });
 
     utils.qs("#plane-trim-inner").addEventListener("slider-change", function(e) {
@@ -35,46 +45,17 @@ window.settings.trim = (function()
 
 
   async function load() {
-    const success = await _fetchData();
+    _lastFetchOk = await _fetchData();
+    _render();
+    return _lastFetchOk;
+  }
 
-    const container = utils.qs("#plane-trim-inner");
 
-    if (success) {
-      const min = _trimValues.limits.min;
-      const max = _trimValues.limits.max;
-      container.querySelector("p")?.remove();
-
-      for (const [surface, serverValue] of Object.entries(_trimValues.surfaces)) {
-        const trimValue = _staged[surface] ?? serverValue;
-        let myWrapper = container.querySelector(`label[for="plane-trim-${surface}-text"]`);
-
-        if (myWrapper === null) {
-          // create the UI element if not exists
-          container.innerHTML += ui.makeRangeTextInputPair(
-            "plane-trim-" + surface, surface, {
-              bounds: { min: min, max: max }, step: 1, value: trimValue, scaling: "linear"
-            }
-          );
-        } else {
-          // or update an existing element
-          const textInput = myWrapper.querySelector("input[type=text]");
-          textInput.value = trimValue;
-          textInput.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-      }
-
-      // make apply button if not exists
-      if (container.querySelector("#plane-trim-apply-btn") === null) {
-        container.insertAdjacentHTML("beforeend", `
-          <div class="flex-r">
-            <button type="button" class="btn" id="plane-trim-apply-btn">Apply trim settings</button>
-          </div>`);
-      }
-    } else {
-      container.innerHTML = `<p>Failed to fetch data.</p>`;
+  function reset() {
+    for (const surface of Object.keys(_staged)) {
+      _staged[surface] = null;
     }
-
-    return success;
+    _render();
   }
 
 
@@ -135,10 +116,53 @@ window.settings.trim = (function()
   }
 
 
+  function _render() {
+    const container = utils.qs("#plane-trim-inner");
+
+    if (!_lastFetchOk) {
+      container.innerHTML = `<p>Failed to fetch data.</p>`;
+      return;
+    }
+
+    const min = _trimValues.limits.min;
+    const max = _trimValues.limits.max;
+    container.querySelector("p")?.remove();
+
+    for (const [surface, serverValue] of Object.entries(_trimValues.surfaces)) {
+      const trimValue = _staged[surface] ?? serverValue;
+      let myWrapper = container.querySelector(`label[for="plane-trim-${surface}-text"]`);
+
+      if (myWrapper === null) {
+        // create the UI element if not exists
+        container.innerHTML += ui.makeRangeTextInputPair(
+          "plane-trim-" + surface, surface, {
+          bounds: { min: min, max: max }, step: 1, value: trimValue, scaling: "linear"
+        }
+        );
+      } else {
+        // or update an existing element
+        const textInput = myWrapper.querySelector("input[type=text]");
+        textInput.value = trimValue;
+        textInput.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }
+
+    // make apply button if not exists
+    if (container.querySelector("#plane-trim-submit-btn") === null) {
+      container.insertAdjacentHTML("beforeend", `
+          <div class="flex-r f-g8">
+            <button type="button" class="btn" id="plane-trim-submit-btn">Apply</button>
+            <button type="button" class="btn" id="plane-trim-reset-btn">Cancel</button>
+          </div>`);
+    }
+  }
+
+
   // public API
   return {
     init,
     load,
+    reset,
     save,
     hasPendingChanges,
   }

@@ -5,6 +5,7 @@
  * and implement the following methods:
  * - async .init() runs once when the app loads, does not load data yet
  * - async .load() should refresh data from the server and update the UI
+ * - sync .reset() should discard uncommitted changes and update the UI
  * - async .save() should push app data to the server
  * - .hasPendingChanges() should synchronously report whether the current
  *    app state differs from the last known server-side state
@@ -57,6 +58,14 @@ window.settingsManager = (function()
    */
   async function load(configDomains = null) {
     return _batchDelegate(async (domainObj) => domainObj.load(), configDomains);
+  }
+
+  /** Ask the specified domains to discard pending changes.
+   * @param {string[]|null} [configDomains=null] null = all
+   * @returns {Promise<object>} dictionary of domain->success
+   */
+  function reset(configDomains = null) {
+    return _batchDelegate((domainObj) => domainObj.reset(), configDomains);
   }
 
   /** Ask the specified domains to push data to the server.
@@ -122,9 +131,10 @@ window.settingsManager = (function()
     for (const [name, domain] of Object.entries(settings)) {
       if (
         !domain ||
-        typeof domain.init !== "function" ||
-        typeof domain.load !== "function" ||
-        typeof domain.save !== "function" ||
+        typeof domain.init  !== "function" ||
+        typeof domain.load  !== "function" ||
+        typeof domain.reset !== "function" ||
+        typeof domain.save  !== "function" ||
         typeof domain.hasPendingChanges !== "function"
       ) {
         throw new InvalidDomainInterfaceError(name, domain);
@@ -137,7 +147,8 @@ window.settingsManager = (function()
   return {
     init,
     load,
+    reset,
     save,
-    pendingChangesExist
+    pendingChangesExist,
   }
 })();

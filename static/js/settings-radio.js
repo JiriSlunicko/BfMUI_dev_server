@@ -1,5 +1,7 @@
 window.settings.radio = (function()
 {
+  let _lastFetchOk = null;
+
   let _staged = {
     channel: null,
     paLevel: null,
@@ -42,29 +44,26 @@ window.settings.radio = (function()
     });
 
     // submit
-    utils.qs("#settings-radio-apply-btn").addEventListener("click", save);
+    utils.qs("#settings-radio-submit-btn").addEventListener("click", save);
+    // reset
+    utils.qs("#settings-radio-reset-btn").addEventListener("click", reset);
 
     return true;
   }
 
 
   async function load() {
-    const radioSuccess = await _fetchData();
-    
-    if (radioSuccess) {
-      const resolvedChannel = _staged.channel ?? _radio.channel;
-      const resolvedPALevel = _staged.paLevel ?? _radio.paLevel;
-      const resolvedFeedback = _staged.feedback ?? _radio.feedback;
+    _lastFetchOk = await _fetchData();
+    _render();
+    return _lastFetchOk;
+  }
 
-      const radioPanel = utils.qs("#settings-radio");
-      radioPanel.querySelector("#settings-radio-channel-range").value = resolvedChannel;
-      radioPanel.querySelector("#settings-radio-channel-text").value = resolvedChannel;
-      radioPanel.querySelector("#settings-radio-pa-range").value = resolvedPALevel;
-      radioPanel.querySelector("#settings-radio-pa-text").value = resolvedPALevel;
-      radioPanel.querySelector("#settings-radio-feedback").value = resolvedFeedback ? "yes" : "";
-    }
 
-    return radioSuccess;
+  function reset() {
+    _staged.channel = null;
+    _staged.paLevel = null;
+    _staged.feedback = null;
+    _render();
   }
 
 
@@ -125,10 +124,34 @@ window.settings.radio = (function()
   }
 
 
+  function _render() {
+    const radioPanel = utils.qs("#settings-radio");
+
+    if (!_lastFetchOk) {
+      if (radioPanel.querySelector("#radio-error") === null)
+        radioPanel.insertAdjacentHTML("beforeend", `
+          <p id="radio-error">Failed to fetch data.</p>`
+        );
+      return;
+    }
+
+    const resolvedChannel = _staged.channel ?? _radio.channel;
+    const resolvedPALevel = _staged.paLevel ?? _radio.paLevel;
+    const resolvedFeedback = _staged.feedback ?? _radio.feedback;
+    radioPanel.querySelector("#radio-error")?.remove();
+    radioPanel.querySelector("#settings-radio-channel-range").value = resolvedChannel;
+    radioPanel.querySelector("#settings-radio-channel-text").value = resolvedChannel;
+    radioPanel.querySelector("#settings-radio-pa-range").value = resolvedPALevel;
+    radioPanel.querySelector("#settings-radio-pa-text").value = resolvedPALevel;
+    radioPanel.querySelector("#settings-radio-feedback").value = resolvedFeedback ? "yes" : "";
+  }
+
+
   // public API
   return {
     init,
     load,
+    reset,
     save,
     hasPendingChanges,
   }

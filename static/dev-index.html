@@ -155,7 +155,7 @@
           </div>
         </div>
 
-        <div id="controls-btn-wrapper" class="flex-r f-j-c f-g16"></div>
+        <div id="controls-btn-wrapper" class="flex-r f-j-c f-g8"></div>
       </div>
 
 
@@ -213,8 +213,9 @@
                 </select>
               </label>
             </div>
-            <div class="flex-r">
-              <button type="button" class="btn" id="settings-radio-apply-btn">Apply radio settings</button>
+            <div class="flex-r f-g8">
+              <button type="button" class="btn" id="settings-radio-submit-btn">Apply</button>
+              <button type="button" class="btn" id="settings-radio-reset-btn">Cancel</button>
             </div>
           </div>
 
@@ -227,9 +228,12 @@
                 <option value="custom">(custom)</option>
               </select>
               <input type="text" id="settings-arduino-baudrate-text" class="ml8 w8ch"
-                pattern="^\d{1,8}$" placeholder="baud rate" />
+                pattern="^\d{1,8}$" placeholder="Bd rate" />
             </div>
-            <button type="button" class="btn" id="settings-arduino-apply-btn">Apply serial port settings</button>
+            <div class="flex-r f-g8">
+              <button type="button" class="btn" id="settings-arduino-submit-btn">Apply</button>
+              <button type="button" class="btn" id="settings-arduino-reset-btn">Cancel</button>
+            </div>
           </div>
         </div>
 

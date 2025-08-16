@@ -45,7 +45,10 @@ window.pages.home = (function()
 
     const statusBar = utils.qs("#status-can-fly");
     if (notOkCount > 0) {
-      statusBar.innerText = notOkCount + " systems not ready";
+      const notOkText = notOkCount === 1
+        ? `${notOkCount} system not ready`
+        : `${notOkCount} systems not ready`;
+      statusBar.innerText = notOkText;
       statusBar.classList.remove("all-ok");
       statusBar.classList.add("not-ok");
     } else {

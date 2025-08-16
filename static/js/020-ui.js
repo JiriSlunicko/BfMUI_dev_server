@@ -76,12 +76,17 @@ window.ui = (function () {
       const fg = document.createElement("div");
       fg.className = "modal-fg flex-c f-a-c";
 
+      // title & main text
       let html = "";
       if (title) html += `<h3>${title}</h3>`;
-      html += `<p>${msg}</p>`;
+      html += `<p>${msg.replaceAll("\n", "<br />")}</p>`;
+
+      // prompt only: text input
       if (type === "prompt") {
         html += `<input type="text" id="modal-text-input" class="w100 mb16" placeholder="(your input here)" />`;
       }
+
+      // button ribbon
       html += `<div class="flex-r f-j-c f-g8">`;
       html += `<button type="button" class="btn" id="modal-ok-btn">Ok</button>`;
       if (type !== "alert") {
@@ -89,6 +94,7 @@ window.ui = (function () {
       }
       html += `</div>`;
 
+      // assemble everything
       fg.innerHTML = html;
       bg.appendChild(fg);
       document.body.append(bg);
@@ -98,6 +104,7 @@ window.ui = (function () {
         : utils.qs("#modal-ok-btn");
       focusElement.focus();
 
+      // cancel by clicking the background
       if (type !== "alert") {
         bg.addEventListener("click", function(e) {
           if (e.target === this) {
@@ -106,7 +113,15 @@ window.ui = (function () {
           }
         });
       }
+      // cancel via the cancel button
+      if (type !== "alert") {
+        fg.querySelector("#modal-cancel-btn").onclick = () => {
+          bg.remove();
+          resolve(type === "prompt" ? null : false);
+        }
+      }
 
+      // submit
       fg.querySelector("#modal-ok-btn").onclick = () => {
         if (type === "prompt") {
           const userInput = utils.qs("#modal-text-input")?.value;
@@ -118,12 +133,6 @@ window.ui = (function () {
         } else {
           bg.remove();
           resolve(true);
-        }
-      }
-      if (type === "confirm") {
-        fg.querySelector("#modal-cancel-btn").onclick = () => {
-          bg.remove();
-          resolve(type === "prompt" ? null : false);
         }
       }
     });

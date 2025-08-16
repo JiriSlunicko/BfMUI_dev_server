@@ -2,6 +2,10 @@ window.serverConfig = (function()
 {
   let _configTypes = [];
   let _availableConfigs = {};
+  const _configGroups = {
+    plane: ["radio", "maxSurfaceAngles", "trim"],
+    user: ["arduino", "controls"],
+  }
 
 
   function init() {
@@ -107,14 +111,7 @@ window.serverConfig = (function()
    * @param {string} cfgType which configuration type was applied
    */
   async function _applyConfig(cfgType) {
-    switch (cfgType) {
-      case "plane":
-        await settingsManager.load(["radio", "maxSurfaceAngles", "trim"]);
-        break;
-      case "user":
-        await settingsManager.load(["arduino", "controls"]);
-        break;
-    }
+    settingsManager.load(_configGroups[cfgType] ?? [])
   }
 
 
@@ -124,6 +121,27 @@ window.serverConfig = (function()
   async function _saveConfig() {
     const cfgType = utils.qs("#settings-configs-type-select").value;
     let cfgName = utils.qs("#settings-configs-name-select").value;
+
+    // if unsaved changes exist, ask whether to save them
+    const thisGroupConfigs = _configGroups[cfgType] ?? [];
+    if (settingsManager.pendingChangesExist(thisGroupConfigs)) {
+      let withChanges = [];
+      for (const cfgDomain of thisGroupConfigs) {
+        if (window.settings[cfgDomain]?.hasPendingChanges()) {
+          withChanges.push(cfgDomain);
+        }
+      }
+      const consent = await ui.makePopup("confirm",
+        "The following modules have unsaved changes. Do you want to apply them before saving?\n\n"
+        + withChanges.join("\n"), "Changes pending");
+      if (consent) {
+        const applyPendingSuccess = await settingsManager.save(thisGroupConfigs);
+        if (!applyPendingSuccess) {
+          ui.makeToast("error", "Failed to apply settings, aborting.");
+          return;
+        }
+      }
+    }
 
     if (cfgName === "__NEW__") {
       const newName = await ui.makePopup("prompt", "Enter a name for the new configuration.", "Name needed");

@@ -13,6 +13,7 @@ window.settings.arduino = (function()
     availablePorts: [],
     baudRatePresets: [110, 300, 600, 1200, 2400, 4800, 9600, 14400,
       19200, 38400, 57600, 115200, 128000, 256000],
+    serverDataIsNull: null,
   }
 
 
@@ -48,10 +49,12 @@ window.settings.arduino = (function()
     });
 
     // submit listener
-    utils.qs("#settings-arduino-apply-btn").addEventListener("click", function () {
+    utils.qs("#settings-arduino-submit-btn").addEventListener("click", function () {
       if (hasPendingChanges())
         save();
     });
+    // reset listener
+    utils.qs("#settings-arduino-reset-btn").addEventListener("click", reset);
 
     return true;
   }
@@ -59,46 +62,17 @@ window.settings.arduino = (function()
 
   async function load() {
     const usingArduino = await _fetchData(backend);
-    if (usingArduino === null) return false; // loading error
-
-    const arduinoPanel = utils.qs("#settings-arduino");
-
-    // hide panel and return if not using arduino
-    if (usingArduino === false) {
-      arduinoPanel.classList.add("hidden");
-      return true;
-    }
-
-    // if we're here, arduino is enabled
-    arduinoPanel.classList.remove("hidden");
-    const portSelect = arduinoPanel.querySelector("#settings-arduino-port");
-    const baudRateText = arduinoPanel.querySelector("#settings-arduino-baudrate-text");
-    const baudRateSelect = arduinoPanel.querySelector("#settings-arduino-baudrate-select");
-    const prevWarning = arduinoPanel.querySelector("#settings-arduino-warning");
-    if (prevWarning) prevWarning.remove();
-
-    const resolvedPort = _staged.port ?? _arduino.port;
-    const resolvedBaudRate = _staged.baudRate ?? _arduino.baudRate;
-
-    // update port selection
-    portSelect.innerHTML = "";
-    for (const opt of _arduino.availablePorts) {
-      portSelect.insertAdjacentHTML("beforeend", `
-        <option value="${opt}"${opt === resolvedPort ? " selected" : ""}>${opt}</option>
-      `);
-    }
-    const isPortValid = _validatePortSelection(resolvedPort);
-
-    if (!isPortValid) {
-      portSelect.insertAdjacentHTML("beforeend", `
-        <option value="${resolvedPort}" selected disabled>${resolvedPort}</option>`);
-    }
-
-    // update baudrate selection
-    baudRateText.value = resolvedBaudRate;
-    baudRateSelect.value = _arduino.baudRatePresets.includes(resolvedBaudRate) ? resolvedBaudRate : "custom";
-
+    if (usingArduino === null)
+      return false; // loading error
+    _render();
     return true;
+  }
+
+
+  function reset() {
+    _staged.port = null;
+    _staged.baudRate = null;
+    _render();
   }
 
 
@@ -118,8 +92,9 @@ window.settings.arduino = (function()
       backend.baseurl + backend.endpoints.serialPortPost,
       payload,
       (resp) => {
-        _arduino.port = resp.Name;
-        _arduino.baudRate = resp.BaudRate;
+        _arduino.port = resp?.Name || null;
+        _arduino.baudRate = resp?.BaudRate || null;
+        _arduino.serverDataIsNull = resp === null;
         _staged.port = null;
         _staged.baudRate = null;
         ui.makeToast("success", "Successfully updated.");
@@ -152,6 +127,7 @@ window.settings.arduino = (function()
         _arduino.port = resp.SerialPortParameters?.Name || null;
         _arduino.baudRate = resp.SerialPortParameters?.BaudRate || null;
         _arduino.availablePorts = resp.AvailablePorts || [];
+        _arduino.serverDataIsNull = resp.SerialPortParameters === null;
         return true;
       } else {
         console.debug("Server is not using arduino.");
@@ -161,6 +137,44 @@ window.settings.arduino = (function()
       console.error("Arduino fetch error:", err);
       return null;
     }
+  }
+
+
+  function _render() {
+    const arduinoPanel = utils.qs("#settings-arduino");
+
+    if (!backend.usingArduino) {
+      arduinoPanel.classList.add("hidden");
+      return;
+    }
+
+    arduinoPanel.classList.remove("hidden");
+    const portSelect = arduinoPanel.querySelector("#settings-arduino-port");
+    const baudRateText = arduinoPanel.querySelector("#settings-arduino-baudrate-text");
+    const baudRateSelect = arduinoPanel.querySelector("#settings-arduino-baudrate-select");
+    const prevWarning = arduinoPanel.querySelector("#settings-arduino-warning");
+    if (prevWarning) prevWarning.remove();
+
+    const resolvedPort = _staged.port ?? _arduino.port;
+    const resolvedBaudRate = _staged.baudRate ?? _arduino.baudRate;
+
+    // update port selection
+    portSelect.innerHTML = "";
+    for (const opt of _arduino.availablePorts) {
+      portSelect.insertAdjacentHTML("beforeend", `
+        <option value="${opt}"${opt === resolvedPort ? " selected" : ""}>${opt}</option>
+      `);
+    }
+    const isPortValid = _validatePortSelection(resolvedPort);
+
+    if (!isPortValid) {
+      portSelect.insertAdjacentHTML("beforeend", `
+        <option value="${resolvedPort}" selected disabled>${resolvedPort}</option>`);
+    }
+
+    // update baudrate selection
+    baudRateText.value = resolvedBaudRate;
+    baudRateSelect.value = _arduino.baudRatePresets.includes(resolvedBaudRate) ? resolvedBaudRate : "custom";
   }
 
 
@@ -174,15 +188,15 @@ window.settings.arduino = (function()
 
     if (value && value !== "null" && !_arduino.availablePorts.includes(value)) {
       arduinoPanel.classList.add("invalid");
-      arduinoPanel.querySelector("#settings-arduino-apply-btn").classList.add("hidden");
-      arduinoPanel.querySelector("#settings-arduino-apply-btn").insertAdjacentHTML("beforebegin", `
+      arduinoPanel.querySelector("#settings-arduino-submit-btn").classList.add("hidden");
+      arduinoPanel.querySelector("#settings-arduino-submit-btn").insertAdjacentHTML("beforebegin", `
         <p id="settings-arduino-warning" class="warning mb0"><b>WARNING:</b> port not available</p>`);
       
       _staged.port = null;
       returnValue = false;
     } else {
       arduinoPanel.classList.remove("invalid");
-      arduinoPanel.querySelector("#settings-arduino-apply-btn").classList.remove("hidden");
+      arduinoPanel.querySelector("#settings-arduino-submit-btn").classList.remove("hidden");
       arduinoPanel.querySelector("#settings-arduino-warning")?.remove();
       
       if (_initialised) _staged.port = value;
@@ -198,6 +212,7 @@ window.settings.arduino = (function()
   return {
     init,
     load,
+    reset,
     save,
     hasPendingChanges,
   }
