@@ -4,6 +4,7 @@ import subprocess
 import zipfile
 from pathlib import Path
 from bundle import bundle
+from version import get_v
 
 # ---- CONFIG ----
 ENTRY_SCRIPT = "app.py"
@@ -20,6 +21,7 @@ EXTRA_FILES = [
     "static/js/",
     "static/css/",
     "readme.md",
+    "v",
 ]
 
 def clean():
@@ -31,11 +33,12 @@ def clean():
 
 def build_exe():
     print("[*] Building .exe with PyInstaller...")
+    v = get_v()
     subprocess.run([
         "pyinstaller",
         "--onefile",
         "--clean",
-        "--name", Path(EXE_NAME).stem,
+        "--name", f"{Path(EXE_NAME).stem}-{v}",
         ENTRY_SCRIPT
     ], check=True)
 

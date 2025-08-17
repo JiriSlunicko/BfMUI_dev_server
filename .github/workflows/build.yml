@@ -13,6 +13,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Read version
+        id: version
+        run: echo "APP_VERSION=${type v}" >> $GITHUB_ENV
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -36,11 +40,11 @@ jobs:
       - name: Upload artifact - desktop
         uses: actions/upload-artifact@v4
         with:
-          name: BfMUI_desktop_dist
+          name: BfMUI_desktop_dist-${{ env.APP_VERSION }}
           path: extracted/
       
       - name: Upload artifact - android
         uses: actions/upload-artifact@v4
         with:
-          name: BfMUI_android_dist
+          name: BfMUI_android_dist-${{ env.APP_VERSION }}
           path: apk/bfmui.apk
