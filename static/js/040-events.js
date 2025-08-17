@@ -30,10 +30,13 @@ window.events = (function () {
 
 
   async function _tryConnection() {
-    console.log("_tryConnection");
+    if (isDebugMode())
+      console.debug("_tryConnection runs.");
     try {
       const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.events, 2500);
       if (!raw.ok) throw new Error("Response "+raw.status);
+      if (isDebugMode())
+        console.debug("_tryConnection succeeded.");
       _tryingReconnect = false;
       _streamFailed = false;
       openStream();
@@ -49,9 +52,10 @@ window.events = (function () {
     _eventStream = new EventSource(backend.baseurl + backend.endpoints.events);
 
     _eventStream.onmessage = (msg) => {
-      if (isDebugMode()) {
+      if (isDebugMode())
         console.debug(msg.data);
-      }
+      _streamFailed = false;
+
       let asJson = null;
       try {
         asJson = JSON.parse(msg.data);
@@ -77,6 +81,9 @@ window.events = (function () {
     };
 
     _eventStream.onerror = (ev) => {
+      if (isDebugMode())
+        console.debug("Event stream fail.");
+
       if (!_streamFailed) { // allow one fail before we consider the connection dead
         _streamFailed = true;
         return;
