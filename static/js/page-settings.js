@@ -12,12 +12,12 @@ window.pages.settings = (function() {
       const [ip, port] = urlWithoutProtocol.split(":");
       utils.qs("#input-ip").value = ip;
       utils.qs("#input-port").value = port;
-      _connect(backend);
+      connect(backend);
     }
     utils.qs("#input-poll-interval").value = _polling.delay;
     utils.qs("#settings-reset-btn").addEventListener("click", _resetSettings);
     utils.qs("#settings-connect-btn").addEventListener("click", () => {
-      _connect(backend);
+      connect(backend);
     });
     utils.qs("#input-poll-interval").addEventListener("blur", _changePollInterval);
     utils.qs("#settings-poll-start-btn").addEventListener("click", _pollStart);
@@ -45,7 +45,7 @@ window.pages.settings = (function() {
    * @param {boolean} retry whether to retry on failure
    * @param {string|null} lastFail if retrying, what failed last time
    */
-  async function _connect(globalServer, retry=true, lastFail=null) {
+  async function connect(globalServer, retry=true, lastFail=null) {
     console.debug("Attempting connection.", lastFail);
     const ip = utils.qs("#input-ip").value;
     const port = utils.qs("#input-port").value;
@@ -99,7 +99,8 @@ window.pages.settings = (function() {
       serverConfig.getFreshServerConfigs();
 
       // open event stream
-      events.openStream(globalServer);
+      events.tryConnectionUntilOk();
+      //events.openStream(globalServer);
 
       let successMessage = "Connected to server, polling.\n\nModules:";
       for (const [domain, success] of Object.entries(loadSuccess)) {
@@ -116,7 +117,7 @@ window.pages.settings = (function() {
       if (!retry)
         ui.makeToast("error", "Connection failed.\n\n" + err.toString(), 5000);
       else
-        _connect(globalServer, retry, err.toString());
+        connect(globalServer, retry, err.toString());
     }
   }
 
@@ -181,5 +182,6 @@ window.pages.settings = (function() {
     init,
     activate: ()=>{},
     deactivate: ()=>{},
+    connect,
   }
 })();

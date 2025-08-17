@@ -14,10 +14,10 @@ window.pages = {};
 window.backend =
 {
   baseurl: localStorage.getItem("serverBaseurl") || "http://localhost:8080",
-  bfmui: null,
-  info: null,
-  usingArduino: null,
-  endpoints: {
+  bfmui: null, // info about the app itself
+  info: null, // info about the backend (Bloodfly Control server)
+  usingArduino: null, // whether the backend is using serial port communication
+  endpoints: { // map of URLs for backend endpoints
     events: "/events/",
     configListGet: "/config/list/",
     configLoadPost: "/config/load/",

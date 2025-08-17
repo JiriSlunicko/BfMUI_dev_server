@@ -1,14 +1,57 @@
-/** Interface for handling a server-side event stream. */
+/** Interface for handling a server-side event stream.
+ * Also responsible for tracking the connection state.
+*/
 
 window.events = (function () {
   let _eventStream = null;
+  let _lastBoot = null;
+  let _streamFailed = false;
+  let _tryingReconnect = false;
+  let _debugMode = false;
+
+
+  function isDebugMode(change=null) {
+    if (change === null)
+      return _debugMode;
+    if (change === true) {
+      _debugMode = true;
+      return;
+    }
+    _debugMode = false;
+  }
+
+
+  async function tryConnectionUntilOk() {
+    if (_tryingReconnect) return;
+    closeStream();
+    _tryingReconnect = true;
+    _tryConnection();
+  }
+
+
+  async function _tryConnection() {
+    console.log("_tryConnection");
+    try {
+      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.events, 2500);
+      if (!raw.ok) throw new Error("Response "+raw.status);
+      _tryingReconnect = false;
+      _streamFailed = false;
+      openStream();
+    } catch {
+      _tryConnection();
+    }
+  }
 
   
   /** Connect to the backend server's event dispatcher. */
   function openStream() {
     closeStream();
     _eventStream = new EventSource(backend.baseurl + backend.endpoints.events);
+
     _eventStream.onmessage = (msg) => {
+      if (isDebugMode()) {
+        console.debug(msg.data);
+      }
       let asJson = null;
       try {
         asJson = JSON.parse(msg.data);
@@ -17,10 +60,30 @@ window.events = (function () {
         return;
       }
 
+      const newBootTime = new Date(asJson.AppStartTime);
+      if (_lastBoot === null) {
+        _lastBoot = newBootTime;
+      } else if (newBootTime > _lastBoot) {
+        _lastBoot = newBootTime;
+        closeStream();
+        if (isDebugMode())
+          console.debug("Event manager requests reconnection from pages.settings.");
+        pages.settings.connect(backend, true, "Server has been restarted.");
+      }
+
       if (asJson.Events && asJson.Events.length) {
         _processEvents(asJson.Events);
       }
-    }
+    };
+
+    _eventStream.onerror = (ev) => {
+      if (!_streamFailed) { // allow one fail before we consider the connection dead
+        _streamFailed = true;
+        return;
+      }
+
+      tryConnectionUntilOk();
+    };
   }
 
 
@@ -31,7 +94,9 @@ window.events = (function () {
     let changedDomains = new Set();
 
     for (const backendEvent of eventArray) {
-      console.debug(new Date().toLocaleString(), backendEvent);
+      if (isDebugMode()) {
+        console.debug(new Date().toLocaleString(), backendEvent);
+      }
 
       switch (backendEvent) {
         case "AvailableSerialPortsChanged":
@@ -73,6 +138,8 @@ window.events = (function () {
 
   // public API
   return {
+    isDebugMode,
+    tryConnectionUntilOk,
     openStream,
     closeStream,
   }
