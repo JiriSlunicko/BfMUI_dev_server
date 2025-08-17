@@ -44,7 +44,9 @@ window.settings.radio = (function()
     });
 
     // submit
-    utils.qs("#settings-radio-submit-btn").addEventListener("click", save);
+    utils.qs("#settings-radio-submit-btn").addEventListener("click", utils.throttle(() => {
+      if (hasPendingChanges()) save();
+    }, 1000));
     // reset
     utils.qs("#settings-radio-reset-btn").addEventListener("click", reset);
 

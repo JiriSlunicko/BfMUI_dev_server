@@ -19,7 +19,7 @@ window.settings.trim = (function()
     utils.qs("#plane-trim-inner").addEventListener("click", function (e) {
       const applyButton = e.target.closest("#plane-trim-submit-btn");
       if (applyButton && hasPendingChanges()) {
-        save();
+        utils.throttle(save, 1000)();
         return;
       }
 
@@ -151,8 +151,8 @@ window.settings.trim = (function()
     if (container.querySelector("#plane-trim-submit-btn") === null) {
       container.insertAdjacentHTML("beforeend", `
           <div class="flex-r f-g8">
-            <button type="button" class="btn" id="plane-trim-submit-btn">Apply</button>
-            <button type="button" class="btn" id="plane-trim-reset-btn">Cancel</button>
+            <button type="button" class="btn" id="plane-trim-submit-btn">Save</button>
+            <button type="button" class="btn" id="plane-trim-reset-btn">Reset</button>
           </div>`);
     }
   }

@@ -51,7 +51,7 @@ window.settings.arduino = (function()
     // submit listener
     utils.qs("#settings-arduino-submit-btn").addEventListener("click", function () {
       if (hasPendingChanges())
-        save();
+        utils.throttle(save, 1000)();
     });
     // reset listener
     utils.qs("#settings-arduino-reset-btn").addEventListener("click", reset);

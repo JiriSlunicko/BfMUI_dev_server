@@ -255,6 +255,10 @@ input[type=range]::-moz-range-thumb {
   align-items: center;
 }
 
+.f-a-e {
+  align-items: end;
+}
+
 .f-j-c {
   justify-content: center;
 }
@@ -456,6 +460,7 @@ section .main-content .view-tab {
 #status-can-fly {
   display: block;
   text-align: center;
+  height: 24px;
   color: var(--bg-bright);
   background-color: var(--bg-dark);
   border-top: 1px solid var(--bg-medium);
@@ -505,10 +510,7 @@ section .main-content .view-tab {
   #view-controls {
     display: grid;
     grid-template-columns: repeat(2, calc(50% - 16px));
-    grid-template-areas: "roleselect roleselect" "buttons axes" "interaction interaction";
-  }
-  #controls-role-select-div {
-    grid-area: roleselect;
+    grid-template-areas: "buttons axes";
   }
   #controls-buttons {
     grid-area: buttons;
@@ -516,10 +518,36 @@ section .main-content .view-tab {
   #controls-axes {
     grid-area: axes;
   }
-  #controls-btn-wrapper {
-    grid-area: interaction;
+}
+#controls-interact-div {
+  position: fixed;
+  left: 0;
+  bottom: 24px; /* footer height */
+  width: 100%;
+}
+
+#controls-interact-div-inner {
+  padding: 4px 8px 8px;
+  justify-content: space-between;
+  background-color: var(--bg-bright);
+  border-top: 1px solid var(--bg-medium);
+}
+@media only screen and (min-width: 751px) {
+  #controls-interact-div-inner {
+    border: 1px solid var(--bg-medium);
+    border-bottom: none;
   }
 }
+@media only screen and (max-width: 750px) {
+  #controls-interact-div-inner {
+    width: 100%;
+  }
+}
+
+section .main-content .view-tab#view-controls {
+  padding-bottom: 64px;
+}
+
 .ctrl-wrapper {
   cursor: pointer;
 }

@@ -10,8 +10,8 @@ window.serverConfig = (function()
 
   function init() {
     utils.qs("#settings-configs-type-select").addEventListener("change", _updateConfigNameSelect);
-    utils.qs("#settings-configs-load").addEventListener("click", _loadConfig);
-    utils.qs("#settings-configs-save").addEventListener("click", _saveConfig);
+    utils.qs("#settings-configs-load").addEventListener("click", utils.throttle(_loadConfig, 1000));
+    utils.qs("#settings-configs-save").addEventListener("click", utils.throttle(_saveConfig, 1000));
   }
 
 

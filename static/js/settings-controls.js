@@ -33,7 +33,7 @@ window.settings.controls = (function()
 
       const submitButton = e.target.closest("#controls-submit-btn");
       if (submitButton) {
-        save();
+        utils.throttle(save, 1000)();
         return;
       }
 
@@ -71,8 +71,8 @@ window.settings.controls = (function()
 
       // buttons
       utils.qs("#controls-btn-wrapper").innerHTML = `
-        <button type="button" class="btn" id="controls-submit-btn">Apply</button>
-        <button type="button" class="btn" id="controls-reset-btn">Cancel</button>
+        <button type="button" class="btn" id="controls-submit-btn">Save</button>
+        <button type="button" class="btn" id="controls-reset-btn">Reset</button>
       `;
 
       _updateActiveController(ctrlHelpers.getActiveControllerRole());

@@ -19,7 +19,7 @@ window.settings.maxSurfaceAngles = (function()
     utils.qs("#plane-angles-inner").addEventListener("click", function (e) {
       const applyButton = e.target.closest("#plane-angles-submit-btn");
       if (applyButton && hasPendingChanges()) {
-        save();
+        utils.throttle(save, 1000)();
         return;
       }
 
@@ -151,8 +151,8 @@ window.settings.maxSurfaceAngles = (function()
     if (container.querySelector("#plane-angles-submit-btn") === null) {
       container.insertAdjacentHTML("beforeend", `
           <div class="flex-r f-g8">
-            <button type="button" class="btn" id="plane-angles-submit-btn">Apply</button>
-            <button type="button" class="btn" id="plane-angles-reset-btn">Cancel</button>
+            <button type="button" class="btn" id="plane-angles-submit-btn">Save</button>
+            <button type="button" class="btn" id="plane-angles-reset-btn">Reset</button>
           </div>`);
     }
   }

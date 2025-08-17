@@ -2,6 +2,28 @@
 
 window.utils = (function()
 {
+  /** Limit how often a function is invoked.
+   * @param {function} fn function, may be async
+   * @param {number} cooldown wait time in ms
+   * @returns {function} throttled function
+   */
+  function throttle(fn, cooldown) {
+    let lastRun = 0;
+    let state = null;
+
+    return (...args) => {
+      const now = Date.now();
+      if (now - lastRun >= cooldown) {
+        lastRun = now;
+        state = Promise.resolve(fn(...args));
+        return state;
+      }
+
+      return Promise.resolve(null);
+    }
+  }
+
+
   /** Map values between 0 and 100 to min-max logarithmically or exponentially.
    * @param {number} min output at 0%
    * @param {number} max output at 100%
@@ -9,7 +31,7 @@ window.utils = (function()
    * @param {number} [curve=4] 1 = linear, higher = more resolution near min
    * @returns {number} scaled value
    */
-  function percentToExp(min, max, percent, curve = 4) {
+  function _percentToExp(min, max, percent, curve = 4) {
     if (min >= max || percent < 0 || percent > 100) {
       throw new Error(`invalid params: ${min}-${max}, ${percent}`);
     }
@@ -27,7 +49,7 @@ window.utils = (function()
    * @param {number} [curve=4] 1 = linear, higher = more resolution near min
    * @returns {number} slider percent (0–100)
    */
-  function expToPercent(min, max, value, curve = 4) {
+  function _expToPercent(min, max, value, curve = 4) {
     if (min >= max || value < min || value > max) {
       throw new Error(`invalid params: ${min}-${max}, ${value}`);
     }
@@ -47,7 +69,7 @@ window.utils = (function()
   function rangeToTextInput(val, logScaling=null, decimals=null) {
     const resolvedValue =
       logScaling
-      ? percentToExp(logScaling.min, logScaling.max, val)
+      ? _percentToExp(logScaling.min, logScaling.max, val)
       : Number(val);
     return (
       decimals === null
@@ -73,7 +95,7 @@ window.utils = (function()
     }
     const resolvedValue =
       isLog
-      ? expToPercent(min, max, numVal)
+      ? _expToPercent(min, max, numVal)
       : numVal;
     return (
       decimals === null
@@ -86,6 +108,7 @@ window.utils = (function()
   return {
     qs: (sel) => document.querySelector(sel),
     qsa: (sel) => document.querySelectorAll(sel),
+    throttle,
     rangeToTextInput,
     textInputToRange,
   }
