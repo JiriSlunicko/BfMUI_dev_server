@@ -4,7 +4,9 @@ window.pages.home = (function()
     hideIntro: Boolean(localStorage.getItem("hideIntro")),
   }
 
-  /** On DOM load, hide the intro text if desired & allow the user to hide it. */
+  /** On DOM load:
+   * - hide the intro text if desired & allow the user to hide it.
+   * */
   function init() {
     if (_userPreferences.hideIntro) {
       utils.qs("#home-intro").style.display = "none";
@@ -19,20 +21,30 @@ window.pages.home = (function()
   }
 
 
+  async function _get_BfMUI_version() {
+    const resp = await fetch("/v");
+    const text = await resp.text();
+    backend.bfmui = {Version: text};
+    return text;
+  }
+
+
   /** Load basic server info for the homepage. */
-  function initSysInfo() {
+  async function initSysInfo() {
     if (!backend.info) {
       console.error("Tried to initSysInfo without any server info!");
       return;
     }
 
     utils.qs("#home-sysinfo-inner > p")?.remove();
+    await _get_BfMUI_version();
+    entries.reuseOrCreate("#home-sysinfo-inner", 0, "BfMUI", backend.bfmui);
     const sysInfo = backend.info;
     for (let i = 0; i < sysInfo.length; i++) {
       const dataEntry = sysInfo[i];
-      entries.reuseOrCreate("#home-sysinfo-inner", i, dataEntry.ComponentName, dataEntry.Properties);
+      entries.reuseOrCreate("#home-sysinfo-inner", i+1, dataEntry.ComponentName, dataEntry.Properties);
     };
-    entries.trimList("#home-sysinfo-inner", sysInfo.length);
+    entries.trimList("#home-sysinfo-inner", sysInfo.length+1);
   }
 
 

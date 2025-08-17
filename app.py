@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, make_response
 import sys
 import traceback
 from pathlib import Path
@@ -49,6 +49,19 @@ def index():
     else:
         return send_from_directory(str(root / "static"), "index.html")
 
+@app.route("/v")
+def version():
+    v = "0.0.0"
+    try:
+        with open("v", "r", encoding="utf-8") as f:
+            v = f.read()
+    except: pass
+    resp = make_response(v)
+    resp.headers["Content-Type"] = "text-plain"
+    resp.status_code = 200
+    return resp
+
+
 @app.route("/<path:path>")
 def static_proxy(path: str):
     return send_from_directory(str(root / "static"), path)
@@ -74,8 +87,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     r"""
-    Important:
-    - commit via CLI rather than VS Code to avoid hook weirdness.
+    Note to self:
+    - commit via CLI rather than VS Code if hook weirdness occurs.
 
     Testing:
     1. Start server

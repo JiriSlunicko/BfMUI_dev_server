@@ -14,6 +14,7 @@ window.pages = {};
 window.backend =
 {
   baseurl: localStorage.getItem("serverBaseurl") || "http://localhost:8080",
+  bfmui: null,
   info: null,
   usingArduino: null,
   endpoints: {
