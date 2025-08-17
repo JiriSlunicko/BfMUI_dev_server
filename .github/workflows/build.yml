@@ -15,7 +15,7 @@ jobs:
 
       - name: Read version
         id: version
-        run: echo "APP_VERSION=${type v}" >> $GITHUB_ENV
+        run: echo "APP_VERSION=${python version.py get}" >> $GITHUB_ENV
 
       - name: Set up Python
         uses: actions/setup-python@v5
