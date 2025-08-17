@@ -31,23 +31,22 @@ def clean():
     if Path(ZIP_NAME).exists():
         Path(ZIP_NAME).unlink()
 
-def build_exe():
+def build_exe(exe_name_with_v):
     print("[*] Building .exe with PyInstaller...")
-    v = get_v()
     subprocess.run([
         "pyinstaller",
         "--onefile",
         "--clean",
-        "--name", f"{Path(EXE_NAME).stem}-{v}",
+        "--name", exe_name_with_v,
         ENTRY_SCRIPT
     ], check=True)
 
-def gather_files():
+def gather_files(exe_name_with_v):
     print("[*] Preparing ZIP package...")
     zip_path = DIST_DIR / ZIP_NAME
-    exe_path = DIST_DIR / EXE_NAME
+    exe_path = DIST_DIR / exe_name_with_v
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        zipf.write(exe_path, arcname=EXE_NAME)
+        zipf.write(exe_path, arcname=exe_name_with_v)
         for item in EXTRA_FILES:
             p = Path(item)
             if p.is_file():
@@ -62,9 +61,11 @@ def gather_files():
     print(f"[OK] Created {zip_path}")
 
 def main():
+    v = get_v()
+    exe_name_with_v = f"{Path(EXE_NAME).stem}-{v}"
     clean()
-    build_exe()
-    gather_files()
+    build_exe(exe_name_with_v)
+    gather_files(exe_name_with_v)
 
 if __name__ == "__main__":
     bundle()
