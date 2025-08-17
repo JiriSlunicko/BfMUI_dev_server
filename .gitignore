@@ -6,6 +6,7 @@ dist/
 *.spec
 minify_svg.py
 migrate.py
+version.py
 static/svg/
 static/js2/
 key.txt
