@@ -37,7 +37,7 @@ def build_exe(exe_name_with_v):
         "pyinstaller",
         "--onefile",
         "--clean",
-        "--name", exe_name_with_v,
+        "--name", Path(exe_name_with_v).stem,
         ENTRY_SCRIPT
     ], check=True)
 
@@ -62,7 +62,7 @@ def gather_files(exe_name_with_v):
 
 def main():
     v = get_v()
-    exe_name_with_v = f"{Path(EXE_NAME).stem}-{v}"
+    exe_name_with_v = f"{Path(EXE_NAME).stem}-{v}.exe"
     clean()
     build_exe(exe_name_with_v)
     gather_files(exe_name_with_v)
