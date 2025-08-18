@@ -32,7 +32,7 @@ window.settings.controls = (function()
       }
 
       const submitButton = e.target.closest("#controls-submit-btn");
-      if (submitButton) {
+      if (submitButton && hasPendingChanges()) {
         utils.throttle(save, 1000)();
         return;
       }

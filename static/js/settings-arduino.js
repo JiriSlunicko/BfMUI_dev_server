@@ -49,10 +49,13 @@ window.settings.arduino = (function()
     });
 
     // submit listener
-    utils.qs("#settings-arduino-submit-btn").addEventListener("click", function () {
-      if (hasPendingChanges())
-        utils.throttle(save, 1000)();
-    });
+    utils.qs("#settings-arduino-submit-btn").addEventListener("click", utils.throttle(() => {
+      if (hasPendingChanges()) save();
+    }, 1000));
+    // submit as NULL listener
+    utils.qs("#settings-arduino-setnull-btn").addEventListener("click", utils.throttle(() => {
+      if (!_arduino.serverDataIsNull) _saveNull();
+    }, 1000));
     // reset listener
     utils.qs("#settings-arduino-reset-btn").addEventListener("click", reset);
 
@@ -86,6 +89,31 @@ window.settings.arduino = (function()
     }
 
     const payload = { Name: resolvedPort, BaudRate: parseInt(resolvedBaudRate) };
+    const success = await _saveInternal(payload);
+    return success;
+  }
+
+
+  function hasPendingChanges() {
+    return (
+      (_staged.port !== null && _staged.port !== _arduino.port) ||
+      (_staged.baudRate !== null && _staged.baudRate !== _arduino.baudRate)
+    );
+  }
+
+
+  async function _saveNull() {
+    const payload = null;
+    const success = await _saveInternal(payload);
+    if (success) {
+      utils.qs("#settings-arduino-port").value = null;
+      _validatePortSelection(null);
+    }
+    return success;
+  }
+
+
+  async function _saveInternal(payload) {
     console.debug("arduino payload:", payload);
 
     const postSuccess = await ajax.postWithTimeout(
@@ -102,14 +130,6 @@ window.settings.arduino = (function()
     );
 
     return postSuccess;
-  }
-
-
-  function hasPendingChanges() {
-    return (
-      (_staged.port !== null && _staged.port !== _arduino.port) ||
-      (_staged.baudRate !== null && _staged.baudRate !== _arduino.baudRate)
-    );
   }
 
 
@@ -189,8 +209,8 @@ window.settings.arduino = (function()
     if (value && value !== "null" && !_arduino.availablePorts.includes(value)) {
       arduinoPanel.classList.add("invalid");
       arduinoPanel.querySelector("#settings-arduino-submit-btn").classList.add("hidden");
-      arduinoPanel.querySelector("#settings-arduino-submit-btn").insertAdjacentHTML("beforebegin", `
-        <p id="settings-arduino-warning" class="warning mb0"><b>WARNING:</b> port not available</p>`);
+      arduinoPanel.querySelector("#settings-arduino-buttons").insertAdjacentHTML("beforebegin", `
+        <p id="settings-arduino-warning" class="warning mb16"><b>WARNING:</b> port not available</p>`);
       
       _staged.port = null;
       returnValue = false;
