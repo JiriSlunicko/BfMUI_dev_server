@@ -83,9 +83,13 @@ window.settings.arduino = (function()
     const resolvedPort = _staged.port ?? _arduino.port;
     const resolvedBaudRate = _staged.baudRate ?? _arduino.baudRate;
 
+    if (!resolvedPort) {
+      ui.makeToast("error", "Invalid port. Must be a non-empty string.", 3000);
+      return false;
+    }
     if (!/^\d+$/.test(resolvedBaudRate)) {
       ui.makeToast("error", "Invalid baud rate. Must be a non-negative integer.", 3000);
-      return;
+      return false;
     }
 
     const payload = { Name: resolvedPort, BaudRate: parseInt(resolvedBaudRate) };
