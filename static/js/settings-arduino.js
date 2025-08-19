@@ -73,8 +73,7 @@ window.settings.arduino = (function()
 
 
   function reset() {
-    _staged.port = null;
-    _staged.baudRate = null;
+    _clearStaged();
     _render();
   }
 
@@ -127,8 +126,7 @@ window.settings.arduino = (function()
         _arduino.port = resp?.Name || null;
         _arduino.baudRate = resp?.BaudRate || null;
         _arduino.serverDataIsNull = resp === null;
-        _staged.port = null;
-        _staged.baudRate = null;
+        _clearStaged();
         ui.makeToast("success", "Successfully updated.");
       }
     );
@@ -229,6 +227,12 @@ window.settings.arduino = (function()
 
     _initialised = true;
     return returnValue;
+  }
+
+
+  function _clearStaged() {
+    _staged.port = null;
+    _staged.baudRate = null;
   }
 
 
