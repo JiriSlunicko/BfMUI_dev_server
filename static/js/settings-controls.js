@@ -316,6 +316,7 @@ window.settings.controls = (function()
 
 
   /** Trivial helper for _makeMappingModal - make a <select>.
+   * Automatically includes a (none) option which maps to 'unbound'.
    * @param {string} id ID attribute to assign to the new select
    * @param {Array<string>} options list of options
    * @param {string} current which option is selected
