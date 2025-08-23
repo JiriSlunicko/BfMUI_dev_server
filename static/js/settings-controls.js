@@ -105,7 +105,7 @@ window.settings.controls = (function()
         const resolvedMapping = ctrlHelpers.getResolvedMapping(_controls, _staged, controller, action, "button");
         if (resolvedMapping === undefined || resolvedMapping.button === "unbound")
           continue;
-        processedMappings[action] = resolvedMapping.button;
+        processedMappings[action] = resolvedMapping.button.split(", ");
       }
       payload.ControlActionsSettings[controller] = processedMappings;
     }
@@ -180,7 +180,10 @@ window.settings.controls = (function()
       _controls.inAxes = resp.AvailableControllerAxes; // string[]
       _controls.actions = resp.AvailableControlActions; // string[]
       _controls.outAxes = resp.AvailablePlaneAxes; // string[]
-      _controls.restrictions = resp.ControlActionsRestrictions; // Dictionary<string, List<string>>
+      _controls.restrictions = {}; // Dictionary<string, List<string>>
+      for (const [action, allowedCombos] of Object.entries(resp.ControlActionsRestrictions)) {
+        _controls.restrictions[action] = allowedCombos.map(x => x.join(", "));
+      }
       ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);
       for (const controller of Object.keys(_controls.actionMappings))
         _staged.actionMappings[controller] ??= {};

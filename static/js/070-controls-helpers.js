@@ -101,7 +101,7 @@ window.ctrlHelpers = (function() {
     for (const [ctrlrRole, ctrlrMappings] of Object.entries(respMappings)) {
       const processedCtrlrMappings = {};
       for (const [action, mapping] of Object.entries(ctrlrMappings)) {
-        processedCtrlrMappings[action] = mapping;
+        processedCtrlrMappings[action] = {button: mapping.join(", ")};
       }
       processedMappings[ctrlrRole] = processedCtrlrMappings;
     }
