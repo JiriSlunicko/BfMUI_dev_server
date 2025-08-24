@@ -18,7 +18,7 @@ window.settings.controls = (function()
   }
 
   let _limits = {
-    axisGain: { min: 0.01, max: 100 },
+    axisGain: { min: 0.01, max: 10 },
     axisDeadzone: { min: 0, max: 1 },
   }
 
@@ -259,9 +259,9 @@ window.settings.controls = (function()
         // axes
       } else {
         const inverted = currentMapping?.invert || false;
-        const deadzone = currentMapping?.deadzone || 0;
+        const deadzone = currentMapping?.deadzone || 0.05;
         const mode = currentMapping?.mode || "direct";
-        const gain = currentMapping?.gain || 0.1;
+        const gain = currentMapping?.gain || 0.5;
         fg.insertAdjacentHTML("beforeend", `
         <label for="ctrl-input-invert" class="flex-c f-g4 w100 mb16">
           <span>Axis direction</span>
