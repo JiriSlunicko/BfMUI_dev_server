@@ -1,11 +1,15 @@
 window.pages.settings = (function() {
   let _polling = {
-    delay: Number(localStorage.getItem("pollDelay") || 1000),
+    delay: null,
     interval: null,
     active: false,
   };
 
   function init() {
+    // set poll delay
+    _polling.delay = Number(localStorage.getItem("pollDelay")
+      || (utils.isMobile() ? 500 : 1000));
+
     // server & polling config
     if (backend.baseurl) {
       const urlWithoutProtocol = backend.baseurl.replace(/^https?:\/\//, "");

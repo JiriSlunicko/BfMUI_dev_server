@@ -90,14 +90,17 @@ window.pages.status = (function()
    */
   function _processSTHDEntry(entry) {
     const result = {};
+    // process specific keys
     for (const [key, value] of Object.entries(entry)) {
       switch (key) {
         case "SerialTimerName":
         case "LatestErrorMessage":
         case "Health":
+        case "MinCallbackDurationMs":
+        case "MaxCallbackDurationMs":
           break;
         case "Frequency":
-          result[key] = (value === null ? "–" : value.toFixed(1));
+          result[key] = (value === null ? "–" : value.toFixed(1)) + " Hz";
           break;
         case "MaxLoopDelayMs":
           result[key] = (value === null ? "–" : Math.ceil(value)) + " ms";
@@ -106,7 +109,25 @@ window.pages.status = (function()
           result[key] = value;
       }
     }
+    // process callback durations
+    result.CallbackDurationMs = _makeCallbackDurationString(
+      entry.MinCallbackDurationMs,
+      entry.MaxCallbackDurationMs
+    );
     return result;
+  }
+
+
+  function _makeCallbackDurationString(minDur, maxDur) {
+    let multiplier = 1;
+    let unit = " ms";
+    if (Math.max(minDur ?? 0, maxDur ?? 0) < 1) {
+      multiplier = 1000;
+      unit = " ns"
+    }
+    const minDurAdjusted = minDur ? (Number(minDur) * multiplier).toFixed(2) : "?";
+    const maxDurAdjusted = maxDur ? (Number(maxDur) * multiplier).toFixed(2) : "?";
+    return `${minDurAdjusted}–${maxDurAdjusted} ${unit}`;
   }
 
   

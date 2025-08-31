@@ -105,11 +105,18 @@ window.utils = (function()
   }
 
 
+  /** @returns {boolean} whether the viewport size indicates we're on a mobile screen */
+  function isMobile() {
+    return document.body.offsetWidth <= 750;
+  }
+
+
   return {
     qs: (sel) => document.querySelector(sel),
     qsa: (sel) => document.querySelectorAll(sel),
     throttle,
     rangeToTextInput,
     textInputToRange,
+    isMobile,
   }
 })();
