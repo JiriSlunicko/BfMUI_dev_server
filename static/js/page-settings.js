@@ -8,7 +8,7 @@ window.pages.settings = (function() {
   function init() {
     // set poll delay
     _polling.delay = Number(localStorage.getItem("pollDelay")
-      || (utils.isMobile() ? 500 : 1000));
+      || (utils.isMobile() ? 1000 : 500));
 
     // server & polling config
     if (backend.baseurl) {
@@ -54,8 +54,8 @@ window.pages.settings = (function() {
     const ip = utils.qs("#input-ip").value;
     const port = utils.qs("#input-port").value;
 
-    if (!/^(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})|localhost$/.test(ip)
-      || !/^\d{4}$/.test(port)) {
+    if (//!/^(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})|localhost$/.test(ip) ||
+        !/^\d{4}$/.test(port)) {
       await ui.makePopup("alert", "Invalid IP address / port.");
       return;
     }
