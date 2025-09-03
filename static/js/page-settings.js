@@ -1,13 +1,19 @@
 window.pages.settings = (function() {
   let _polling = {
-    delay: null,
+    delayMs: null,
     interval: null,
     active: false,
   };
+  let _connectionAttempt = {
+    delayMs: 1000,
+    busy: false,
+    interval: null,
+    lastFail: null,
+  }
 
   function init() {
     // set poll delay
-    _polling.delay = Number(localStorage.getItem("pollDelay")
+    _polling.delayMs = Number(localStorage.getItem("pollDelay")
       || (utils.isMobile() ? 1000 : 500));
 
     // server & polling config
@@ -18,7 +24,7 @@ window.pages.settings = (function() {
       utils.qs("#input-port").value = port;
       connect(backend);
     }
-    utils.qs("#input-poll-interval").value = _polling.delay;
+    utils.qs("#input-poll-interval").value = _polling.delayMs;
     utils.qs("#settings-reset-btn").addEventListener("click", _resetSettings);
     utils.qs("#settings-connect-btn").addEventListener("click", () => {
       connect(backend);
@@ -44,19 +50,33 @@ window.pages.settings = (function() {
   }
 
 
+  function _attemptReconnect() {
+    if (_connectionAttempt.interval !== null)
+      return;
+
+    _connectionAttempt.interval = setInterval(() => {
+      if (!_connectionAttempt.busy)
+        connect(backend, true);
+    }, _connectionAttempt.delayMs);
+  }
+
+
   /** Attempt connection to the backend server, start polling and everything.
    * @param {object} globalServer backend - will be updated on success
    * @param {boolean} retry whether to retry on failure
-   * @param {string|null} lastFail if retrying, what failed last time
+   * @param {string|null} lastFailOverride if retrying, what failed last time
    */
-  async function connect(globalServer, retry=true, lastFail=null) {
+  async function connect(globalServer, retry=true, lastFailOverride=null) {
+    const lastFail = lastFailOverride ?? _connectionAttempt.lastFail;
     console.debug("Attempting connection.", lastFail);
+    _connectionAttempt.busy = true;
     const ip = utils.qs("#input-ip").value;
     const port = utils.qs("#input-port").value;
 
-    if (//!/^(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})|localhost$/.test(ip) ||
-        !/^\d{4}$/.test(port)) {
+    if (ip === null || port === null) {
       await ui.makePopup("alert", "Invalid IP address / port.");
+      _connectionAttempt.busy = false;
+      _attemptReconnect();
       return;
     }
 
@@ -70,6 +90,7 @@ window.pages.settings = (function() {
       ui.makeToast("error", "Retrying connection after the following problem:\n\n"+lastFail, -1);
 
     const baseurl = "http://" + ip + ":" + port;
+    let shouldRetry = false;
     try {
       // get systeminfo
       let raw, resp;
@@ -115,13 +136,23 @@ window.pages.settings = (function() {
         ? "\n\nRunning in Arduino mode."
         : "\n\nRunning without Arduino.";
 
+      _connectionAttempt.lastFail = null;
+      if (_connectionAttempt.interval !== null) {
+        clearInterval(_connectionAttempt.interval);
+        _connectionAttempt.interval = null;
+      }
       ui.makeToast("success", successMessage, 5000);
     } catch (err) {
       console.error("During connect:", err);
+      _connectionAttempt.lastFail = err.toString();
       if (!retry)
-        ui.makeToast("error", "Connection failed.\n\n" + err.toString(), 5000);
+        ui.makeToast("error", "Connection failed.\n\n" + _connectionAttempt.lastFail, 5000);
       else
-        connect(globalServer, retry, err.toString());
+        shouldRetry = true;
+    } finally {
+      _connectionAttempt.busy = false;
+      if (shouldRetry)
+        _attemptReconnect();
     }
   }
 
@@ -138,7 +169,7 @@ window.pages.settings = (function() {
 
     _polling.interval = setInterval(() => {
       pages.status.fetchTelemetry();
-    }, _polling.delay);
+    }, _polling.delayMs);
     pages.status.fetchTelemetry();
 
     utils.qs("#settings-poll-start-btn").disabled = true;
@@ -172,11 +203,11 @@ window.pages.settings = (function() {
       return;
     }
 
-    if (newPollDelay !== _polling.delay) {
-      _polling.delay = newPollDelay;
+    if (newPollDelay !== _polling.delayMs) {
+      _polling.delayMs = newPollDelay;
       _pollStart();
       localStorage.setItem("pollDelay", newPollDelay);
-      ui.makeToast("success", "Polling interval set to " + _polling.delay + " ms.");
+      ui.makeToast("success", "Polling interval set to " + _polling.delayMs + " ms.");
     }
   }
 
