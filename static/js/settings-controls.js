@@ -334,7 +334,10 @@ window.settings.controls = (function()
     );
     for (const opt of options.filter(x => x !== "None")) {
       const selected = current === opt;
-      const optName = opt.replace(/\b(.)Input/g, "$1I").replace(/\s*,\s*/g, " + ");
+      const optName = opt
+        .replace(/\b(.)Input/g, "$1I")
+        .replace(/\bLinux/g, "Lx")
+        .replace(/\s*,\s*/g, " + ");
       select.insertAdjacentHTML("beforeend",
         `<option class="ctrl-modal-option" value="${opt}"${selected ? ' selected' : ''}>${optName}</option>`
       );
