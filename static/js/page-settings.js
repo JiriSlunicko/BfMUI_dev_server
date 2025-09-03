@@ -68,6 +68,7 @@ window.pages.settings = (function() {
    */
   async function connect(globalServer, retry=true, lastFailOverride=null) {
     const lastFail = lastFailOverride ?? _connectionAttempt.lastFail;
+    utils.qs("#settings-connection-status").textContent = "Currently not connected.";
     console.debug("Attempting connection.", lastFail);
     _connectionAttempt.busy = true;
     const ip = utils.qs("#input-ip").value;
@@ -111,7 +112,6 @@ window.pages.settings = (function() {
       localStorage.setItem("serverBaseurl", baseurl);
 
       pages.home.initSysInfo();
-      utils.qs("#settings-connection-status").textContent = "Connected to " + baseurl;
 
       _pollStart();
 
@@ -127,6 +127,8 @@ window.pages.settings = (function() {
       events.tryConnectionUntilOk();
       //events.openStream(globalServer);
 
+      // handle success-related things
+      utils.qs("#settings-connection-status").textContent = "Connected to " + baseurl;
       let successMessage = "Connected to server, polling.\n\nModules:";
       for (const [domain, success] of Object.entries(loadSuccess)) {
         successMessage += success ? "\nOK: " : "\nERROR: ";

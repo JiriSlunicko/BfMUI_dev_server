@@ -103,14 +103,14 @@ window.pages.status = (function()
           result[key] = (value === null ? "–" : value.toFixed(1)) + " Hz";
           break;
         case "MaxLoopDelayMs":
-          result[key] = (value === null ? "–" : Math.ceil(value)) + " ms";
+          result.MaxLoopDelay = (value === null ? "–" : Math.ceil(value)) + " ms";
           break;
         default:
           result[key] = value;
       }
     }
     // process callback durations
-    result.CallbackDurationMs = _makeCallbackDurationString(
+    result.CallbackDuration = _makeCallbackDurationString(
       entry.MinCallbackDurationMs,
       entry.MaxCallbackDurationMs
     );
