@@ -185,6 +185,7 @@ window.serverConfig = (function()
         ui.makeToast("error", `Failed to save ${cfgType} config '${cfgName}'.\n\n` + err.toString(), 5000);
       }
     );
+    await getFreshServerConfigs();
 
     return success;
   }
