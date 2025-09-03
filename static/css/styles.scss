@@ -283,6 +283,16 @@ section {
             &:not(:last-child) {
                 border-bottom: 1px solid var(--bg-medium)
             }
+
+            .entry-item-key {
+                overflow: clip;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .entry-item-value {
+                flex-shrink: 0;
+            }
         }
     }
 
