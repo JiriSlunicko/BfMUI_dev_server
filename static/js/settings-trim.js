@@ -31,6 +31,8 @@ window.settings.trim = (function()
     });
 
     utils.qs("#plane-trim-inner").addEventListener("slider-change", function(e) {
+      if (!e.detail.byUser) return;
+      
       const slider = e.target.closest(".range-text-pair");
       if (!slider) return;
       
@@ -143,7 +145,7 @@ window.settings.trim = (function()
         // or update an existing element
         const textInput = myWrapper.querySelector("input[type=text]");
         textInput.value = trimValue;
-        textInput.dispatchEvent(new Event("change", { bubbles: true }));
+        textInput.dispatchEvent(new CustomEvent("backend-refresh", { bubbles: true }));
       }
     }
 

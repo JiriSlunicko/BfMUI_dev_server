@@ -233,45 +233,47 @@ window.ui = (function () {
       );
       pairWrapper.dispatchEvent(
         new CustomEvent("slider-change", {
-          detail: { value: textInput.value },
+          detail: { value: textInput.value, byUser: true },
           bubbles: true
         })
       );
     });
 
     // text -> range
-    document.addEventListener("change", function (e) {
-      const textInput = e.target.closest(".range-text-pair input[type=text]");
-      if (!textInput) return;
+    ["change", "backend-refresh"].forEach(eName =>
+      document.addEventListener(eName, function (e) {
+        const textInput = e.target.closest(".range-text-pair input[type=text]");
+        if (!textInput) return;
 
-      const pairWrapper = textInput.closest(".range-text-pair");
-      const minVal = Number(pairWrapper.dataset.min);
-      const maxVal = Number(pairWrapper.dataset.max);
-      const decimals = pairWrapper.dataset.step.split(".")[1]?.length || 0;
-      const isLog = Boolean(pairWrapper.dataset.log);
+        const pairWrapper = textInput.closest(".range-text-pair");
+        const minVal = Number(pairWrapper.dataset.min);
+        const maxVal = Number(pairWrapper.dataset.max);
+        const decimals = pairWrapper.dataset.step.split(".")[1]?.length || 0;
+        const isLog = Boolean(pairWrapper.dataset.log);
 
-      const rangeInput = pairWrapper.querySelector("input[type=range]");
+        const rangeInput = pairWrapper.querySelector("input[type=range]");
 
-      const newVal = utils.textInputToRange(textInput.value,
-        minVal, maxVal, isLog, isLog ? 1 : decimals
-      );
-      if (newVal === null) {
-        // revert text input to range value, which should always be safe
-        textInput.value = utils.rangeToTextInput(rangeInput.value,
-          isLog ? { min: minVal, max: maxVal } : null,
-          decimals
+        const newVal = utils.textInputToRange(textInput.value,
+          minVal, maxVal, isLog, isLog ? 1 : decimals
         );
-      } else {
-        // apply scaled value to range slider
-        rangeInput.value = newVal;
-      }
-      pairWrapper.dispatchEvent(
-        new CustomEvent("slider-change", {
-          detail: { value: textInput.value },
-          bubbles: true
-        })
-      );
-    });
+        if (newVal === null) {
+          // revert text input to range value, which should always be safe
+          textInput.value = utils.rangeToTextInput(rangeInput.value,
+            isLog ? { min: minVal, max: maxVal } : null,
+            decimals
+          );
+        } else {
+          // apply scaled value to range slider
+          rangeInput.value = newVal;
+        }
+        pairWrapper.dispatchEvent(
+          new CustomEvent("slider-change", {
+            detail: { value: textInput.value, byUser: e.type === "change" },
+            bubbles: true
+          })
+        );
+      })
+    );
 
     _rangeTextPairsInitialised = true;
   }

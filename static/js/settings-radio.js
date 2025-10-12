@@ -24,7 +24,9 @@ window.settings.radio = (function()
       }, "mb16"
     );
     utils.qs(`label[for="settings-radio-channel-text"]`).addEventListener("slider-change", (e) => {
-      _staged.channel = parseInt(e.detail.value);
+      if (e.detail.byUser) {
+        _staged.channel = parseInt(e.detail.value);
+      }
     });
 
     // PA
@@ -35,7 +37,9 @@ window.settings.radio = (function()
       }, "f-grow"
     );
     utils.qs(`label[for="settings-radio-pa-text"]`).addEventListener("slider-change", (e) => {
-      _staged.paLevel = parseInt(e.detail.value);
+      if (e.detail.byUser) {
+        _staged.paLevel = parseInt(e.detail.value);
+      }
     });
 
     // feedback
