@@ -148,6 +148,7 @@ window.ui = (function () {
    *  step: number,
    *  value: number,
    *  scaling: ("linear"|"logarithmic"),
+   *  incrementButtons?: boolean,
    *  textInputClassOverride?: (string|null),
    * }} config sets how the range-textinput pair should behave
    * @param {string} [labelClass=""] additional classes to apply to the label 
@@ -161,7 +162,7 @@ window.ui = (function () {
     label.insertAdjacentHTML("beforeend", `<span>${title}</span>`);
 
     const inputWrapper = document.createElement("div");
-    inputWrapper.className = "flex-r f-g16";
+    inputWrapper.className = "flex-r f-g16 f-a-str";
 
     const rangeInput = document.createElement("input");
     rangeInput.setAttribute("type", "range");
@@ -204,6 +205,11 @@ window.ui = (function () {
 
     // put it all together and return the HTML
     inputWrapper.appendChild(rangeInput);
+    if (config.incrementButtons) {
+      inputWrapper.insertAdjacentHTML("beforeend",
+        `<button type="button" class="btn range-btn range-decr">▼</button>
+         <button type="button" class="btn range-btn range-incr">▲</button>`);
+    }
     inputWrapper.appendChild(textInput);
     label.appendChild(inputWrapper);
     return label.outerHTML;
@@ -215,7 +221,7 @@ window.ui = (function () {
     if (_rangeTextPairsInitialised) return;
 
     // range -> text
-    document.addEventListener("input", function (e) {
+    document.addEventListener("input", function(e) {
       const rangeInput = e.target.closest(".range-text-pair input[type=range]");
       if (!rangeInput) return;
 
@@ -241,7 +247,7 @@ window.ui = (function () {
 
     // text -> range
     ["change", "backend-refresh"].forEach(eName =>
-      document.addEventListener(eName, function (e) {
+      document.addEventListener(eName, function(e) {
         const textInput = e.target.closest(".range-text-pair input[type=text]");
         if (!textInput) return;
 
@@ -274,6 +280,41 @@ window.ui = (function () {
         );
       })
     );
+
+    // decrement/increment buttons
+    document.addEventListener("click", function(e) {
+      const decrButton = e.target.closest(".range-decr");
+      const incrButton = e.target.closest(".range-incr");
+      if (!decrButton && !incrButton) return;
+
+      const pairWrapper = e.target.closest(".range-text-pair");
+      if (!pairWrapper) {
+        console.error("Increment/decrement button not within a range-text input pair");
+        return;
+      }
+
+      const textInput = pairWrapper.querySelector("input[type=text]");
+      if (!textInput) {
+        console.error("Increment/decrement button's wrapper has no text input");
+        return;
+      }
+
+      const currentValue = Number(textInput.value);
+      const minValue = Number(pairWrapper.dataset.min);
+      const maxValue = Number(pairWrapper.dataset.max);
+      const step = Number(pairWrapper.dataset.step);
+      const fireEvent = (el) => el.dispatchEvent(new Event("change", { bubbles: true }));
+
+      if (decrButton && currentValue > minValue) {
+        textInput.value = Math.max(currentValue - step, minValue);
+        fireEvent(textInput);
+      }
+      else
+      if (incrButton && currentValue < maxValue) {
+        textInput.value = Math.min(currentValue + step, maxValue);
+        fireEvent(textInput);
+      }
+    });
 
     _rangeTextPairsInitialised = true;
   }

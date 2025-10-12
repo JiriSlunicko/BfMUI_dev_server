@@ -151,8 +151,10 @@ input[type=range]::-moz-range-thumb {
 }
 .f-grow { flex-grow: 1; }
 .f-noshrink { flex-shrink: 0; }
+.f-a-s { align-items: start; }
 .f-a-c { align-items: center; }
 .f-a-e { align-items: end; }
+.f-a-str { align-items: stretch; }
 .f-j-c { justify-content: center; }
 .f-g4 { gap: 4px; }
 .f-g8 { gap: 8px; }
@@ -324,6 +326,11 @@ section {
             border: 1px solid var(--warning);
         }
     }
+}
+
+.range-btn {
+    flex-shrink: 0;
+    margin-right: -8px;
 }
 
 /***************

@@ -20,7 +20,7 @@ window.settings.radio = (function()
     const channelPlaceholder = utils.qs("#settings-radio-channel-placeholder");
     channelPlaceholder.outerHTML = ui.makeRangeTextInputPair(
       "settings-radio-channel", "Channel", {
-        bounds: {min: 0, max:125}, step: 1, value: 0, scaling: "linear"
+        bounds: {min: 0, max:125}, step: 1, value: 0, scaling: "linear", incrementButtons: true
       }, "mb16"
     );
     utils.qs(`label[for="settings-radio-channel-text"]`).addEventListener("slider-change", (e) => {
@@ -33,7 +33,7 @@ window.settings.radio = (function()
     const PAPlaceholder = utils.qs("#settings-radio-pa-placeholder");
     PAPlaceholder.outerHTML = ui.makeRangeTextInputPair(
       "settings-radio-pa", "Power amp level", {
-        bounds: {min: 0, max: 3}, step: 1, value: 0, scaling: "linear"
+        bounds: {min: 0, max: 3}, step: 1, value: 0, scaling: "linear", incrementButtons: true
       }, "f-grow"
     );
     utils.qs(`label[for="settings-radio-pa-text"]`).addEventListener("slider-change", (e) => {

@@ -89,7 +89,7 @@ window.utils = (function()
    */
   function textInputToRange(val, min, max, isLog=false, decimals=null) {
     const numVal = Number(val);
-    if (isNaN(numVal) || numVal < min || numVal > max) {
+    if (isNaN(numVal) || val === "" || numVal < min || numVal > max) {
       ui.makeToast("error", `Value must be a number between ${min} and ${max}!`);
       return null;
     }

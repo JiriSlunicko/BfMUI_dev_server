@@ -251,12 +251,20 @@ input[type=range]::-moz-range-thumb {
   flex-shrink: 0;
 }
 
+.f-a-s {
+  align-items: start;
+}
+
 .f-a-c {
   align-items: center;
 }
 
 .f-a-e {
   align-items: end;
+}
+
+.f-a-str {
+  align-items: stretch;
 }
 
 .f-j-c {
@@ -451,6 +459,11 @@ section .main-content .view-tab {
     padding-bottom: 2px;
     border: 1px solid var(--warning);
   }
+}
+
+.range-btn {
+  flex-shrink: 0;
+  margin-right: -8px;
 }
 
 /***************
