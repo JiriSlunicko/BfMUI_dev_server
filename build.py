@@ -35,8 +35,9 @@ def build_exe(exe_name_with_v):
     print("[*] Building .exe with PyInstaller...")
     subprocess.run([
         "pyinstaller",
-        "--onefile",
+        "--onedir",
         "--clean",
+        "--noupx",
         "--name", Path(exe_name_with_v).stem,
         ENTRY_SCRIPT
     ], check=True)
@@ -44,9 +45,11 @@ def build_exe(exe_name_with_v):
 def gather_files(exe_name_with_v):
     print("[*] Preparing ZIP package...")
     zip_path = DIST_DIR / ZIP_NAME
-    exe_path = DIST_DIR / exe_name_with_v
+    dir_path = DIST_DIR / Path(exe_name_with_v).stem # onedir folder
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        zipf.write(exe_path, arcname=exe_name_with_v)
+        for file in dir_path.rglob("*"):
+            if file.is_file():
+                zipf.write(file, file.relative_to(dir_path))
         for item in EXTRA_FILES:
             p = Path(item)
             if p.is_file():
@@ -56,7 +59,7 @@ def gather_files(exe_name_with_v):
                     if file.is_file():
                         arcname = file
                         zipf.write(file, arcname)
-    exe_path.unlink()
+        zipf.writestr("README.txt", "Built from https://github.com/JiriSlunicko/BfMUI_dev_server/")
 
     print(f"[OK] Created {zip_path}")
 

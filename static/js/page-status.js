@@ -123,7 +123,7 @@ window.pages.status = (function()
     let unit = " ms";
     if (Math.max(minDur ?? 0, maxDur ?? 0) < 1) {
       multiplier = 1000;
-      unit = " ns"
+      unit = " μs"
     }
     const minDurAdjusted = minDur ? (Number(minDur) * multiplier).toFixed(2) : "?";
     const maxDurAdjusted = maxDur ? (Number(maxDur) * multiplier).toFixed(2) : "?";
