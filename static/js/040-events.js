@@ -13,11 +13,8 @@ window.events = (function () {
   function isDebugMode(change=null) {
     if (change === null)
       return _debugMode;
-    if (change === true) {
-      _debugMode = true;
-      return;
-    }
-    _debugMode = false;
+
+    _debugMode = change === true;
   }
 
 
@@ -127,6 +124,13 @@ window.events = (function () {
         case "TrimValuesChanged":
           changedDomains.add("trim");
           break;
+
+        case "BackgroundMusicSettingsChanged":
+          changedDomains.add("music");
+          break;
+        
+        default:
+          console.warn("Received unknown event", backendEvent);
       }
     }
 

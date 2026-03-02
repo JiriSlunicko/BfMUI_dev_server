@@ -17,8 +17,11 @@ window.backend =
   bfmui: null, // info about the app itself
   info: null, // info about the backend (Bloodfly Control server)
   usingArduino: null, // whether the backend is using serial port communication
+  musicEnabled: null, // whether background music is available
   endpoints: { // map of URLs for backend endpoints
     events: "/events/",
+    musicGet: "/settings/backgroundmusic/",
+    musicPost: "/settings/backgroundmusic/",
     configListGet: "/config/list/",
     configLoadPost: "/config/load/",
     configSavePost: "/config/save/",
