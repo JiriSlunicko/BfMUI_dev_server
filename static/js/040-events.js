@@ -5,8 +5,9 @@
 window.events = (function () {
   let _eventStream = null;
   let _lastBoot = null;
-  let _streamFailed = false;
-  let _tryingReconnect = false;
+  let _connectInterval = null;
+  let _hasConnected = false;
+  let _isAttemptingReconnect = false;
   let _debugMode = false;
 
 
@@ -19,39 +20,42 @@ window.events = (function () {
 
 
   async function tryConnectionUntilOk() {
-    if (_tryingReconnect) return;
-    closeStream();
-    _tryingReconnect = true;
-    _tryConnection();
-  }
-
-
-  async function _tryConnection() {
-    if (isDebugMode())
-      console.debug("_tryConnection runs.");
-    try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.events, 2500);
-      if (!raw.ok) throw new Error("Response "+raw.status);
+    if (_connectInterval) return;
+    closeStream(); // sets _hasConnected to false
+    _connectInterval = setInterval(() => {
       if (isDebugMode())
-        console.debug("_tryConnection succeeded.");
-      _tryingReconnect = false;
-      _streamFailed = false;
-      openStream();
-    } catch {
-      _tryConnection();
-    }
+        console.debug("tryConnectionUntilOk interval hit.", {_hasConnected, _isAttemptingReconnect});
+      
+      if (_hasConnected) {
+        clearInterval(_connectInterval);
+        _connectInterval = null;
+        return;
+      }
+
+      if (!_isAttemptingReconnect) {
+        _isAttemptingReconnect = true;
+        openStream();
+      }
+    }, 1000);
   }
 
-  
+
   /** Connect to the backend server's event dispatcher. */
   function openStream() {
+    if (isDebugMode())
+      console.debug("Attempting to open a new event stream.");
+
     closeStream();
     _eventStream = new EventSource(backend.baseurl + backend.endpoints.events);
 
+    _eventStream.onopen = () => {
+      if (isDebugMode()) console.debug("Opened new event stream.", _eventStream);
+      _hasConnected = true;
+      _isAttemptingReconnect = false;
+    }
+
     _eventStream.onmessage = (msg) => {
-      if (isDebugMode())
-        console.debug(msg.data);
-      _streamFailed = false;
+      if (isDebugMode()) console.debug(msg.data);
 
       let asJson = null;
       try {
@@ -81,13 +85,20 @@ window.events = (function () {
       if (isDebugMode())
         console.debug("Event stream fail.");
 
-      if (!_streamFailed) { // allow one fail before we consider the connection dead
-        _streamFailed = true;
-        return;
-      }
-
+      _isAttemptingReconnect = false;
       tryConnectionUntilOk();
     };
+  }
+
+
+  /** Close an open event stream. Idempotent. */
+  function closeStream() {
+    if (_eventStream !== null) {
+      if (isDebugMode()) console.debug("Closing existing event stream.", _eventStream);
+      _eventStream?.close();
+      _eventStream = null;
+      _hasConnected = false;
+    }
   }
 
 
@@ -128,22 +139,13 @@ window.events = (function () {
         case "BackgroundMusicSettingsChanged":
           changedDomains.add("music");
           break;
-        
+
         default:
           console.warn("Received unknown event", backendEvent);
       }
     }
 
     settingsManager.load(Array.from(changedDomains));
-  }
-
-
-  /** Close an open event stream. */
-  function closeStream() {
-    if (_eventStream !== null) {
-      _eventStream?.close();
-      _eventStream = null;
-    }
   }
 
 
