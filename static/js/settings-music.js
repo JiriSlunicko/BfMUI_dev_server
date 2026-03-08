@@ -13,13 +13,14 @@ window.settings.music = (function()
     // volume
     const volumePlaceholder = utils.qs("#settings-music-volume-placeholder");
     volumePlaceholder.outerHTML = ui.makeRangeTextInputPair(
-      "settings-music-volume", "Volume", {
-        bounds: {min:0.0, max:100}, step: 1, value: 0, scaling: "linear", incrementButtons: false
+      "settings-music-volume", "Volume %", {
+        bounds: {min: 0.0, max: 100}, step: 0.1, value: 0,
+        scaling: "logarithmic", textInputClassOverride: "w6ch"
       }, "mb16"
     );
     utils.qs(`label[for="settings-music-volume-text"]`).addEventListener("slider-change", (e) => {
       if (e.detail.byUser) {
-        _staged.volume = parseInt(e.detail.value);
+        _staged.volume = parseFloat(e.detail.value);
       }
     });
 
@@ -51,7 +52,7 @@ window.settings.music = (function()
 
   async function save() {
     const payload = {
-      Volume: (_staged.volume ?? _music.volume) / 100,
+      Volume: _convertOutgoing(_staged.volume ?? _music.volume),
     };
     console.debug("music payload:", payload);
 
@@ -59,7 +60,7 @@ window.settings.music = (function()
       backend.baseurl + backend.endpoints.musicPost,
       payload,
       (resp) => {
-        _music.volume = Math.round(resp.Volume * 100);
+        _music.volume = _convertIncoming(resp.Volume);
         _staged.volume = null;
         ui.makeToast("success", "Successfully updated.");
       }
@@ -85,7 +86,7 @@ window.settings.music = (function()
 
       if (globalServer.musicEnabled) {
         const resp = await raw.json();
-        _music.volume = Math.round(resp.Volume * 100);
+        _music.volume = _convertIncoming(resp.Volume);
         return true;
       } else {
         console.debug("Music is not enabled.");
@@ -98,6 +99,23 @@ window.settings.music = (function()
   }
 
 
+  /** Convert <0.000,1.000> to <0.0,100.0>
+   * @param {number} val backend value
+   * @returns {number} multiplied by 100 and rounded to 1 decimal
+   */
+  function _convertIncoming(val) {
+    return Math.round(val * 10000) / 100;
+  }
+
+  /** Convert <0.0,100.0> to <0.000,1.000>
+   * @param {number} val frontend value
+   * @returns {number} rounded to 1 decimal and divided by 100
+   */
+  function _convertOutgoing(val) {
+    return Math.round(val * 10) / 1000;
+  }
+
+
   function _render() {
     const musicPanel = utils.qs("#settings-music");
 
@@ -107,10 +125,10 @@ window.settings.music = (function()
     }
 
     musicPanel.classList.remove("hidden");
-    const resolvedVolume = _staged.volume ?? _music.volume;
     musicPanel.querySelector("#music-error")?.remove();
-    musicPanel.querySelector("#settings-music-volume-range").value = resolvedVolume;
-    musicPanel.querySelector("#settings-music-volume-text").value = resolvedVolume;
+    const textInput = musicPanel.querySelector("#settings-music-volume-text");
+    textInput.value = (_staged.volume ?? _music.volume).toFixed(1);
+    textInput.dispatchEvent(new CustomEvent("backend-refresh", { bubbles: true }));
   }
 
 
