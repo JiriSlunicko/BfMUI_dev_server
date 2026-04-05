@@ -14,8 +14,8 @@ window.settings.music = (function()
     const volumePlaceholder = utils.qs("#settings-music-volume-placeholder");
     volumePlaceholder.outerHTML = ui.makeRangeTextInputPair(
       "settings-music-volume", "Volume %", {
-        bounds: {min: 0.0, max: 100}, step: 0.1, value: 0,
-        scaling: "logarithmic", textInputClassOverride: "w6ch"
+        bounds: {min: 0.0, max: 100}, step: 0.01, value: 0,
+        scaling: "logarithmic", textInputClassOverride: "w7ch"
       }, "mb16"
     );
     utils.qs(`label[for="settings-music-volume-text"]`).addEventListener("slider-change", (e) => {
@@ -99,20 +99,20 @@ window.settings.music = (function()
   }
 
 
-  /** Convert <0.000,1.000> to <0.0,100.0>
+  /** Convert <0.0000,1.0000> to <0.00,100.00>
    * @param {number} val backend value
-   * @returns {number} multiplied by 100 and rounded to 1 decimal
+   * @returns {number} multiplied by 100 and rounded to 2 decimals
    */
   function _convertIncoming(val) {
-    return Math.round(val * 10000) / 100;
+    return Math.round(val * 100_000) / 1000;
   }
 
-  /** Convert <0.0,100.0> to <0.000,1.000>
+  /** Convert <0.00,100.00> to <0.0000,1.0000>
    * @param {number} val frontend value
-   * @returns {number} rounded to 1 decimal and divided by 100
+   * @returns {number} rounded to 2 decimal and divided by 100
    */
   function _convertOutgoing(val) {
-    return Math.round(val * 10) / 1000;
+    return Math.round(val * 100) / 10_000;
   }
 
 
@@ -127,7 +127,7 @@ window.settings.music = (function()
     musicPanel.classList.remove("hidden");
     musicPanel.querySelector("#music-error")?.remove();
     const textInput = musicPanel.querySelector("#settings-music-volume-text");
-    textInput.value = (_staged.volume ?? _music.volume).toFixed(1);
+    textInput.value = (_staged.volume ?? _music.volume).toFixed(2);
     textInput.dispatchEvent(new CustomEvent("backend-refresh", { bubbles: true }));
   }
 
