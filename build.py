@@ -3,25 +3,27 @@ import shutil
 import subprocess
 import zipfile
 from pathlib import Path
+
 from bundle import bundle
+from app_config import cfg
 from version import get_v
 
 # ---- CONFIG ----
-ENTRY_SCRIPT = "app.py"
+ENTRY_SCRIPT = cfg.root / "app.py"
 EXE_NAME = "BfMUI_desktop.exe"
-DIST_DIR = Path("dist")
-BUILD_DIR = Path("build")
+DIST_DIR = cfg.root / "dist"
+BUILD_DIR = cfg.root / "build"
 ZIP_NAME = "BfMUI_desktop.zip"
 
 # Files/folders to include in the zip along with the .exe
 EXTRA_FILES = [
-    "config.txt",
     "static/index.html",
     "static/dev-index.html",
     "static/js/",
     "static/css/",
     "readme.md",
     "v",
+    ".env.example"
 ]
 
 def clean():
@@ -38,6 +40,7 @@ def build_exe(exe_name_with_v):
         "--onedir",
         "--clean",
         "--noupx",
+        "--paths", str(ENTRY_SCRIPT.parent),
         "--name", Path(exe_name_with_v).stem,
         ENTRY_SCRIPT
     ], check=True)

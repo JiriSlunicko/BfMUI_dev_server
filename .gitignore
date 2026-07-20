@@ -3,6 +3,8 @@ __pycache__/
 *.code-workspace
 build/
 dist/
+tiles/
+tiles_url
 *.spec
 minify_svg.py
 migrate.py
@@ -12,3 +14,5 @@ key.txt
 _TODO.txt
 * copy.*
 *.exe
+*.d.ts
+.env

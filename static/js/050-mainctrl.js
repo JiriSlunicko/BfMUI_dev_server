@@ -86,7 +86,10 @@ window.nav = (function()
    */
   function gotoPage(targetPage) {
     const targetContainerId = "view-"+targetPage;
-    if (!utils.qs("#"+targetContainerId)) return;
+    if (!utils.qs("#"+targetContainerId)) {
+      console.warn(`Failed to navigate to page "${targetPage}".`);
+      return;
+    }
 
     _currentPage = targetPage;
 

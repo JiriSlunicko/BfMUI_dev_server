@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/js/deps/leaflet.css" />
   <script src="/js/dist/app.bundle.js" defer type="application/javascript"></script>
   <title>Bloodfly MUI</title>
 </head>
@@ -38,6 +39,15 @@
           <path style="fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: none" d="M 16,11 3,16 16,15 29,16 Z" />
           <path style="fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: none" d="m 12,28 4,-2 4,2 -4,-5 z" />
           <path style="fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: none" d="M 16,29 V 26" />
+        </svg>
+      </button>
+      <button type="button" id="goto-mapPage" title="Map">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32.000001 32.000001">
+          <g transform="rotate(-15,16,16)">
+            <circle style="fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: none" cx="16" cy="16" r="5" />
+            <path style="fill: currentColor; fill-opacity: 1; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: none" d="m 16,2 -4,10 4,-2 4,2 z" />
+            <path style="fill: none; fill-opacity: 1; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: none" d="M 20,12 30,16 20,20 16,30 12,20 2,16 12,12" />
+          </g>
         </svg>
       </button>
       <button type="button" id="goto-settings" title="Settings">
@@ -137,6 +147,13 @@
           <div id="plane-trim-inner" class="flex-c f-g16">
             <p>Connect to load options.</p>
           </div>
+        </div>
+      </div>
+
+
+      <div class="view-tab flex-c" id="view-mapPage">
+        <div class="flex-c">
+          <div id="map-view"></div>
         </div>
       </div>
 
