@@ -87,11 +87,12 @@ def get_tile(z: int, x: int, y: int, save: bool) -> GetTileResult:
     return GetTileResult(True, "ok & not saved", 200, bytes)
 
 
-def bulk_download(lat: float, lon: float, radius_km: float,
+def bulk_download(min_lon: float, max_lon: float, min_lat: float, max_lat: float,
                   min_zoom: int | None = None, max_zoom: int | None = None,
                   job_meta: jobs.JobMeta | None = None) -> dict[str, int]:
     status = {
-        "total": utils.count_tiles(lat, lon, radius_km, min_zoom, max_zoom),
+        "total": utils.count_tiles(min_lon, max_lon, min_lat, max_lat,
+                                   min_zoom, max_zoom),
         "downloaded": 0,
         "skipped": 0,
         "failed": 0,
@@ -115,8 +116,8 @@ def bulk_download(lat: float, lon: float, radius_km: float,
     resolved_max_z = utils.MAX_ZOOM if max_zoom is None else max_zoom
     start = perf_counter()
     for z in utils.even_zooms_in_range(resolved_min_z, resolved_max_z):
-        min_x, max_x, min_y, max_y = utils.tile_range_for_radius(lat, lon,
-                                                                 radius_km, z)
+        min_x, max_x, min_y, max_y\
+            = utils.mercator_to_xy_bounds(min_lon, max_lon, min_lat, max_lat, z)
         for x in range(min_x, max_x+1):
             for y in range(min_y, max_y+1):
                 f = _abs(_get_tile_path_relative(z, x, y))

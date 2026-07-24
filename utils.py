@@ -45,16 +45,18 @@ def is_online(host: str = "1.1.1.1",
     return _is_online_cache["result"]
 
 
-def validate_download_tiles_args(request: Request
-                                 ) -> tuple[float, float, float, int|None, int|None]:
-    lon = request.args.get("lon", type=float)
-    lat = request.args.get("lat", type=float)
-    radius_km = request.args.get("radiusKm", type=float)
+def validate_download_tiles_args(
+        request: Request
+        ) -> tuple[float, float, float, float, int|None, int|None]:
+    min_lon = request.args.get("minLng", type=float)
+    max_lon = request.args.get("maxLng", type=float)
+    min_lat = request.args.get("minLat", type=float)
+    max_lat = request.args.get("maxLat", type=float)
     min_zoom = request.args.get("minZoom", None, type=int)
     max_zoom = request.args.get("maxZoom", None, type=int)
-    if lon is None or lat is None or radius_km is None:
+    if (min_lon is None or max_lon is None or min_lat is None or max_lat is None):
         raise ValueError()
-    return lon, lat, radius_km, min_zoom, max_zoom
+    return min_lon, max_lon, min_lat, max_lat, min_zoom, max_zoom
 
 
 def lon_to_tile_x(lon: float, zoom: int) -> int:
@@ -76,17 +78,9 @@ def lat_to_tile_y(lat: float, zoom: int) -> int:
     return _clamp(math.floor(y), 0, n-1)
 
 
-def tile_range_for_radius(lat: float, lon: float,
-                          radius_km: float,
-                          zoom: int):
-    d_lat = radius_km / 111.32
-    d_lon = radius_km / (111.32 * math.cos(math.radians(lat)))
-
-    min_lat = _clamp_lat(lat - d_lat)
-    max_lat = _clamp_lat(lat + d_lat)
-    min_lon = lon - d_lon
-    max_lon = lon + d_lon
-
+def mercator_to_xy_bounds(min_lon: float, max_lon: float,
+                          min_lat: float, max_lat: float,
+                          zoom: int) -> tuple[int, int, int, int]:
     min_x = lon_to_tile_x(min_lon, zoom)
     max_x = lon_to_tile_x(max_lon, zoom)
     # Y axis is flipped
@@ -101,14 +95,14 @@ def even_zooms_in_range(min_zoom: int, max_zoom: int) -> list[int]:
     return list(range(start, max_zoom + 1, 2))
 
 
-def count_tiles(lat: float, lon: float,
-                radius_km: float,
+def count_tiles(min_lon: float, max_lon: float,
+                min_lat: float, max_lat: float,
                 min_zoom: int | None, max_zoom: int | None) -> int:
     resolved_min_z = MIN_ZOOM if min_zoom is None else min_zoom
     resolved_max_z = MAX_ZOOM if max_zoom is None else max_zoom
     total = 0
     for z in even_zooms_in_range(resolved_min_z, resolved_max_z):
-        min_x, max_x, min_y, max_y = tile_range_for_radius(lat, lon,
-                                                           radius_km, z)
+        min_x, max_x, min_y, max_y\
+            = mercator_to_xy_bounds(min_lon, max_lon, min_lat, max_lat, z)
         total += (max_x - min_x + 1) * (max_y - min_y + 1)
     return total

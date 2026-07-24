@@ -55,6 +55,16 @@ def start_job(fn: Callable, *args: Any) -> str:
     return job_id
 
 
+def get_running_jobs() -> list[str]:
+    """Ask if the module is aware of any unfinished jobs right now.
+
+    Returns:
+        IDs of any running jobs.
+    """
+    with jobs_lock:
+        return [j_id for j_id, job in jobs.items() if not job.future.done()]
+
+
 def get_job_status(
         job_id: str
         ) -> tuple[JobStatus, dict[str, Any], Exception | Any | None]:

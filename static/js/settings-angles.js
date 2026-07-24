@@ -78,7 +78,8 @@ window.settings.maxSurfaceAngles = (function()
           _staged[surfName] = null;
         }
         ui.makeToast("success", "Successfully updated.");
-      }
+      },
+      ajax.handleJsonAjaxFail, undefined, true
     );
 
     return postSuccess;

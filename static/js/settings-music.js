@@ -63,7 +63,8 @@ window.settings.music = (function()
         _music.volume = _convertIncoming(resp.Volume);
         _staged.volume = null;
         ui.makeToast("success", "Successfully updated.");
-      }
+      },
+      ajax.handleJsonAjaxFail, undefined, true
     );
 
     return postSuccess;

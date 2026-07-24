@@ -12,6 +12,8 @@
   --warning: hsl(0,90%,30%);
   --modified: hsl(90,10%,50%);
   --shadow: hsla(0,10%,10%,0.75);
+  --download-ok: hsl(120, 100%, 50%);
+  --download-err: hsl(0, 100%, 60%);
 }
 
 *, *::before, *::after {
@@ -632,6 +634,21 @@ section .main-content .view-tab#view-controls {
 
 section .main-content .view-tab#view-mapPage {
   padding-bottom: 0px;
+}
+
+#map-download-indicator {
+  height: 0.6vh;
+  background: var(--bg-dark);
+}
+#map-download-indicator #map-download-ok {
+  background: var(--download-ok);
+}
+#map-download-indicator #map-download-err {
+  background: var(--download-err);
+}
+#map-download-indicator #map-download-ok, #map-download-indicator #map-download-err {
+  will-change: width;
+  transition-duration: 250ms;
 }
 
 /*******************

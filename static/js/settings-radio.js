@@ -92,7 +92,8 @@ window.settings.radio = (function()
         _staged.paLevel = null;
         _staged.feedback = null;
         ui.makeToast("success", "Successfully updated.");
-      }
+      },
+      ajax.handleJsonAjaxFail, undefined, true
     );
 
     return postSuccess;

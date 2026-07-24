@@ -52,8 +52,8 @@ window.pages.settings = (function() {
     + "URL template etc?\n\nThis will reload the app.");
     if (consent) {
       localStorage.clear();
+      _resetTilesUrlTemplate();
       location.reload();
-      await ajax.postWithTimeout("/tiles-url-template/unset", null);
     }
   }
 
@@ -236,15 +236,7 @@ window.pages.settings = (function() {
         if (r.ok) ui.makeToast("success", "Updated tile URL template.");
         else ui.makeToast("error", `Something failed: ${JSON.stringify(r)}`);
       },
-      (r, e) => {
-        try {
-          const resp = r.json();
-          ui.makeToast("error", `Failed:\n\n${resp.error ?? e.toString()}`);
-        } catch (err) {
-          ui.makeToast("error", `Failed:\n\n${e.toString()}`);
-        }
-      },
-      undefined, true
+      ajax.handleJsonAjaxFail, undefined, true
     );
   }
 

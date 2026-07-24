@@ -61,7 +61,7 @@ window.ajax = (function()
 
     if (raw) {
       try {
-        if (raw.status !== 200)
+        if (!raw.ok)
           throw new Error("HTTP status code "+raw.status);
         const resp = await raw.json();
         successHandler?.(resp);
@@ -81,10 +81,29 @@ window.ajax = (function()
     }
   }
 
+
+  /** Provides a reasonable default for JSON ajax request errors.
+   * @param {Reponse} rawResp
+   * @param {Error} error
+   */
+  async function handleJsonAjaxFail(rawResp, error) {
+    try {
+      const jsonResp = await rawResp.json();
+      ui.makeToast("error",
+                   `AJAX fail:\n\n${jsonResp.error ?? error.toString()}`,
+                  5000);
+    } catch (jsonParseError) {
+      ui.makeToast("error",
+                   `AJAX fail:\n\n${error.toString()}`,
+                  5000);
+    }
+  }
+
   
   // public API
   return {
     fetchWithTimeout,
-    postWithTimeout
+    postWithTimeout,
+    handleJsonAjaxFail,
   }
 })();

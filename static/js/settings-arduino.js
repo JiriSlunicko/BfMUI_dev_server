@@ -128,7 +128,8 @@ window.settings.arduino = (function()
         _arduino.serverDataIsNull = resp === null;
         _clearStaged();
         ui.makeToast("success", "Successfully updated.");
-      }
+      },
+      ajax.handleJsonAjaxFail, undefined, true
     );
 
     return postSuccess;

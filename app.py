@@ -46,41 +46,30 @@ def version():
     return resp
 
 
-@app.route("/tiles/<int:z>/<int:x>/<int:y>.png")
-def serve_tile(z: int, x: int, y: int):
-    result = tiles.get_tile(z, x, y, request.args.get("save"))
-    if not result.ok:
-        return result.message, result.suggested_status
-
-    if isinstance(result.data, bytes):
-        resp = make_response(result.data)
-        resp.headers.set("Content-Type", "image/png")
-        return resp
-
-    if isinstance(result.data, Path):
-        subdir, filename = result.data.parent, result.data.name
-        return send_from_directory(str(cfg.root / tiles.TILE_DIR / subdir),
-                                   filename)
-
-
 @app.route("/download-tiles/start", methods=["POST"])
 def download_tiles():
     try:
-        lon, lat, radius_km, min_zoom, max_zoom =\
-            utils.validate_download_tiles_args(request)
+        min_lon, max_lon, min_lat, max_lat, min_zoom, max_zoom\
+            = utils.validate_download_tiles_args(request)
     except:
-        return jsonify({"error": "Bad arguments"}), 400
+        return jsonify({"error": "bad arguments"}), 400
 
     job_id = jobs.start_job(tiles.bulk_download,
-                            lat, lon, radius_km, min_zoom, max_zoom)
+                            min_lon, max_lon, min_lat, max_lat,
+                            min_zoom, max_zoom)
 
-    return jsonify({"job_id": job_id}), 202
+    return jsonify({"ok": True, "jobId": job_id}), 202
 
 
-@app.route("/job-status")
+@app.route("/jobs/running")
+def get_jobs_running():
+    return jsonify({"ok": True, "jobs": jobs.get_running_jobs()}), 200
+
+
+@app.route("/jobs/status")
 def get_job_status():
     if not request.args.get("jobId"):
-        return jsonify({"error": "Bad arguments"}), 400
+        return jsonify({"error": "bad arguments"}), 400
 
     status, meta, data = jobs.get_job_status(request.args["jobId"])
     match status:
@@ -122,6 +111,23 @@ def unset_tiles_url_template():
         tiles.TILE_URL_SRC.unlink()
     cfg.urlpat = tiles.TILE_URL_DEFAULT    
     return jsonify({"ok": True}), 200
+
+
+@app.route("/tiles/<int:z>/<int:x>/<int:y>.png")
+def serve_tile(z: int, x: int, y: int):
+    result = tiles.get_tile(z, x, y, request.args.get("save"))
+    if not result.ok:
+        return result.message, result.suggested_status
+
+    if isinstance(result.data, bytes):
+        resp = make_response(result.data)
+        resp.headers.set("Content-Type", "image/png")
+        return resp
+
+    if isinstance(result.data, Path):
+        subdir, filename = result.data.parent, result.data.name
+        return send_from_directory(str(cfg.root / tiles.TILE_DIR / subdir),
+                                   filename)
 
 
 @app.route("/<path:path>")

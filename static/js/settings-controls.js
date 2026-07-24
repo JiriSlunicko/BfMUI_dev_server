@@ -145,7 +145,8 @@ window.settings.controls = (function()
         _clearStaged();
         _updateActiveController();
         ui.makeToast("success", "Successfully updated.");
-      }
+      },
+      ajax.handleJsonAjaxFail, undefined, true
     );
 
     return postSuccess;

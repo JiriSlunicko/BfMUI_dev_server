@@ -8,6 +8,7 @@ window.pages.mapPage = (function() {
   const _maxLat =  85.05112878;
   let _previewRect = null;
 
+
   function activate() {
     if (!_map) {
       _loadMap();
@@ -67,6 +68,15 @@ window.pages.mapPage = (function() {
 
 
   async function _openBatchDownloadDialog(e) {
+    // download already in progress -> short circuit
+    const raw = await ajax.fetchWithTimeout("/jobs/running");
+    const resp = await raw.json();
+    if (resp.jobs.length > 0) {
+      ui.makeToast("error", "A tile download is currently in progress. "
+                          + "Please wait for it to finish.");
+      return;
+    }
+
     const lat = e.latlng.lat;
     const lng = e.latlng.lng;
     const latStr = Math.abs(lat).toFixed(4) + (lat > 0 ? "°N" : "°S");
@@ -89,33 +99,96 @@ window.pages.mapPage = (function() {
     }
 
     // get & visualise estimate
-    const est = _estimateDownloadParameters(lat, lng, radius);
+    const downloadParams = _getDownloadParameters(lat, lng, radius);
     if (_previewRect !== null) _map.removeLayer(_previewRect);
-    _previewRect = L.rectangle(est.bounds, {
+    _previewRect = L.rectangle(downloadParams.bounds, {
       stroke: false, fill: true, fillOpacity: 0.3, fillColor: "red"
     }).addTo(_map);
 
     // confirm scope
     const consent = await ui.makePopup(
       "confirm",
-      `Download ${est.total} tiles?\n\nThat amounts to <b>roughly `
-      + `${Math.ceil(est.total * _approxTileFileSizeMB)} MB</b>, depending on `
-      + `your configured tile provider. Wi-fi is recommended.`,
+      `Download ${downloadParams.total} tiles?\n\nThat amounts to <b>roughly `
+      + `${Math.ceil(downloadParams.total * _approxTileFileSizeMB)} MB</b>, `
+      + `depending on your configured tile provider. Wi-fi is recommended.`,
       `Confirm download`
     );
 
     // remove preview rectangle
-    if (_previewRect !== null) _map.removeLayer(_previewRect);
+    if (_previewRect !== null) {
+      _map.removeLayer(_previewRect);
+    }
     _previewRect = null;
 
-    console.log(est);
-
-    // TODO: POST job, poll result
-
+    // go.
+    if (consent) {
+      _batchDownload(downloadParams.rect);
+    }
   }
 
 
-  function _batchDownload() {}
+  async function _batchDownload(rect) {
+    await ajax.postWithTimeout(
+      "/download-tiles/start"
+      + "?minLng=" + rect.minLng + "&maxLng=" + rect.maxLng
+      + "&minLat=" + rect.minLat + "&maxLat=" + rect.maxLat,
+      null,
+      (r) => {
+        if (r.ok) _monitorDownload(r.jobId);
+        else ui.makeToast("error", `Something failed: ${JSON.stringify(r)}`);
+      },
+      ajax.handleJsonAjaxFail, undefined, true
+    );
+  }
+
+
+  async function _monitorDownload(jobId) {
+    if (!jobId) return; // guard against garbage just in case
+
+    const okBar = utils.qs("#map-download-ok");
+    const errBar = utils.qs("#map-download-err");
+    okBar.style.width = "0%";
+    errBar.style.width = "0%";
+
+    while (true) {
+      await new Promise(r => setTimeout(r, 1000)); // wait
+      const raw = await ajax.fetchWithTimeout(`/jobs/status?jobId=${jobId}`);
+      const resp = await raw.json();
+
+      // dead :(
+      if (resp.fail) {
+        ui.makeToast("error", `Tile download job fail: ${resp.msg}`);
+        return;
+      }
+
+      // update
+      let percentOk = Math.round(100
+                                 * (resp.meta.downloaded + resp.meta.skipped)
+                                 / resp.meta.total);
+      let percentErr = Math.round(100 * resp.meta.failed / resp.meta.total);
+      percentErr = Math.min(percentErr, 100 - percentOk);
+      okBar.style.width = `${percentOk}%`;
+      errBar.style.width = `${percentErr}%`;
+
+      // done
+      if (resp.result) {
+        const t = resp.result.timeElapsed;
+        ui.makeToast(
+          "success",
+          `Tile download complete in ${Math.floor(t / 60)}m ${t % 60}s!\n\n`
+          + `${resp.result.downloaded} downloaded\n`
+          + `${resp.result.skipped} already on disk\n`
+          + `${resp.result.failed} failed`,
+          5000
+        );
+        setTimeout(() => {
+          okBar.style.width = "0%";
+          errBar.style.width = "0%";
+        }, 5000);
+        return;
+      }
+    }
+  }
 
 
   const _toRad = (deg) => deg * (Math.PI / 180);
@@ -165,7 +238,7 @@ window.pages.mapPage = (function() {
   }
 
 
-  function _estimateDownloadParameters(lat, lng, radiusKm) {
+  function _getDownloadParameters(lat, lng, radiusKm) {
     const rect = _get_rect_around(lat, lng, radiusKm);
 
     // the rectangle as map-friendly coords
