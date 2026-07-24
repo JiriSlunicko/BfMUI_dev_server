@@ -4,7 +4,7 @@ BfMUI is a GUI for the Bloodfly Control server, which needs to be running on the
 (same machine or accessible on the network over HTTP). Together they allow the user to access
 settings on a compatible RC plane and modify them as needed.
 
-This app currently supports Windows PCs and Android devices...
+This app currently supports Windows PCs and Android devices.
 
 ## Getting started - Windows PC
 1. Download the repo or the desktop artifact (under Actions on GitHub).

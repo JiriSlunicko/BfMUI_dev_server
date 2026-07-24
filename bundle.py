@@ -12,6 +12,7 @@ IGNORE: list[str] = [
 
 DO_FIRST: list[str] = [
   os.path.join("deps", "leaflet.js"),
+  os.path.join("deps", "L.Control.Locate.min.js"),
   os.path.join("deps", "lodash.min.js"),
   "010-utils.js",
   "020-ui.js",
