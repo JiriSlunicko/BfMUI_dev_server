@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="stylesheet" href="/js/deps/leaflet.css" />
+  <link rel="stylesheet" href="/js/deps/L.Control.Locate.css" />
   <!--Debug imports start-->
   <script src="/js/deps/lodash.min.js" defer type="application/javascript"></script>
   <script src="/js/deps/leaflet.js" defer type="application/javascript"></script>
+  <script src="/js/deps/L.Control.Locate.min.js" defer type="application/javascript"></script>
   <script src="/js/010-utils.js" defer type="application/javascript"></script>
   <script src="/js/020-ui.js" defer type="application/javascript"></script>
   <script src="/js/030-entries.js" defer type="application/javascript"></script>
@@ -191,7 +193,7 @@
 
 
       <div class="view-tab flex-c" id="view-settings">
-        <div class="flex-c">
+        <div class="flex-c"><!-- Settings 1st column -->
           <div id="settings-connection" class="desktop-panel">
             <h2>Connection</h2>
             <p id="settings-connection-status">Currently not connected.</p>
@@ -214,25 +216,6 @@
             </label>
           </div>
 
-          <div id="settings-radio" class="desktop-panel">
-            <h2>Radio</h2>
-            <div id="settings-radio-channel-placeholder"></div>
-            <div class="flex-r f-g16 mb16">
-              <div id="settings-radio-pa-placeholder"></div>
-              <label for="settings-radio-feedback" class="f-noshrink">
-                <span>Plane feedback</span>
-                <select id="settings-radio-feedback">
-                  <option value="yes">enabled</option>
-                  <option value="">disabled</option>
-                </select>
-              </label>
-            </div>
-            <div class="flex-r f-g8">
-              <button type="button" class="btn" id="settings-radio-submit-btn">Save</button>
-              <button type="button" class="btn" id="settings-radio-reset-btn">Reset</button>
-            </div>
-          </div>
-
           <div id="settings-arduino" class="desktop-panel">
             <h2>Arduino serial port</h2>
             <div class="flex-r mb16">
@@ -250,9 +233,7 @@
               <button type="button" class="btn" id="settings-arduino-reset-btn">Reset</button>
             </div>
           </div>
-        </div>
 
-        <div class="flex-c">
           <div id="settings-music" class="desktop-panel">
             <h2>Background music</h2>
             <div id="settings-music-volume-placeholder"></div>
@@ -261,7 +242,9 @@
               <button type="button" class="btn" id="settings-music-reset-btn">Reset</button>
             </div>
           </div>
+        </div>
 
+        <div class="flex-c"><!-- Settings 2nd column -->
           <div id="settings-configs" class="desktop-panel">
             <h2>Saved configurations</h2>
             <p>Saving individual settings won't automatically update named configs.
@@ -283,9 +266,40 @@
               </div>
             </div>
           </div>
+        </div>
+
+        <div class="flex-c"><!-- Settings 3rd column -->
+          <div id="settings-radio" class="desktop-panel">
+            <h2>Radio</h2>
+            <div id="settings-radio-channel-placeholder"></div>
+            <div class="flex-r f-g16 mb16">
+              <div id="settings-radio-pa-placeholder"></div>
+              <label for="settings-radio-feedback" class="f-noshrink">
+                <span>Plane feedback</span>
+                <select id="settings-radio-feedback">
+                  <option value="yes">enabled</option>
+                  <option value="">disabled</option>
+                </select>
+              </label>
+            </div>
+            <div class="flex-r f-g8">
+              <button type="button" class="btn" id="settings-radio-submit-btn">Save</button>
+              <button type="button" class="btn" id="settings-radio-reset-btn">Reset</button>
+            </div>
+          </div>
 
           <div id="settings-misc" class="desktop-panel">
             <h2>Miscellaneous</h2>
+            <div class="flex-r">
+              <label for="input-tiles-url" class="w100">
+                <span>Tile URL template</span>
+                <div class="flex-r f-g8 mb16">
+                  <input id="input-tiles-url" type="text" class="f-grow" autocomplete="off" value="{{ tiles_dir }}" />
+                  <button type="button" class="btn" id="tiles-url-set">Set</button>
+                  <button type="button" class="btn" id="tiles-url-reset">Reset</button>
+                </div>
+              </label>
+            </div>
             <div class="flex-r">
               <button type="button" class="btn" id="settings-reset-btn">Reset app settings</button>
             </div>

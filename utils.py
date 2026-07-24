@@ -2,8 +2,15 @@ import math
 import socket
 from time import time
 
-_MIN_LAT = -85.05112878
-_MAX_LAT =  85.05112878
+from flask import Request
+
+MIN_LAT = -85.05112878
+MAX_LAT =  85.05112878
+
+MIN_ZOOM = 8
+MAX_ZOOM = 16
+
+BATCH_DOWNLOAD_HARD_LIMIT = 5000
 
 _is_online_cache = {
     "result": None,
@@ -15,7 +22,7 @@ def _clamp(v, lo, hi):
     return max(lo, min(hi, v))
 
 def _clamp_lat(lat: float) -> float:
-    return _clamp(lat, _MIN_LAT, _MAX_LAT)
+    return _clamp(lat, MIN_LAT, MAX_LAT)
 
 
 def is_online(host: str = "1.1.1.1",
@@ -38,6 +45,18 @@ def is_online(host: str = "1.1.1.1",
     return _is_online_cache["result"]
 
 
+def validate_download_tiles_args(request: Request
+                                 ) -> tuple[float, float, float, int|None, int|None]:
+    lon = request.args.get("lon", type=float)
+    lat = request.args.get("lat", type=float)
+    radius_km = request.args.get("radiusKm", type=float)
+    min_zoom = request.args.get("minZoom", None, type=int)
+    max_zoom = request.args.get("maxZoom", None, type=int)
+    if lon is None or lat is None or radius_km is None:
+        raise ValueError()
+    return lon, lat, radius_km, min_zoom, max_zoom
+
+
 def lon_to_tile_x(lon: float, zoom: int) -> int:
     n = 1 << zoom
     x = math.floor((lon + 180) / 360.0 * n)
@@ -51,13 +70,9 @@ def lat_to_tile_y(lat: float, zoom: int) -> int:
         1.0
         - math.log(
             math.tan(lat_rad)
-            + 1.0
-            / math.cos(lat_rad)
-        )
-        / math.pi
-    )
-    / 2.0
-    * n)
+            + 1.0 / math.cos(lat_rad)
+        ) / math.pi
+    ) / 2.0 * n)
     return _clamp(math.floor(y), 0, n-1)
 
 
@@ -88,9 +103,11 @@ def even_zooms_in_range(min_zoom: int, max_zoom: int) -> list[int]:
 
 def count_tiles(lat: float, lon: float,
                 radius_km: float,
-                min_zoom: int, max_zoom: int) -> int:
+                min_zoom: int | None, max_zoom: int | None) -> int:
+    resolved_min_z = MIN_ZOOM if min_zoom is None else min_zoom
+    resolved_max_z = MAX_ZOOM if max_zoom is None else max_zoom
     total = 0
-    for z in even_zooms_in_range(min_zoom, max_zoom):
+    for z in even_zooms_in_range(resolved_min_z, resolved_max_z):
         min_x, max_x, min_y, max_y = tile_range_for_radius(lat, lon,
                                                            radius_km, z)
         total += (max_x - min_x + 1) * (max_y - min_y + 1)

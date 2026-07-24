@@ -37,15 +37,23 @@ window.pages.settings = (function() {
 
     // config saving/loading
     window.serverConfig.init();
+
+    // map tile URL template settings
+    utils.qs("#tiles-url-set").addEventListener("click", _setTilesUrlTemplate);
+    utils.qs("#tiles-url-reset").addEventListener("click", _resetTilesUrlTemplate);
   }
 
 
-  /** Reset app settings to defaults (clear localStorage) if the user confirms. */
+  /** Reset app settings to defaults (clear localStorage & unset tile URL)
+   *  if the user confirms. */
   async function _resetSettings() {
-    const consent = await ui.makePopup("confirm", "Are you sure you want to reset all app settings, including server IP etc?\n\nThis will reload the app.");
+    const consent = await ui.makePopup("confirm",
+      "Are you sure you want to reset all app settings, including server IP, map tile "
+    + "URL template etc?\n\nThis will reload the app.");
     if (consent) {
       localStorage.clear();
       location.reload();
+      await ajax.postWithTimeout("/tiles-url-template/unset", null);
     }
   }
 
@@ -211,6 +219,46 @@ window.pages.settings = (function() {
       localStorage.setItem("pollDelay", newPollDelay);
       ui.makeToast("success", "Polling interval set to " + _polling.delayMs + " ms.");
     }
+  }
+
+
+  /** Persist a new tile URL pattern with {z}, {x}, {y} placeholders. */
+  async function _setTilesUrlTemplate() {
+    const urlPat = utils.qs("#input-tiles-url").value;
+    if (!urlPat) {
+      ui.makeToast("error", "Please enter a URL template.");
+      return;
+    }
+    await ajax.postWithTimeout(
+      "/tiles-url-template/set?urlTemplate=" + encodeURIComponent(urlPat),
+      null,
+      (r) => {
+        if (r.ok) ui.makeToast("success", "Updated tile URL template.");
+        else ui.makeToast("error", `Something failed: ${JSON.stringify(r)}`);
+      },
+      (r, e) => {
+        try {
+          const resp = r.json();
+          ui.makeToast("error", `Failed:\n\n${resp.error ?? e.toString()}`);
+        } catch (err) {
+          ui.makeToast("error", `Failed:\n\n${e.toString()}`);
+        }
+      },
+      undefined, true
+    );
+  }
+
+
+  /** Clear the set URL template for tiles, revert to default. */
+  async function _resetTilesUrlTemplate() {
+    const consent = await ui.makePopup("confirm",
+      "Are you sure you want to revert to the default map tile source?",
+      "Reset tile source?"
+    );
+    if (!consent) return;
+    await ajax.postWithTimeout("/tiles-url-template/reset", null,
+      (r) => { ui.makeToast("success", "Successfully reset."); }
+    );
   }
 
 

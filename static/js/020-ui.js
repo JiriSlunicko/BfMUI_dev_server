@@ -72,7 +72,7 @@ window.ui = (function () {
 
     return new Promise(resolve => {
       const bg = document.createElement("div");
-      bg.className = "modal-bg flex-c f-a-c";
+      bg.className = "modal-bg flex-c f-a-c f-j-c";
       const fg = document.createElement("div");
       fg.className = "modal-fg flex-c f-a-c";
 

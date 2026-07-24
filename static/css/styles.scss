@@ -166,9 +166,9 @@ input[type=range]::-moz-range-thumb {
 
 .modal-bg {
     position: absolute;
-    z-index: 10;
+    z-index: 9990;
     width: 100%;
-    height: 100%;
+    height: 100dvh;
     background-color: rgba(0,0,0,0.6);
     backdrop-filter: blur(2px);
 }
@@ -178,10 +178,10 @@ input[type=range]::-moz-range-thumb {
     width: 80%;
     max-width: 400px;
     border-radius: 3px;
-    margin-top: 32px;
-    @media only screen and (min-width: 751px) {
-        margin-top: 64px;
-    }
+    //margin-top: 32px;
+    //@media only screen and (min-width: 1024px) {
+    //    margin-top: 64px;
+    //}
 }
 
 .toast-container {
@@ -310,7 +310,7 @@ section {
 }
 
 .desktop-panel {
-    @media only screen and (min-width: 751px) {
+    @media only screen and (min-width: 1024px) {
         padding: 12px 16px 16px;
         border: 1px solid var(--bg-medium);
         box-shadow: 1px 1px 4px var(--bg-medium);
@@ -318,7 +318,7 @@ section {
             background-color: var(--bad);
         }
     }
-    @media only screen and (max-width: 750px) {
+    @media only screen and (max-width: 1023px) {
         border-bottom: 1px solid var(--bg-medium);
         &.invalid p.warning {
             text-align: center;
@@ -340,7 +340,7 @@ section {
 #view-home {
     max-width: 480px;
 }
-@media only screen and (max-width: 750px) {
+@media only screen and (max-width: 1023px) {
     #home-hide-intro-btn { margin-bottom: 24px; }
 }
 #status-can-fly {
@@ -362,7 +362,7 @@ section {
 /*****************
  * STATUS SCREEN *
  *****************/
-@media only screen and (min-width: 751px) {
+@media only screen and (min-width: 1024px) {
     #view-status {
         display: grid;
         grid-template-columns: repeat(2, calc(50% - 16px));
@@ -385,7 +385,7 @@ section {
 /*******************
  * CONTROLS SCREEN *
  *******************/
-@media only screen and (min-width: 751px) {
+@media only screen and (min-width: 1024px) {
     #view-controls {
         display: grid;
         grid-template-columns: repeat(2, calc(50% - 16px));
@@ -407,11 +407,11 @@ section {
     background-color: var(--bg-bright);
     border-top: 1px solid var(--bg-medium);
     
-    @media only screen and (min-width: 751px) {
+    @media only screen and (min-width: 1024px) {
         border: 1px solid var(--bg-medium);
         border-bottom: none;
     }
-    @media only screen and (max-width: 750px) {
+    @media only screen and (max-width: 1023px) {
         width: 100%;
     }
 }
@@ -444,13 +444,13 @@ section .main-content .view-tab#view-controls {
 /****************
  * PLANE SCREEN *
  ****************/
-@media only screen and (max-width: 750px) {
+@media only screen and (max-width: 1023px) {
     #view-plane > div:not(:last-child) {
         padding-bottom: 24px;
         border-bottom: 1px solid var(--bg-medium);
     }
 }
-@media only screen and (min-width: 751px) {
+@media only screen and (min-width: 1024px) {
     #view-plane {
         display: grid;
         grid-template-columns: repeat(2, 376px);
@@ -479,23 +479,30 @@ section .main-content .view-tab#view-controls {
 
         .leaflet-control-attribution { font-size: 10px; }
     }
+    #map-view, #map-view * {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
 }
+section .main-content .view-tab#view-mapPage { padding-bottom: 0px; }
 
 
 /*******************
  * SETTINGS SCREEN *
  *******************/
-@media only screen and (max-width: 750px) {
+@media only screen and (max-width: 1023px) {
     #view-settings { gap: 0; }
     #view-settings > div > div {
         padding-bottom: 24px;
         margin-bottom: 16px;
     }
 }
-@media only screen and (min-width: 751px) {
+@media only screen and (min-width: 1024px) {
     #view-settings {
         display: grid;
-        grid-template-columns: repeat(2, 376px);
+        grid-template-columns: repeat(3, calc((100% - 2*8px) / 3));
     }
     #view-settings, #view-settings > div {
         gap: 8px;

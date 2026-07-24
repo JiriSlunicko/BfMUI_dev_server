@@ -37,9 +37,12 @@ window.ajax = (function()
    * @param {function|null} [failureHandler=null]
    * function called when anything fails, with Response|null and the error as arguments
    * @param {number} [timeout=5000]
+   * @param {boolean} [suppressToasts=false]
+   * whether to mute error toasts natively emitted by this function
    * @returns {Promise<boolean>}
    */
-  async function postWithTimeout(url, payload, successHandler=null, failureHandler=null, timeout=5000) {
+  async function postWithTimeout(url, payload, successHandler=null, failureHandler=null,
+                                 timeout=5000, suppressToasts=false) {
     let raw = null;
     try {
       raw = await fetchWithTimeout(url, timeout, {
@@ -50,7 +53,9 @@ window.ajax = (function()
     } catch (err) {
       console.error(url, err);
       failureHandler?.(raw, err);
-      ui.makeToast("error", `POST ${url} failed - network error\n\n${err.toString()}`, 5000);
+      if (!suppressToasts) {
+        ui.makeToast("error", `POST ${url} failed - network error\n\n${err.toString()}`, 5000);
+      }
       return false;
     }
 
@@ -64,11 +69,13 @@ window.ajax = (function()
       } catch (err) {
         console.error(url, err, payload);
         failureHandler?.(raw, err);
-        ui.makeToast("error", raw.ok
-          ? `POST ${url} succeeded, but can't process response\n\n${err.toString()}`
-          : `POST ${url} failed utterly - ${raw.status}:\n\n${raw.statusText}`,
-          7500
-        );
+        if (!suppressToasts) {
+          ui.makeToast("error", raw.ok
+            ? `POST ${url} succeeded, but can't process response\n\n${err.toString()}`
+            : `POST ${url} failed utterly - ${raw.status}:\n\n${raw.statusText}`,
+            7500
+          );
+        }
         return false;
       }
     }

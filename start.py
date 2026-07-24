@@ -17,7 +17,7 @@ def start(port=8765, data_dir=None):
         from app import app, cfg
         if data_dir:
             cfg.data_dir = Path(data_dir)
-        serve(app, host="127.0.0.1", port=port)
+        serve(app, host="127.0.0.1", port=port, channel_timeout=900)
 
     _server_thread = threading.Thread(target=run, daemon=True)
     _server_thread.start()
