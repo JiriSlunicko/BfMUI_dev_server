@@ -164,8 +164,10 @@ if __name__ == "__main__":
       2. Simply open the URL in a browser.
     Mobile:
       2. Plug in, enable USB debugging (settings > more/other/whatever > dev)
-      3. cmd > adb reverse tcp:8081 tcp:8000
+      3. cmd > adb reverse tcp:8080 tcp:8000
       4. Open app
+      5. On PC open a browser and visit either "chrome://inspect" (Chrome) or
+         "about:debugging" (Firefox) to poke at the DOM, console etc.
 
     Deployment (other repo):
     1. Copy the required files to `/app/src/main/python` of the other repo.

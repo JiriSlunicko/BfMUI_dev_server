@@ -102,7 +102,8 @@ window.settings.controls = (function()
     for (const controller of Object.keys(_controls.actionMappings)) {
       const processedMappings = {};
       for (const action of _controls.actions) {
-        const resolvedMapping = ctrlHelpers.getResolvedMapping(_controls, _staged, controller, action, "button");
+        const resolvedMapping = ctrlHelpers.getResolvedMapping(_controls, _staged, controller,
+                                                               action, "button");
         if (resolvedMapping === undefined || resolvedMapping.button === "unbound")
           continue;
         processedMappings[action] = resolvedMapping.button.split(", ");
@@ -114,7 +115,8 @@ window.settings.controls = (function()
     for (const controller of Object.keys(_controls.axisMappings)) {
       const processedMappings = {};
       for (const planeAxis of _controls.outAxes) {
-        const resolvedMapping = ctrlHelpers.getResolvedMapping(_controls, _staged, controller, planeAxis, "axis");
+        const resolvedMapping = ctrlHelpers.getResolvedMapping(_controls, _staged, controller,
+                                                               planeAxis, "axis");
         if (resolvedMapping === undefined || resolvedMapping.deleteMe)
           continue;
 
@@ -156,15 +158,21 @@ window.settings.controls = (function()
   function hasPendingChanges() {
     for (const controller of Object.keys(_controls.actionMappings)) {
       for (const action of _controls.actions) {
-        if (_staged.actionMappings[controller][action])
+        if (_staged.actionMappings[controller][action] !== undefined
+          && !_.isEqual(_staged.actionMappings[controller][action],
+                      _controls.actionMappings[controller][action])) {
           return true;
+        }
       }
     }
 
     for (const controller of Object.keys(_controls.axisMappings)) {
       for (const planeAxis of _controls.outAxes) {
-        if (_staged.axisMappings[controller][planeAxis])
+        if (_staged.axisMappings[controller][planeAxis] !== undefined
+          && !_.isEqual(_staged.axisMappings[controller][planeAxis],
+                      _controls.axisMappings[controller][planeAxis])) {
           return true;
+        }
       }
     }
 
@@ -203,14 +211,14 @@ window.settings.controls = (function()
     for (const controller of Object.keys(_controls.actionMappings)) {
       _staged.actionMappings[controller] ??= {};
       for (const action of _controls.actions) {
-        _staged.actionMappings[controller][action] = null;
+        _staged.actionMappings[controller][action] = undefined;
       }
     }
 
     for (const controller of Object.keys(_controls.axisMappings)) {
       _staged.axisMappings[controller] ??= {};
       for (const planeAxis of _controls.outAxes) {
-        _staged.axisMappings[controller][planeAxis] = null;
+        _staged.axisMappings[controller][planeAxis] = undefined;
       }
     }
   }
@@ -228,7 +236,8 @@ window.settings.controls = (function()
     const activeRole = ctrlHelpers.getActiveControllerRole();
     const kind = mapping.dataset.kind;
     const output = mapping.dataset.output;
-    const currentMapping = ctrlHelpers.getResolvedMapping(_controls, _staged, activeRole, output, kind);
+    const currentMapping = ctrlHelpers.getResolvedMapping(_controls, _staged, activeRole,
+                                                          output, kind);
     const mappingMainProperty = kind === "axis" ? "inAxis" : "button";
     let currentInput = currentMapping?.[mappingMainProperty]?.split(/\s*,\s*/) || ["unbound"];
 

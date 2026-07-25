@@ -56,13 +56,19 @@ window.ctrlHelpers = (function() {
         const mMode = mapping?.mode || "direct";
         const mGain = typeof mapping?.gain === "number" ? mapping.gain : -1;
         mappingString = _stringifyAxisMapping(mInAxis, mInvert, mDeadzone, mMode, mGain);
-        if (staged.axisMappings[controller][output])
-          stagedChange = true;
+        if (staged.axisMappings[controller][output] !== undefined
+          && !_.isEqual(staged.axisMappings[controller][output],
+                      controls.axisMappings[controller][output])) {
+          stagedChange = true;               
+        }
       } else {
         item.dataset.isEnum = controls.restrictions[output] ? "yes" : "";
         mappingString = mapping?.button || "unbound";
-        if (staged.actionMappings[controller][output])
+        if (staged.actionMappings[controller][output] !== undefined
+          && !_.isEqual(staged.actionMappings[controller][output],
+                      controls.actionMappings[controller][output])) {
           stagedChange = true;
+        }
       }
 
       item.insertAdjacentHTML("beforeend", `
@@ -162,8 +168,8 @@ window.ctrlHelpers = (function() {
   function getResolvedMapping(controls, staged, controller, output, kind) {
     const mappingsKey = kind === "axis" ? "axisMappings" : "actionMappings";
 
-    return staged[mappingsKey][controller][output]
-      ?? controls[mappingsKey][controller][output];
+    return utils.coalesceUndef(staged[mappingsKey][controller][output],
+                             controls[mappingsKey][controller][output]);
   }
 
 

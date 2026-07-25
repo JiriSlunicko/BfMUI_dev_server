@@ -3,8 +3,8 @@ window.settings.arduino = (function()
   let _initialised = false;
 
   let _staged = {
-    port: null,
-    baudRate: null,
+    port: undefined,
+    baudRate: undefined,
   }
 
   let _arduino = {
@@ -39,13 +39,17 @@ window.settings.arduino = (function()
     // update text input on baud rate select interaction
     baudRateSelect.addEventListener("change", function () {
       if (this.value !== "custom") { baudRateText.value = this.value; }
-      _staged.baudRate = baudRateText.value === "" ? null : parseInt(baudRateText.value);
+      _staged.baudRate = (baudRateText.value === "")
+        ? undefined
+        : parseInt(baudRateText.value);
     });
     // update baud rate select on text input
     baudRateText.addEventListener("change", function () {
       const val = parseInt(this.value);
       baudRateSelect.value = _arduino.baudRatePresets.includes(val) ? val : "custom";
-      _staged.baudRate = isNaN(val) ? null : val;
+      _staged.baudRate = isNaN(val)
+        ? undefined
+        : val;
     });
 
     // submit listener
@@ -79,8 +83,8 @@ window.settings.arduino = (function()
 
 
   async function save() {
-    const resolvedPort = _staged.port ?? _arduino.port;
-    const resolvedBaudRate = _staged.baudRate ?? _arduino.baudRate;
+    const resolvedPort = utils.coalesceUndef(_staged.port, _arduino.port);
+    const resolvedBaudRate = utils.coalesceUndef(_staged.baudRate, _arduino.baudRate);
 
     if (!resolvedPort) {
       ui.makeToast("error", "Invalid port. Must be a non-empty string.", 3000);
@@ -99,8 +103,10 @@ window.settings.arduino = (function()
 
   function hasPendingChanges() {
     return (
-      (_staged.port !== null && _staged.port !== _arduino.port) ||
-      (_staged.baudRate !== null && _staged.baudRate !== _arduino.baudRate)
+      (_staged.port !== undefined
+        && _staged.port !== _arduino.port) ||
+      (_staged.baudRate !== undefined
+        && _staged.baudRate !== _arduino.baudRate)
     );
   }
 
@@ -178,8 +184,8 @@ window.settings.arduino = (function()
     const prevWarning = arduinoPanel.querySelector("#settings-arduino-warning");
     if (prevWarning) prevWarning.remove();
 
-    const resolvedPort = _staged.port ?? _arduino.port;
-    const resolvedBaudRate = _staged.baudRate ?? _arduino.baudRate;
+    const resolvedPort = utils.coalesceUndef(_staged.port, _arduino.port);
+    const resolvedBaudRate = utils.coalesceUndef(_staged.baudRate, _arduino.baudRate);
 
     // update port selection
     portSelect.innerHTML = "";
@@ -215,7 +221,7 @@ window.settings.arduino = (function()
       arduinoPanel.querySelector("#settings-arduino-buttons").insertAdjacentHTML("beforebegin", `
         <p id="settings-arduino-warning" class="warning mb16"><b>WARNING:</b> port not available</p>`);
       
-      _staged.port = null;
+      _staged.port = undefined;
       returnValue = false;
     } else {
       arduinoPanel.classList.remove("invalid");
@@ -232,8 +238,8 @@ window.settings.arduino = (function()
 
 
   function _clearStaged() {
-    _staged.port = null;
-    _staged.baudRate = null;
+    _staged.port = undefined;
+    _staged.baudRate = undefined;
   }
 
 

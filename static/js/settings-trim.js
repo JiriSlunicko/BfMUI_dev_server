@@ -55,7 +55,7 @@ window.settings.trim = (function()
 
   function reset() {
     for (const surface of Object.keys(_staged)) {
-      _staged[surface] = null;
+      _staged[surface] = undefined;
     }
     _render();
   }
@@ -64,7 +64,7 @@ window.settings.trim = (function()
   async function save() {
     const payload = {};
     for (const [surface, serverValue] of Object.entries(_trimValues.surfaces)) {
-      payload[surface] = _staged[surface] ?? serverValue;
+      payload[surface] = utils.coalesceUndef(_staged[surface], serverValue);
     }
     console.debug("trim payload:", payload);
 
@@ -75,7 +75,7 @@ window.settings.trim = (function()
         _trimValues.surfaces = {};
         for (const [surfName, surfTrim] of Object.entries(resp)) {
           _trimValues.surfaces[surfName] = surfTrim;
-          _staged[surfName] = null;
+          _staged[surfName] = undefined;
         }
         ui.makeToast("success", "Successfully updated.");
       },
@@ -88,7 +88,7 @@ window.settings.trim = (function()
 
   function hasPendingChanges() {
     for (const [surface, serverValue] of Object.entries(_trimValues.surfaces)) {
-      if (_staged[surface] !== null && _staged[surface] !== serverValue)
+      if (_staged[surface] !== undefined && _staged[surface] !== serverValue)
         return true;
     }
     return false;
@@ -105,8 +105,6 @@ window.settings.trim = (function()
       _trimValues.surfaces = {};
       for (const surface of resp.AvailableSurfaces) {
         _trimValues.surfaces[surface] = resp.TrimValues[surface] || 0;
-        if (!_initialised)
-          _staged[surface] = null;
       }
       _initialised = true;
       return true;
@@ -132,7 +130,7 @@ window.settings.trim = (function()
     container.querySelector("p")?.remove();
 
     for (const [surface, serverValue] of Object.entries(_trimValues.surfaces)) {
-      const trimValue = _staged[surface] ?? serverValue;
+      const trimValue = utils.coalesceUndef(_staged[surface], serverValue);
       let myWrapper = container.querySelector(`label[for="plane-trim-${surface}-text"]`);
 
       if (myWrapper === null) {

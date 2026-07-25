@@ -4,7 +4,7 @@ window.serverConfig = (function()
   let _availableConfigs = {};
   const _configGroups = {
     plane: ["radio", "maxSurfaceAngles", "trim"],
-    user: ["arduino", "controls"],
+    user: ["arduino", "controls", "music"],
   }
 
 

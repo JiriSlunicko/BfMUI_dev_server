@@ -1,11 +1,11 @@
 window.settings.music = (function()
 {
   let _staged = {
-    volume: null,
+    volume: undefined,
   }
 
   let _music = {
-    volume: null
+    volume: undefined
   }
 
 
@@ -45,14 +45,14 @@ window.settings.music = (function()
 
 
   function reset() {
-    _staged.volume = null;
+    _staged.volume = undefined;
     _render();
   }
 
 
   async function save() {
     const payload = {
-      Volume: _convertOutgoing(_staged.volume ?? _music.volume),
+      Volume: _convertOutgoing(utils.coalesceUndef(_staged.volume, _music.volume)),
     };
     console.debug("music payload:", payload);
 
@@ -61,7 +61,7 @@ window.settings.music = (function()
       payload,
       (resp) => {
         _music.volume = _convertIncoming(resp.Volume);
-        _staged.volume = null;
+        _staged.volume = undefined;
         ui.makeToast("success", "Successfully updated.");
       },
       ajax.handleJsonAjaxFail, undefined, true
@@ -72,7 +72,7 @@ window.settings.music = (function()
 
 
   function hasPendingChanges() {
-    return _staged.volume !== null && _staged.volume !== _music.volume;
+    return _staged.volume !== undefined && _staged.volume !== _music.volume;
   }
 
 
@@ -128,7 +128,7 @@ window.settings.music = (function()
     musicPanel.classList.remove("hidden");
     musicPanel.querySelector("#music-error")?.remove();
     const textInput = musicPanel.querySelector("#settings-music-volume-text");
-    textInput.value = (_staged.volume ?? _music.volume).toFixed(2);
+    textInput.value = (utils.coalesceUndef(_staged.volume, _music.volume)).toFixed(2);
     textInput.dispatchEvent(new CustomEvent("backend-refresh", { bubbles: true }));
   }
 

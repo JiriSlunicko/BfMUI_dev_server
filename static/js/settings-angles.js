@@ -54,9 +54,7 @@ window.settings.maxSurfaceAngles = (function()
 
 
   function reset() {
-    for (const surface of Object.keys(_staged)) {
-      _staged[surface] = null;
-    }
+    _staged = {};
     _render();
   }
 
@@ -64,7 +62,7 @@ window.settings.maxSurfaceAngles = (function()
   async function save() {
     const payload = {};
     for (const [surface, serverValue] of Object.entries(_maxSurfaceAngles.surfaces)) {
-      payload[surface] = _staged[surface] ?? serverValue;
+      payload[surface] = utils.coalesceUndef(_staged[surface], serverValue);
     }
     console.debug("max angles payload:", payload);
 
@@ -75,8 +73,8 @@ window.settings.maxSurfaceAngles = (function()
         _maxSurfaceAngles.surfaces = {};
         for (const [surfName, surfMaxAngle] of Object.entries(resp)) {
           _maxSurfaceAngles.surfaces[surfName] = surfMaxAngle;
-          _staged[surfName] = null;
         }
+        _staged = {};
         ui.makeToast("success", "Successfully updated.");
       },
       ajax.handleJsonAjaxFail, undefined, true
@@ -88,7 +86,7 @@ window.settings.maxSurfaceAngles = (function()
 
   function hasPendingChanges() {
     for (const [surface, serverValue] of Object.entries(_maxSurfaceAngles.surfaces)) {
-      if (_staged[surface] !== null && _staged[surface] !== serverValue)
+      if (_staged[surface] !== undefined && _staged[surface] !== serverValue)
         return true;
     }
     return false;
@@ -105,8 +103,6 @@ window.settings.maxSurfaceAngles = (function()
       _maxSurfaceAngles.surfaces = {};
       for (const surface of resp.AvailableSurfaces) {
         _maxSurfaceAngles.surfaces[surface] = resp.MaxSurfaceAngles[surface] || 0;
-        if (!_initialised)
-          _staged[surface] = null;
       }
       _initialised = true;
       return true;
@@ -132,7 +128,7 @@ window.settings.maxSurfaceAngles = (function()
     container.querySelector("p")?.remove();
 
     for (const [surface, serverValue] of Object.entries(_maxSurfaceAngles.surfaces)) {
-      const maxAngle = _staged[surface] ?? serverValue;
+      const maxAngle = utils.coalesceUndef(_staged[surface], serverValue);
       let myWrapper = container.querySelector(`label[for="plane-angles-${surface}-text"]`);
 
       if (myWrapper === null) {

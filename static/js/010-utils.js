@@ -107,7 +107,13 @@ window.utils = (function()
 
   /** @returns {boolean} whether the viewport size indicates we're on a mobile screen */
   function isMobile() {
-    return document.body.offsetWidth <= 750;
+    return document.body.offsetWidth < 1024;
+  }
+
+
+  /** @returns val2 if val1 is undefined, otherwise val1 */
+  function coalesceUndef(val1, val2) {
+    return (typeof val1 === "undefined") ? val2 : val1;
   }
 
 
@@ -118,5 +124,6 @@ window.utils = (function()
     rangeToTextInput,
     textInputToRange,
     isMobile,
+    coalesceUndef,
   }
 })();

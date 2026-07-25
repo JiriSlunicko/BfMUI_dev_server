@@ -3,20 +3,22 @@ window.settings.radio = (function()
   let _lastFetchOk = null;
 
   let _staged = {
-    channel: null,
-    paLevel: null,
-    feedback: null,
+    channel: undefined,
+    feedbackChannel: undefined,
+    paLevel: undefined,
+    feedback: undefined,
   }
 
   let _radio = {
     channel: null,
+    feedbackChannel: null,
     paLevel: null,
     feedback: null,
   }
 
 
   async function init() {
-    // channel
+    // main channel
     const channelPlaceholder = utils.qs("#settings-radio-channel-placeholder");
     channelPlaceholder.outerHTML = ui.makeRangeTextInputPair(
       "settings-radio-channel", "Channel", {
@@ -28,6 +30,22 @@ window.settings.radio = (function()
         _staged.channel = parseInt(e.detail.value);
       }
     });
+
+    // feedback channel
+    const fbcPlaceholder = utils.qs("#settings-radio-feedback-channel-placeholder");
+    fbcPlaceholder.outerHTML = ui.makeRangeTextInputPair(
+      "settings-radio-feedback-channel", "Feedback channel", {
+      bounds: { min: 0, max: 125 }, step: 1, value: 0, scaling: "linear", incrementButtons: true
+    }, "mb16"
+    );
+    utils.qs(`label[for="settings-radio-feedback-channel-text"]`).addEventListener(
+      "slider-change",
+      (e) => {
+        if (e.detail.byUser) {
+          _staged.feedbackChannel = parseInt(e.detail.value);
+        }
+      }
+    );
 
     // PA
     const PAPlaceholder = utils.qs("#settings-radio-pa-placeholder");
@@ -42,7 +60,7 @@ window.settings.radio = (function()
       }
     });
 
-    // feedback
+    // feedback on/off
     utils.qs("#settings-radio-feedback").addEventListener("change", function() {
       _staged.feedback = this.value === "yes";
     });
@@ -66,18 +84,20 @@ window.settings.radio = (function()
 
 
   function reset() {
-    _staged.channel = null;
-    _staged.paLevel = null;
-    _staged.feedback = null;
+    _staged.channel = undefined;
+    _staged.feedbackChannel = undefined;
+    _staged.paLevel = undefined;
+    _staged.feedback = undefined;
     _render();
   }
 
 
   async function save() {
     const payload = {
-      Channel: _staged.channel ?? _radio.channel,
-      PALevel: _staged.paLevel ?? _radio.paLevel,
-      IsPlaneFeedbackEnabled: _staged.feedback ?? _radio.feedback,
+      Channel: utils.coalesceUndef(_staged.channel, _radio.channel),
+      ChannelFeedback: utils.coalesceUndef(_staged.feedbackChannel, _radio.feedbackChannel),
+      PALevel: utils.coalesceUndef(_staged.paLevel, _radio.paLevel),
+      IsPlaneFeedbackEnabled: utils.coalesceUndef(_staged.feedback, _radio.feedback),
     };
     console.debug("radio payload:", payload);
 
@@ -86,11 +106,13 @@ window.settings.radio = (function()
       payload,
       (resp) => {
         _radio.channel = resp.Channel;
+        _radio.feedbackChannel = resp.ChannelFeedback;
         _radio.paLevel = resp.PALevel;
         _radio.feedback = resp.IsPlaneFeedbackEnabled;
-        _staged.channel = null;
-        _staged.paLevel = null;
-        _staged.feedback = null;
+        _staged.channel = undefined;
+        _staged.feedbackChannel = undefined;
+        _staged.paLevel = undefined;
+        _staged.feedback = undefined;
         ui.makeToast("success", "Successfully updated.");
       },
       ajax.handleJsonAjaxFail, undefined, true
@@ -102,9 +124,14 @@ window.settings.radio = (function()
 
   function hasPendingChanges() {
     return (
-      (_staged.channel !== null && _staged.channel !== _radio.channel) ||
-      (_staged.paLevel !== null && _staged.paLevel !== _radio.paLevel) ||
-      (_staged.feedback !== null && _staged.feedback !== _radio.feedback)
+      (_staged.channel !== undefined
+        && _staged.channel !== _radio.channel) ||
+      (_staged.feedbackChannel !== undefined
+        && _staged.feedbackChannel !== _radio.feedbackChannel) ||
+      (_staged.paLevel !== undefined
+        && _staged.paLevel !== _radio.paLevel) ||
+      (_staged.feedback !== undefined
+        && _staged.feedback !== _radio.feedback)
     );
   }
 
@@ -120,6 +147,7 @@ window.settings.radio = (function()
       }
       const resp = await raw.json();
       _radio.channel = resp.Channel;
+      _radio.feedbackChannel = resp.ChannelFeedback;
       _radio.paLevel = resp.PALevel;
       _radio.feedback = resp.IsPlaneFeedbackEnabled;
 
@@ -142,12 +170,15 @@ window.settings.radio = (function()
       return;
     }
 
-    const resolvedChannel = _staged.channel ?? _radio.channel;
-    const resolvedPALevel = _staged.paLevel ?? _radio.paLevel;
-    const resolvedFeedback = _staged.feedback ?? _radio.feedback;
+    const resolvedChannel = utils.coalesceUndef(_staged.channel, _radio.channel);
+    const resolvedFeedbackChannel = utils.coalesceUndef(_staged.feedbackChannel, _radio.feedbackChannel);
+    const resolvedPALevel = utils.coalesceUndef(_staged.paLevel, _radio.paLevel);
+    const resolvedFeedback = utils.coalesceUndef(_staged.feedback, _radio.feedback);
     radioPanel.querySelector("#radio-error")?.remove();
     radioPanel.querySelector("#settings-radio-channel-range").value = resolvedChannel;
     radioPanel.querySelector("#settings-radio-channel-text").value = resolvedChannel;
+    radioPanel.querySelector("#settings-radio-feedback-channel-range").value = resolvedFeedbackChannel;
+    radioPanel.querySelector("#settings-radio-feedback-channel-text").value = resolvedFeedbackChannel;
     radioPanel.querySelector("#settings-radio-pa-range").value = resolvedPALevel;
     radioPanel.querySelector("#settings-radio-pa-text").value = resolvedPALevel;
     radioPanel.querySelector("#settings-radio-feedback").value = resolvedFeedback ? "yes" : "";
