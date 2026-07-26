@@ -22,6 +22,8 @@ window.settings.controls = (function()
     axisDeadzone: { min: 0, max: 1 },
   }
 
+  const _throttleSave = _.throttle(save, 1000, {trailing: false});
+
 
   async function init() {
     utils.qs("#view-controls").addEventListener("click", function (e) {
@@ -33,7 +35,7 @@ window.settings.controls = (function()
 
       const submitButton = e.target.closest("#controls-submit-btn");
       if (submitButton && hasPendingChanges()) {
-        utils.throttle(save, 1000)();
+        _throttleSave();
         return;
       }
 

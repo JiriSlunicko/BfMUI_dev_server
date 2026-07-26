@@ -2,28 +2,6 @@
 
 window.utils = (function()
 {
-  /** Limit how often a function is invoked.
-   * @param {function} fn function, may be async
-   * @param {number} cooldown wait time in ms
-   * @returns {function} throttled function
-   */
-  function throttle(fn, cooldown) {
-    let lastRun = 0;
-    let state = null;
-
-    return (...args) => {
-      const now = Date.now();
-      if (now - lastRun >= cooldown) {
-        lastRun = now;
-        state = Promise.resolve(fn(...args));
-        return state;
-      }
-
-      return Promise.resolve(null);
-    }
-  }
-
-
   /** Map values between 0 and 100 to min-max logarithmically or exponentially.
    * @param {number} min output at 0%
    * @param {number} max output at 100%
@@ -120,7 +98,6 @@ window.utils = (function()
   return {
     qs: (sel) => document.querySelector(sel),
     qsa: (sel) => document.querySelectorAll(sel),
-    throttle,
     rangeToTextInput,
     textInputToRange,
     isMobile,

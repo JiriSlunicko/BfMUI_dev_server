@@ -25,9 +25,10 @@ window.settings.music = (function()
     });
 
     // submit
-    utils.qs("#settings-music-submit-btn").addEventListener("click", utils.throttle(() => {
-      if (hasPendingChanges()) save();
-    }, 1000));
+    utils.qs("#settings-music-submit-btn").addEventListener("click",
+      _.throttle(() => {
+        if (hasPendingChanges()) save();
+      }, 1000, {trailing: false}));
     // reset
     utils.qs("#settings-music-reset-btn").addEventListener("click", reset);
 

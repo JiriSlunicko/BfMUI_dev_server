@@ -53,13 +53,15 @@ window.settings.arduino = (function()
     });
 
     // submit listener
-    utils.qs("#settings-arduino-submit-btn").addEventListener("click", utils.throttle(() => {
-      if (hasPendingChanges()) save();
-    }, 1000));
+    utils.qs("#settings-arduino-submit-btn").addEventListener("click",
+      _.throttle(() => {
+        if (hasPendingChanges()) save();
+      }, 1000, {trailing: false}));
     // submit as NULL listener
-    utils.qs("#settings-arduino-setnull-btn").addEventListener("click", utils.throttle(() => {
-      if (!_arduino.serverDataIsNull) _saveNull();
-    }, 1000));
+    utils.qs("#settings-arduino-setnull-btn").addEventListener("click",
+      _.throttle(() => {
+        if (!_arduino.serverDataIsNull) _saveNull();
+      }, 1000, {trailing: false}));
     // reset listener
     utils.qs("#settings-arduino-reset-btn").addEventListener("click", reset);
 

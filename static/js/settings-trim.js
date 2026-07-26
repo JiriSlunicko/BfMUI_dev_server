@@ -14,12 +14,14 @@ window.settings.trim = (function()
     surfaces: {},
   }
 
+  const _throttleSave = _.throttle(save, 1000, {trailing: false});
+
 
   async function init() {
     utils.qs("#plane-trim-inner").addEventListener("click", function (e) {
       const applyButton = e.target.closest("#plane-trim-submit-btn");
       if (applyButton && hasPendingChanges()) {
-        utils.throttle(save, 1000)();
+        _throttleSave();
         return;
       }
 
