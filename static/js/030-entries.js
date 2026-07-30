@@ -1,13 +1,16 @@
 /** Interface for 'entries', i.e. DOM representations of named key-value pair collections. */
 
-window.entries = (function () {
-  /** Use the (n+1)-th entry if available, otherwise create one 
-   * @param {string} parentSelector immediate parent for the entry
-   * @param {number} n index of the entry
+window.entries = (function ()
+{
+  /** Use the (n+1)-th entry if available, otherwise create one
+   * 
+   * @param {string} parentSelector immediate parent of the entry
+   * @param {number} n 0-based index of the entry
    * @param {string} header heading of the section
    * @param {object} data key-value data pairs
-   * @param {"Healthy"|"Struggling"|"Broken"|"Inactive"|null} health optional, draws a coloured circle in the header
-   * @param {string|null} lastError arbitrary error message to append to the entry
+   * @param {"Healthy"|"Struggling"|"Broken"|"Inactive"|null} [health=null] optional, draws
+   *  a coloured circle in the header of the entry
+   * @param {string|null} [lastError=null] arbitrary error message to append to the entry
    */
   function reuseOrCreate(parentSelector, n, header, data, health = null, lastError = null) {
     const container = utils.qs(parentSelector);
@@ -33,10 +36,16 @@ window.entries = (function () {
     }
 
     // update header & health
-    const healthClassName = health ? ("health " + health.toLowerCase() + " f-noshrink mla") : "";
-    entry.querySelector(".entry-header").innerHTML = `
-    <span>${header}</span>
-    ${health ? '<span class="' + healthClassName + '">' + health +'</span>' : ''}`;
+    const healthClassName = (
+      health
+      ? (`health ${health.toLowerCase()} f-noshrink mla`)
+      : ""
+    );
+    const entryHeader = entry.querySelector(".entry-header");
+    entryHeader.innerHTML = `<span>${header}</span>`;
+    if (health) {
+      entryHeader.innerHTML += `<span class="${healthClassName}">${health}</span>`;
+    }
 
     // update items
     const items = entry.querySelector(".entry-items");
@@ -56,6 +65,7 @@ window.entries = (function () {
 
 
   /** Remove UI entries that extend beyond the specified length.
+   * 
    * @param {string} parentSelector immediate parent for the entries
    * @param {number} maxLength how many entries to keep in the DOM
    */

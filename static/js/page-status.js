@@ -14,31 +14,23 @@ window.pages.status = (function()
 
   /** Get current telemetry data and render it if we're on the "status" page. */
   async function fetchTelemetry() {
-    let resp;
-    try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.telemetry);
-      resp = await raw.json();
-    } catch (err) {
-      ui.makeToast("error", "Connection failed.\n\n" + err.toString(), 5000);
-      return;
-    }
-
-    if (!_.isPlainObject(resp)
-      || typeof resp.SerialTimerHealthData === "undefined"
-      || typeof resp.Controllers === "undefined") {
-      ui.makeToast("error", "/telemetry/ returned something unexpected.");
-      return;
-    }
-
-    _teleData.serialTimers.push(resp.SerialTimerHealthData);
-    _teleData.serialTimers.shift();
-    _teleData.controllers = resp.Controllers;
-
-    if (nav.getCurrentPage() === "status") {
-      _renderTelemetry();
-    }
-
-    pages.home.updateChecklist(resp.FlightChecklist);
+    await ajax.fetchWithTimeout(
+      backend.baseurl + backend.endpoints.telemetry,
+      {
+        successHandler: (resp) => {
+          // update frontend records
+          _teleData.serialTimers.push(resp.SerialTimerHealthData); // append at the end
+          _teleData.serialTimers.shift(); // pop the first item
+          _teleData.controllers = resp.Controllers;
+          pages.home.updateChecklist(resp.FlightChecklist);
+          // if we're on the status page, also refresh the telemetry component
+          if (nav.getCurrentPage() === "status") {
+            _renderTelemetry();
+          }
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
+      },
+    );
   }
 
 

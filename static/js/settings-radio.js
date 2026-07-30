@@ -102,24 +102,29 @@ window.settings.radio = (function()
     };
     console.debug("radio payload:", payload);
 
-    const postSuccess = await ajax.postWithTimeout(
+    const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.radioPost,
-      payload,
-      (resp) => {
-        _radio.channel = resp.Channel;
-        _radio.feedbackChannel = resp.ChannelFeedback;
-        _radio.paLevel = resp.PALevel;
-        _radio.feedback = resp.IsPlaneFeedbackEnabled;
-        _staged.channel = undefined;
-        _staged.feedbackChannel = undefined;
-        _staged.paLevel = undefined;
-        _staged.feedback = undefined;
-        ui.makeToast("success", "Successfully updated.");
-      },
-      ajax.handleJsonAjaxFail, undefined, true
+      {
+        options: {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+        successHandler: (resp) => {
+          _radio.channel = resp.Channel;
+          _radio.feedbackChannel = resp.ChannelFeedback;
+          _radio.paLevel = resp.PALevel;
+          _radio.feedback = resp.IsPlaneFeedbackEnabled;
+          _staged.channel = undefined;
+          _staged.feedbackChannel = undefined;
+          _staged.paLevel = undefined;
+          _staged.feedback = undefined;
+          ui.makeToast("success", "Successfully updated.");
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
+      }
     );
 
-    return postSuccess;
+    return success;
   }
 
 
@@ -140,23 +145,19 @@ window.settings.radio = (function()
   /** Load fresh data from the server into _radio.
    * @returns {Promise<boolean>} success
    */
-  async function _fetchData() {
-    try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.radioGet);
-      if (raw.status !== 200) {
-        throw new Error("/settings/radio/ returned " + raw.status);
+  function _fetchData() {
+    return ajax.fetchWithTimeout(
+      backend.baseurl + backend.endpoints.radioGet,
+      {
+        successHandler: (resp) => {
+          _radio.channel = resp.Channel;
+          _radio.feedbackChannel = resp.ChannelFeedback;
+          _radio.paLevel = resp.PALevel;
+          _radio.feedback = resp.IsPlaneFeedbackEnabled;
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
       }
-      const resp = await raw.json();
-      _radio.channel = resp.Channel;
-      _radio.feedbackChannel = resp.ChannelFeedback;
-      _radio.paLevel = resp.PALevel;
-      _radio.feedback = resp.IsPlaneFeedbackEnabled;
-
-      return true;
-    } catch (err) {
-      console.error("Radio fetch error:", err);
-      return false;
-    }
+    );
   }
 
 

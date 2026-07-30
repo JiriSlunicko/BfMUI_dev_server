@@ -35,6 +35,7 @@ window.settingsManager = (function()
 
   /** Ask the specified domains to run their app load setup.
    * Also checks that all registered domains implement the required interface.
+   * 
    * @param {string[]|null} [configDomains=null] null = all
    * @returns {Promise<object>|null} dictionary of domain->success, or null if validation fails
    */
@@ -53,6 +54,7 @@ window.settingsManager = (function()
   }
 
   /** Ask the specified domains to load data from the server.
+   * 
    * @param {string[]|null} [configDomains=null] null = all
    * @returns {Promise<object>} dictionary of domain->success
    */
@@ -61,6 +63,7 @@ window.settingsManager = (function()
   }
 
   /** Ask the specified domains to discard pending changes.
+   * 
    * @param {string[]|null} [configDomains=null] null = all
    * @returns {Promise<object>} dictionary of domain->success
    */
@@ -69,6 +72,7 @@ window.settingsManager = (function()
   }
 
   /** Ask the specified domains to push data to the server.
+   * 
    * @param {string[]|null} [configDomains=null] null = all
    * @returns {Promise<object>} dictionary of domain->success
    */
@@ -81,6 +85,7 @@ window.settingsManager = (function()
   }
 
   /** Ask whether any of the specified domains have pending changes.
+   * 
    * @param {string[]|null} [configDomains=null] null = all
    * @returns {boolean}
    */
@@ -88,16 +93,18 @@ window.settingsManager = (function()
     if (!configDomains) configDomains = Object.keys(settings);
 
     for (const configDomain of configDomains)
-      if (settings?.[configDomain].hasPendingChanges() === true)
+      if (settings?.[configDomain].hasPendingChanges() === true) {
         return true;
+      }
 
     return false;
   }
 
 
   /** Call asyncCallback on each specified domain.
+   * 
    * @param {async function} asyncCallback takes the domain object as an argument
-   * @param {string[]|null} domains null = all
+   * @param {string[]|null} [domains=null] null = all
    * @returns {Promise<object>} dictionary of domain->success
    */
   async function _batchDelegate(asyncCallback, domains = null) {
@@ -113,8 +120,7 @@ window.settingsManager = (function()
       const domainObj = settings?.[domain];
 
       if (domainObj) {
-        const success = await asyncCallback(domainObj);
-        response[domain] = success;
+        response[domain] = await asyncCallback(domainObj);
       } else {
         response[domain] = false;
       }
@@ -125,6 +131,7 @@ window.settingsManager = (function()
 
 
   /** Check if all registered configuration domains have the required interface.
+   * 
    * @throws {InvalidDomainInterfaceError} if an interface fails
    */
   function _validateDomains() {

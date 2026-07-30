@@ -1,36 +1,31 @@
 /** An assortment of helpers for recurring UI features. */
 
-window.ui = (function () {
-  let _toastContainerInitialised = false;
+window.ui = (function ()
+{
   let _rangeTextPairsInitialised = false;
 
   let _toastFadeTimeout = null;
   let _toastKillTimeout = null;
 
 
-  /** Call this once on app load. */
-  function initToastContainer() {
-    if (_toastContainerInitialised) return;
-
-    const toastContainer = document.createElement("div");
-    toastContainer.className = "toast-container";
-    document.body.appendChild(toastContainer);
-    _toastContainerInitialised = true;
-  }
-
-
   /** Create a floating notification.
    * 
    * @param {"error"|"success"|null} type affects stripe colour only
-   * @param {string} msg arbitrary text
-   * @param {number} timeout how long to show in ms, negative numbers -> indefinitely
+   * @param {string} msg arbitrary html content, \n converted to \<br /\> automatically
+   * @param {number} [timeout=2500] how long to show in ms, negative -> indefinitely
    */
   function makeToast(type, msg, timeout = 2500) {
     removeToast();
-    const tst = document.createElement("div");
-    tst.className = "break-word toast" + (type === "error" ? " toast-err" : (type === "success" ? " toast-ok" : ""));
-    tst.innerHTML = msg.replaceAll("\n", "<br />");
-    utils.qs(".toast-container").appendChild(tst);
+
+    const toast = document.createElement("div");
+    toast.className = "break-word toast"
+    switch (type) {
+      case "error":   toast.className += " toast-err"; break;
+      case "success": toast.className += " toast-ok";  break;
+    }
+    toast.innerHTML = msg.replaceAll("\n", "<br />");
+    utils.qs(".toast-container").appendChild(toast);
+
     if (timeout >= 0) {
       _toastFadeTimeout = setTimeout(() => {
         utils.qs(".toast").classList.add("fading");
@@ -60,9 +55,11 @@ window.ui = (function () {
    * Returns a Promise if successful, or false if another such window is open.
    * 
    * @param {"alert"|"confirm"|"prompt"} type which native popup to emulate
-   * @param {string} msg the main text
-   * @param {string|null} title optional heading
-   * @returns {Promise<boolean>|Promise<string|null>|false}
+   * @param {string} msg arbitrary html content, \n converted to \<br /\> automatically
+   * @param {string|null} [title=null] optional heading
+   * @returns {Promise<boolean>|Promise<string|null>|false} instant false if a modal is
+   *  already open, otherwise a Promise: alert -> true; confirm -> boolean;
+   *  prompt -> string | null
    */
   function makePopup(type, msg, title = null) {
     if (utils.qs(".modal-bg")) {
@@ -71,24 +68,27 @@ window.ui = (function () {
     }
 
     return new Promise(resolve => {
+      // overlay
       const bg = document.createElement("div");
       bg.className = "modal-bg flex-c f-a-c f-j-c";
       const fg = document.createElement("div");
       fg.className = "modal-fg flex-c f-a-c";
 
       // title & main text
-      let html = "";
-      if (title) html += `<h3>${title}</h3>`;
+      let html = title ? `<h3>${title}</h3>` : "";
       html += `<p>${msg.replaceAll("\n", "<br />")}</p>`;
 
-      // prompt only: text input
+      // prompt -> add text input
       if (type === "prompt") {
-        html += `<input type="text" id="modal-text-input" class="w100 mb16" placeholder="(your input here)" />`;
+        html += `<input type="text" id="modal-text-input" class="w100 mb16"
+                  placeholder="(your input here)" />`;
       }
 
       // button ribbon
       html += `<div class="flex-r f-j-c f-g8">`;
+      // OK button
       html += `<button type="button" class="btn" id="modal-ok-btn">Ok</button>`;
+      // non-alert -> add cancel button
       if (type !== "alert") {
         html += `<button type="button" class="btn" id="modal-cancel-btn">Cancel</button>`;
       }
@@ -99,49 +99,51 @@ window.ui = (function () {
       bg.appendChild(fg);
       document.body.append(bg);
 
-      const focusElement = type === "prompt"
+      // focus an appropriate control
+      (type === "prompt"
         ? utils.qs("#modal-text-input")
-        : utils.qs("#modal-ok-btn");
-      focusElement.focus();
+        : utils.qs("#modal-ok-btn")
+      ).focus();
 
-      // cancel by clicking the background
-      if (type !== "alert") {
-        bg.addEventListener("click", function(e) {
-          if (e.target === this) {
-            this.remove();
-            resolve(type === "prompt" ? null : false);
-          }
-        });
-      }
-      // cancel via the cancel button
-      if (type !== "alert") {
-        fg.querySelector("#modal-cancel-btn").onclick = () => {
-          bg.remove();
-          resolve(type === "prompt" ? null : false);
+      // a helper that cleans up and decides what cancel should resolve to
+      const _resolve = (res) => {
+        bg.remove();
+        if (res === false && type === "prompt") {
+          resolve(null);
+        } else {
+          resolve(res);
         }
+      }
+
+      // non-alert -> cancel via button or clicking the background
+      if (type !== "alert") {
+        bg.addEventListener("click", (e) => {
+          if (e.target === bg) { _resolve(false); }
+        });
+        fg.querySelector("#modal-cancel-btn").addEventListener("click", () => {
+          _resolve(false);
+        });
       }
 
       // submit
-      fg.querySelector("#modal-ok-btn").onclick = () => {
+      fg.querySelector("#modal-ok-btn").addEventListener("click", () => {
         if (type === "prompt") {
           const userInput = utils.qs("#modal-text-input")?.value;
-          if (userInput === undefined)
-            console.error("Prompt modal resolved when it didn't exist.");
-
-          bg.remove();
-          resolve(userInput || "");
+          if (userInput === undefined) {
+            console.error("Prompt modal resolved when it didn't exist. (what?)");
+          }
+          _resolve(userInput || "");
         } else {
-          bg.remove();
-          resolve(true);
+          _resolve(true);
         }
-      }
+      });
     });
   }
 
 
   /** Prepare a linked range & text input pair for DOM insertion.
    * 
-   * @param {string} valueName used for element IDs - will create "value-name-range" & "value-name-text"
+   * @param {string} valueName this + "-range" & "-text" -> element IDs
    * @param {string} title display name of the UI element
    * @param {{
    *  bounds: { min: number, max: number },
@@ -175,7 +177,7 @@ window.ui = (function () {
     textInput.className = "w4ch";
 
     // apply config
-    if (config.textInputClassOverride !== undefined && config.textInputClassOverride !== null) {
+    if (!_.isNil(config.textInputClassOverride)) {
       textInput.className = config.textInputClassOverride;
     }
     try {
@@ -192,7 +194,10 @@ window.ui = (function () {
 
       textInput.setAttribute("value", Number(config.value).toFixed(stepDecimals));
       rangeInput.setAttribute("value", utils.textInputToRange(
-        config.value, minScaled, maxScaled, usesLogScaling,
+        config.value,
+        minScaled,
+        maxScaled,
+        usesLogScaling,
         usesLogScaling ? 1 : stepDecimals)
       );
       rangeInput.setAttribute("min", usesLogScaling ? 0 : minScaled);
@@ -208,7 +213,8 @@ window.ui = (function () {
     if (config.incrementButtons) {
       inputWrapper.insertAdjacentHTML("beforeend",
         `<button type="button" class="btn range-btn range-decr">▼</button>
-         <button type="button" class="btn range-btn range-incr">▲</button>`);
+         <button type="button" class="btn range-btn range-incr">▲</button>`
+      );
     }
     inputWrapper.appendChild(textInput);
     label.appendChild(inputWrapper);
@@ -233,13 +239,17 @@ window.ui = (function () {
 
       const textInput = pairWrapper.querySelector("input[type=text]");
       // apply scaled value to text input
-      textInput.value = utils.rangeToTextInput(rangeInput.value,
+      textInput.value = utils.rangeToTextInput(
+        rangeInput.value,
         isLog ? { min: minVal, max: maxVal } : null,
         decimals
       );
       pairWrapper.dispatchEvent(
         new CustomEvent("slider-change", {
-          detail: { value: textInput.value, byUser: true },
+          detail: {
+            value: textInput.value,
+            byUser: true
+          },
           bubbles: true
         })
       );
@@ -259,12 +269,17 @@ window.ui = (function () {
 
         const rangeInput = pairWrapper.querySelector("input[type=range]");
 
-        const newVal = utils.textInputToRange(textInput.value,
-          minVal, maxVal, isLog, isLog ? 1 : decimals
+        const newVal = utils.textInputToRange(
+          textInput.value,
+          minVal,
+          maxVal,
+          isLog,
+          isLog ? 1 : decimals
         );
         if (newVal === null) {
-          // revert text input to range value, which should always be safe
-          textInput.value = utils.rangeToTextInput(rangeInput.value,
+          // invalid -> revert text input to range value, which should always be safe
+          textInput.value = utils.rangeToTextInput(
+            rangeInput.value,
             isLog ? { min: minVal, max: maxVal } : null,
             decimals
           );
@@ -274,7 +289,10 @@ window.ui = (function () {
         }
         pairWrapper.dispatchEvent(
           new CustomEvent("slider-change", {
-            detail: { value: textInput.value, byUser: e.type === "change" },
+            detail: {
+              value: textInput.value,
+              byUser: e.type === "change"
+            },
             bubbles: true
           })
         );
@@ -285,7 +303,7 @@ window.ui = (function () {
     document.addEventListener("click", function(e) {
       const decrButton = e.target.closest(".range-decr");
       const incrButton = e.target.closest(".range-incr");
-      if (!decrButton && !incrButton) return;
+      if (!decrButton || !incrButton) return;
 
       const pairWrapper = e.target.closest(".range-text-pair");
       if (!pairWrapper) {
@@ -303,7 +321,13 @@ window.ui = (function () {
       const minValue = Number(pairWrapper.dataset.min);
       const maxValue = Number(pairWrapper.dataset.max);
       const step = Number(pairWrapper.dataset.step);
-      const fireEvent = (el) => el.dispatchEvent(new Event("change", { bubbles: true }));
+      const fireEvent = (el) => {
+        el.dispatchEvent(
+          new Event("change", {
+            bubbles: true
+          })
+        );
+      };
 
       if (decrButton && currentValue > minValue) {
         textInput.value = Math.max(currentValue - step, minValue);
@@ -322,7 +346,6 @@ window.ui = (function () {
 
   // public API
   return {
-    initToastContainer,
     makeToast,
     removeToast,
     makePopup,

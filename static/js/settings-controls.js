@@ -141,19 +141,24 @@ window.settings.controls = (function()
 
     console.debug("controls payload:", payload);
 
-    const postSuccess = await ajax.postWithTimeout(
+    const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.controlsPost,
-      payload,
-      (resp) => {
-        ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);
-        _clearStaged();
-        _updateActiveController();
-        ui.makeToast("success", "Successfully updated.");
-      },
-      ajax.handleJsonAjaxFail, undefined, true
+      {
+        options: {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+        successHandler: (resp) => {
+          ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);
+          _clearStaged();
+          _updateActiveController();
+          ui.makeToast("success", "Successfully updated.");
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
+      }
     );
 
-    return postSuccess;
+    return success;
   }
 
 
@@ -183,29 +188,30 @@ window.settings.controls = (function()
 
 
   async function _fetchData() {
-    try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.controlsGet);
-      const resp = await raw.json();
+    return await ajax.fetchWithTimeout(
+      backend.baseurl + backend.endpoints.controlsGet,
+      {
+        successHandler: (resp) => {
+          _controls.buttons = resp.AvailableControllerButtons; // string[]
+          _controls.inAxes = resp.AvailableControllerAxes; // string[]
+          _controls.actions = resp.AvailableControlActions; // string[]
+          _controls.outAxes = resp.AvailablePlaneAxes; // string[]
+          _controls.restrictions = {}; // Dictionary<string, List<string>>
+          for (const [action, allowedCombos]
+               of Object.entries(resp.ControlActionsRestrictions)) {
+            _controls.restrictions[action] = allowedCombos.map(x => x.join(", "));
+          }
 
-      _controls.buttons = resp.AvailableControllerButtons; // string[]
-      _controls.inAxes = resp.AvailableControllerAxes; // string[]
-      _controls.actions = resp.AvailableControlActions; // string[]
-      _controls.outAxes = resp.AvailablePlaneAxes; // string[]
-      _controls.restrictions = {}; // Dictionary<string, List<string>>
-      for (const [action, allowedCombos] of Object.entries(resp.ControlActionsRestrictions)) {
-        _controls.restrictions[action] = allowedCombos.map(x => x.join(", "));
+          ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);
+
+          for (const controller of Object.keys(_controls.actionMappings))
+            _staged.actionMappings[controller] ??= {};
+          for (const controller of Object.keys(_controls.axisMappings))
+            _staged.axisMappings[controller] ??= {};
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
       }
-      ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);
-      for (const controller of Object.keys(_controls.actionMappings))
-        _staged.actionMappings[controller] ??= {};
-      for (const controller of Object.keys(_controls.axisMappings))
-        _staged.axisMappings[controller] ??= {};
-
-      return true;
-    } catch (err) {
-      console.error("Controls fetch error:", err);
-      return false;
-    }
+    );
   }
 
 

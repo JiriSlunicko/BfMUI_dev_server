@@ -75,94 +75,89 @@ window.pages.settings = (function() {
    * @param {string|null} lastFailOverride if retrying, what failed last time
    */
   async function connect(globalServer, retry=true, lastFailOverride=null) {
-    const lastFail = lastFailOverride ?? _connectionAttempt.lastFail;
     utils.qs("#settings-connection-status").textContent = "Currently not connected.";
-    console.debug("Attempting connection.", lastFail);
-    _connectionAttempt.busy = true;
-    const ip = utils.qs("#input-ip").value;
-    const port = utils.qs("#input-port").value;
-
-    if (ip === null || port === null) {
-      await ui.makePopup("alert", "Invalid IP address / port.");
-      _connectionAttempt.busy = false;
-      _attemptReconnect();
-      return;
-    }
-
     _pollPause();
     utils.qs("#settings-poll-start-btn").disabled = true;
     utils.qs("#settings-poll-pause-btn").disabled = true;
+    _connectionAttempt.busy = true;
 
-    if (lastFail === null)
+    const lastFail = lastFailOverride ?? _connectionAttempt.lastFail;
+    console.debug("Attempting connection.", lastFail);
+    if (lastFail === null) {
       ui.makeToast(null, "Attempting connection...", -1);
-    else
+    } else {
       ui.makeToast("error", "Retrying connection after the following problem:\n\n"+lastFail, -1);
+    }
 
+    const ip = utils.qs("#input-ip").value;
+    const port = utils.qs("#input-port").value;
     const baseurl = "http://" + ip + ":" + port;
     let shouldRetry = false;
     try {
-      // get systeminfo
-      let raw, resp;
-      try {
-        raw = await ajax.fetchWithTimeout(baseurl + backend.endpoints.systemInfo
-          + "?_=" + Date.now() // cache-buster to avoid weird glitches
-        );
-      } catch (err) { throw new Error("Fetch from server failed."); }
-      // to JSON
-      try {
-        resp = await raw.json();
-      } catch (err) { throw new Error("Can't process JSON from server - "+err.toString()); }
-      // did we get an expected response format?
-      if (!_.isArray(resp)) { throw new Error("server did not return a JSON array"); }
+      // try the systemInfo endpoint
+      let sysInfoOk = await ajax.fetchWithTimeout(
+        baseurl + backend.endpoints.systemInfo + `?_=${Date.now()}`,
+        {
+          successHandler: (resp) => {
+            if (!_.isArray(resp)) {
+              throw new Error(`Fetch from server OK, but ${backend.endpoints.systemInfo} did `
+                            + `not return a JSON array`);
+            }
+            globalServer.bfcontrol = resp;
+          },
+          failureHandler: ajax.propagateRespError, // fail loudly
+        },
+      );
 
+      // if we're here the initial ping was successful, connection considered alive
       globalServer.baseurl = baseurl;
-      globalServer.info = resp;
       localStorage.setItem("serverBaseurl", baseurl);
 
+      // show systeminfo data on the dashboard
       pages.home.initSysInfo();
 
+      // start polling telemetry
       _pollStart();
 
       // load all settings subscribed to the manager
-      const loadSuccess = await settingsManager.load();
-      if (loadSuccess === null)
-        throw new Error("settingsManager failed to validate its dependencies");
+      const settingsLoadStatus = await settingsManager.load();
 
       // load config storage data
       serverConfig.getFreshServerConfigs();
 
       // open event stream
       events.tryConnectionUntilOk();
-      //events.openStream(globalServer);
 
-      // handle success-related things
+      // inform the user
       utils.qs("#settings-connection-status").textContent = "Connected to " + baseurl;
       let successMessage = "Connected to server, polling.\n\nModules:";
-      for (const [domain, success] of Object.entries(loadSuccess)) {
-        successMessage += success ? "\nOK: " : "\nERROR: ";
-        successMessage += domain;
+      for (const [domain, success] of Object.entries(settingsLoadStatus)) {
+        successMessage += (success ? "\nOK: " : "\nERROR: ") + domain;
       }
       successMessage += backend.usingArduino
         ? "\n\nRunning in Arduino mode."
         : "\n\nRunning without Arduino.";
+      ui.makeToast("success", successMessage, 5000);
 
+      // clean up
       _connectionAttempt.lastFail = null;
       if (_connectionAttempt.interval !== null) {
         clearInterval(_connectionAttempt.interval);
         _connectionAttempt.interval = null;
       }
-      ui.makeToast("success", successMessage, 5000);
     } catch (err) {
       console.error("During connect:", err);
       _connectionAttempt.lastFail = err.toString();
-      if (!retry)
-        ui.makeToast("error", "Connection failed.\n\n" + _connectionAttempt.lastFail, 5000);
-      else
+      if (!retry) {
+        ui.makeToast("error", `Connection failed.\n\n${err.toString()}`, 5000);
+      } else {
         shouldRetry = true;
+      }
     } finally {
       _connectionAttempt.busy = false;
-      if (shouldRetry)
+      if (shouldRetry) {
         _attemptReconnect();
+      }
     }
   }
 
@@ -229,14 +224,19 @@ window.pages.settings = (function() {
       ui.makeToast("error", "Please enter a URL template.");
       return;
     }
-    await ajax.postWithTimeout(
-      "/tiles-url-template/set?urlTemplate=" + encodeURIComponent(urlPat),
-      null,
-      (r) => {
-        if (r.ok) ui.makeToast("success", "Updated tile URL template.");
-        else ui.makeToast("error", `Something failed: ${JSON.stringify(r)}`);
-      },
-      ajax.handleJsonAjaxFail, undefined, true
+    await ajax.fetchWithTimeout(
+      `/tiles-url-template/set?urlTemplate=${encodeURIComponent(urlPat)}`,
+      {
+        options: {method: "POST", body: "null"},
+        successHandler: (resp) => {
+          if (resp.ok) {
+            ui.makeToast("success", "Updated tile URL template.");
+          } else {
+            ui.makeToast("error", `Something failed: ${JSON.stringify(resp)}`);
+          }
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
+      }
     );
   }
 
@@ -248,8 +248,16 @@ window.pages.settings = (function() {
       "Reset tile source?"
     );
     if (!consent) return;
-    await ajax.postWithTimeout("/tiles-url-template/reset", null,
-      (r) => { ui.makeToast("success", "Successfully reset."); }
+
+    await ajax.fetchWithTimeout(
+      "/tiles/url-template/reset",
+      {
+        options: {method: "POST", body: "null"},
+        successHandler: (resp) => {
+          ui.makeToast("success", "Successfully reset.");
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
+      }
     );
   }
 

@@ -57,18 +57,23 @@ window.settings.music = (function()
     };
     console.debug("music payload:", payload);
 
-    const postSuccess = await ajax.postWithTimeout(
+    const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.musicPost,
-      payload,
-      (resp) => {
-        _music.volume = _convertIncoming(resp.Volume);
-        _staged.volume = undefined;
-        ui.makeToast("success", "Successfully updated.");
-      },
-      ajax.handleJsonAjaxFail, undefined, true
+      {
+        options: {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+        successHandler: (resp) => {
+          _music.volume = _convertIncoming(resp.Volume);
+          _staged.volume = undefined;
+          ui.makeToast("success", "Successfully updated.");
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
+      }
     );
 
-    return postSuccess;
+    return success;
   }
 
 
@@ -82,22 +87,36 @@ window.settings.music = (function()
    * @returns {Promise<boolean|null>} true = music enabled, false = not enabled, null = error
    */
   async function _fetchData(globalServer) {
-    try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.musicGet);
-      globalServer.musicEnabled = raw.status === 200;
+    let isMusicEnabled;
 
-      if (globalServer.musicEnabled) {
-        const resp = await raw.json();
-        _music.volume = _convertIncoming(resp.Volume);
-        return true;
-      } else {
-        console.debug("Music is not enabled.");
-        return false;
+    await ajax.fetchWithTimeout(
+      backend.baseurl + backend.endpoints.musicGet,
+      {
+        successHandler: (resp) => {
+          globalServer.musicEnabled = true;
+          isMusicEnabled = true;
+          console.debug("Music is available.");
+          _music.volume = _convertIncoming(resp.Volume);
+        },
+        failureHandler: (resp, err) => {
+          if (resp.status === 512) {
+            globalServer.musicEnabled = false;
+            isMusicEnabled = false;
+            console.debug("Music is not available.");
+          } else {
+            isMusicEnabled = null;
+            console.debug("Music fetch errored unexpectedly.", err);
+            ui.makeToast(
+              "error",
+              `AJAX fail for ${resp.url}:\n\n${err.toString()}`,
+              5000
+            );
+          }
+        },
       }
-    } catch (err) {
-      console.error("Music fetch error:", err);
-      return null;
-    }
+    );
+
+    return isMusicEnabled;
   }
 
 

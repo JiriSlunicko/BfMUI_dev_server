@@ -127,20 +127,25 @@ window.settings.arduino = (function()
   async function _saveInternal(payload) {
     console.debug("arduino payload:", payload);
 
-    const postSuccess = await ajax.postWithTimeout(
+    const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.serialPortPost,
-      payload,
-      (resp) => {
-        _arduino.port = resp?.Name || null;
-        _arduino.baudRate = resp?.BaudRate || null;
-        _arduino.serverDataIsNull = resp === null;
-        _clearStaged();
-        ui.makeToast("success", "Successfully updated.");
-      },
-      ajax.handleJsonAjaxFail, undefined, true
+      {
+        options: {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+        successHandler: (resp) => {
+          _arduino.port = resp?.Name || null;
+          _arduino.baudRate = resp?.BaudRate || null;
+          _arduino.serverDataIsNull = resp === null;
+          _clearStaged();
+          ui.makeToast("success", "Successfully updated.");4
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
+      }
     );
 
-    return postSuccess;
+    return success;
   }
 
 
@@ -149,25 +154,39 @@ window.settings.arduino = (function()
    * @returns {Promise<boolean|null>} true = using arduino, false = not using arduino, null = error
    */
   async function _fetchData(globalServer) {
-    try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.serialPortGet);
-      globalServer.usingArduino = raw.status === 200;
+    let isArduinoEnabled;
 
-      if (globalServer.usingArduino) {
-        const resp = await raw.json();
-        _arduino.port = resp.SerialPortParameters?.Name || null;
-        _arduino.baudRate = resp.SerialPortParameters?.BaudRate || null;
-        _arduino.availablePorts = resp.AvailablePorts || [];
-        _arduino.serverDataIsNull = resp.SerialPortParameters === null;
-        return true;
-      } else {
-        console.debug("Server is not using arduino.");
-        return false;
+    await ajax.fetchWithTimeout(
+      backend.baseurl + backend.endpoints.serialPortGet,
+      {
+        successHandler: (resp) => {
+          globalServer.usingArduino = true;
+          isArduinoEnabled = true;
+          console.debug("Server is using arduino.");
+          _arduino.port = resp.SerialPortParameters?.Name ?? null;
+          _arduino.baudRate = resp.SerialPortParameters?.BaudRate ?? null;
+          _arduino.availablePorts = resp.AvailablePorts ?? [];
+          _arduino.serverDataIsNull = resp.SerialPortParameters === null;
+        },
+        failureHandler: (resp, err) => {
+          if (resp.status === 512) {
+            globalServer.usingArduino = false;
+            isArduinoEnabled = false;
+            console.debug("Server is not using arduino.");
+          } else {
+            isArduinoEnabled = null;
+            console.debug("Arduino fetch errored unexpectedly.", err);
+            ui.makeToast(
+              "error",
+              `AJAX fail for ${resp.url}:\n\n${err.toString()}`,
+              5000
+            );
+          }
+        },
       }
-    } catch (err) {
-      console.error("Arduino fetch error:", err);
-      return null;
-    }
+    );
+
+    return isArduinoEnabled;
   }
 
 

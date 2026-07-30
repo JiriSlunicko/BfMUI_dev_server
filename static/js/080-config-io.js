@@ -19,23 +19,23 @@ window.serverConfig = (function()
 
   /** Fetch existing config types and stored configs from the server. */
   async function getFreshServerConfigs() {
-    let resp;
-    try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.configListGet);
-      resp = await raw.json();
-    } catch (err) {
-      ui.makeToast("error", "Couldn't fetch a list of saved configs.\n\n" + err.toString(), 5000);
-      return;
-    }
+    await ajax.fetchWithTimeout(
+      backend.baseurl + backend.endpoints.configListGet,
+      {
+        successHandler: (resp) => {
+          _configTypes = resp.ConfigurationTypes;
 
-    _configTypes = resp.ConfigurationTypes;
-    for (const [cfgType, cfgNameList] of Object.entries(resp.StoredConfigurationsPerType)) {
-      configs = _.without(cfgNameList, "latest");
-      configs.sort();
-      _availableConfigs[cfgType] = configs;
-    }
+          for (const [cfgType, cfgNameList] of Object.entries(resp.StoredConfigurationsPerType)) {
+            configs = _.without(cfgNameList, "latest");
+            configs.sort();
+            _availableConfigs[cfgType] = configs;
+          }
 
-    _updateConfigTypeSelect();
+          _updateConfigTypeSelect();
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
+      }
+    );
   }
 
 
@@ -86,22 +86,29 @@ window.serverConfig = (function()
     const payload = { ConfigType: cfgType, ConfigId: cfgName };
     console.debug("loadConfig payload:", payload);
 
-    let success = false;
-    await ajax.postWithTimeout(
+    const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.configLoadPost,
-      payload,
-      (resp) => {
-        if (resp.Success) {
-          success = true;
-          ui.makeToast("success", `Loaded ${cfgType} config '${cfgName}'.`);
-          _applyConfig(cfgType);
-        } else {
-          ui.makeToast("error", `Failed to load ${cfgType} config '${cfgName}':\n\n`
-            + resp.Errors.join("\n"), 5000);
+      {
+        options: {
+          method: "POST",
+          body: JSON.stringify(payload)
+        },
+        successHandler: (resp) => {
+          if (resp.Success) {
+            ui.makeToast("success", `Loaded ${cfgType} config '${cfgName}'.`);
+            _applyConfig(cfgType);
+          } else {
+            ui.makeToast("error", `Failed to load ${cfgType} config '${cfgName}':\n\n`
+              + resp.Errors.join("\n"), 5000);
+          }
+        },
+        failureHandler: (_, err) => {
+          ui.makeToast(
+            "error",
+            `Failed to load ${cfgType} config '${cfgName}'.\n\n${err.toString()}`,
+            5000
+          );
         }
-      },
-      (_, err) => {
-        ui.makeToast("error", `Failed to load ${cfgType} config '${cfgName}'.\n\n` + err.toString(), 5000);
       }
     );
 
@@ -170,23 +177,31 @@ window.serverConfig = (function()
     const payload = { ConfigType: cfgType, ConfigId: cfgName };
     console.debug("saveConfig payload:", payload);
 
-    let success = false;
-    await ajax.postWithTimeout(
+    const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.configSavePost,
-      payload,
-      (resp) => {
-        if (resp.Success) {
-          success = true;
-          ui.makeToast("success", `Saved ${cfgType} config '${cfgName}'.`);
-        } else {
-          ui.makeToast("error", `Failed to save ${cfgType} config '${cfgName}':\n\n`
-            + resp.Errors.join("\n"), 5000);
+      {
+        options: {
+          method: "POST",
+          body: JSON.stringify(payload)
+        },
+        successHandler: (resp) => {
+          if (resp.Success) {
+            ui.makeToast("success", `Saved ${cfgType} config '${cfgName}'.`);
+          } else {
+            ui.makeToast("error", `Failed to save ${cfgType} config '${cfgName}':\n\n`
+              + resp.Errors.join("\n"), 5000);
+          }
+        },
+        failureHandler: (_, err) => {
+          ui.makeToast(
+            "error",
+            `Failed to save ${cfgType} config '${cfgName}'.\n\n${err.toString()}`,
+            5000
+          );
         }
-      },
-      (_, err) => {
-        ui.makeToast("error", `Failed to save ${cfgType} config '${cfgName}'.\n\n` + err.toString(), 5000);
       }
     );
+
     await getFreshServerConfigs();
 
     return success;

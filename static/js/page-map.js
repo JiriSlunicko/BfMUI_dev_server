@@ -69,13 +69,23 @@ window.pages.mapPage = (function() {
 
   async function _openBatchDownloadDialog(e) {
     // download already in progress -> short circuit
-    const raw = await ajax.fetchWithTimeout("/jobs/running");
-    const resp = await raw.json();
-    if (resp.jobs.length > 0) {
-      ui.makeToast("error", "A tile download is currently in progress. "
-                          + "Please wait for it to finish.");
-      return;
-    }
+    let abortFlag = true;
+    await ajax.fetchWithTimeout(
+      "/jobs/running",
+      {
+        successHandler: (resp) => {
+          abortFlag = resp.jobs.length > 0; // job already running
+          if (abortFlag) {
+            ui.makeToast(
+              "error",
+              "A download is already in progress, please wait for it to finish."
+            );
+          }
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
+      }
+    );
+    if (abortFlag) return;
 
     const lat = e.latlng.lat;
     const lng = e.latlng.lng;
@@ -128,16 +138,22 @@ window.pages.mapPage = (function() {
 
 
   async function _batchDownload(rect) {
-    await ajax.postWithTimeout(
-      "/download-tiles/start"
-      + "?minLng=" + rect.minLng + "&maxLng=" + rect.maxLng
-      + "&minLat=" + rect.minLat + "&maxLat=" + rect.maxLat,
-      null,
-      (r) => {
-        if (r.ok) _monitorDownload(r.jobId);
-        else ui.makeToast("error", `Something failed: ${JSON.stringify(r)}`);
-      },
-      ajax.handleJsonAjaxFail, undefined, true
+    await ajax.fetchWithTimeout(
+      `/download-tiles/start`
+      + `?minLng=${rect.minLng}&maxLng=${rect.maxLng}`
+      + `&minLat=${rect.minLat}&maxLat=${rect.maxLat}`,
+      {
+        options: {method: "POST", body: "null"},
+        successHandler: (resp) => {
+          if (resp.ok) {
+            _monitorDownload(resp.jobId);
+          }
+          else {
+            ui.makeToast("error", `Something failed: ${JSON.stringify(resp)}`);
+          }
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
+      }
     );
   }
 
@@ -150,22 +166,18 @@ window.pages.mapPage = (function() {
     okBar.style.width = "0%";
     errBar.style.width = "0%";
 
-    while (true) {
-      await new Promise(r => setTimeout(r, 1000)); // wait
-      const raw = await ajax.fetchWithTimeout(`/jobs/status?jobId=${jobId}`);
-      const resp = await raw.json();
-
+    const _handleResp = (resp) => {
       // dead :(
       if (resp.fail) {
-        ui.makeToast("error", `Tile download job fail: ${resp.msg}`);
-        return;
+        ui.makeToast("error", `Tile download job fail:\n\n${resp.msg}`);
+        polling = false; // BREAK
       }
 
       // update
-      let percentOk = Math.round(100
-                                 * (resp.meta.downloaded + resp.meta.skipped)
-                                 / resp.meta.total);
-      let percentErr = Math.round(100 * resp.meta.failed / resp.meta.total);
+      let percentOk = Math.round(
+        100 * (resp.meta.downloaded + resp.meta.skipped) / resp.meta.total);
+      let percentErr = Math.round(
+        100 * resp.meta.failed / resp.meta.total);
       percentErr = Math.min(percentErr, 100 - percentOk);
       okBar.style.width = `${percentOk}%`;
       errBar.style.width = `${percentErr}%`;
@@ -175,7 +187,7 @@ window.pages.mapPage = (function() {
         const t = resp.result.timeElapsed;
         ui.makeToast(
           "success",
-          `Tile download complete in ${Math.floor(t / 60)}m ${t % 60}s!\n\n`
+          `Download complete in ${Math.floor(t / 60)}m${t % 60}s.\n\n`
           + `${resp.result.downloaded} downloaded\n`
           + `${resp.result.skipped} already on disk\n`
           + `${resp.result.failed} failed`,
@@ -185,8 +197,20 @@ window.pages.mapPage = (function() {
           okBar.style.width = "0%";
           errBar.style.width = "0%";
         }, 5000);
-        return;
+        polling = false; // BREAK
       }
+    }
+
+    let polling = true;
+    while (polling) {
+      await new Promise(r => setTimeout(r, 1000)); // wait
+      await ajax.fetchWithTimeout(
+        `/jobs/status?jobId=${jobId}`,
+        {
+          successHandler: _handleResp,
+          failureHandler: ajax.handleJsonAjaxFail,
+        }
+      );
     }
   }
 

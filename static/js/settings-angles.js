@@ -68,21 +68,26 @@ window.settings.maxSurfaceAngles = (function()
     }
     console.debug("max angles payload:", payload);
 
-    const postSuccess = await ajax.postWithTimeout(
+    const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.maxSurfaceAnglesPost,
-      payload,
-      (resp) => {
-        _maxSurfaceAngles.surfaces = {};
-        for (const [surfName, surfMaxAngle] of Object.entries(resp)) {
-          _maxSurfaceAngles.surfaces[surfName] = surfMaxAngle;
-        }
-        _staged = {};
-        ui.makeToast("success", "Successfully updated.");
-      },
-      ajax.handleJsonAjaxFail, undefined, true
+      {
+        options: {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+        successHandler: (resp) => {
+          _maxSurfaceAngles.surfaces = {};
+          for (const [surfName, surfMaxAngle] of Object.entries(resp)) {
+            _maxSurfaceAngles.surfaces[surfName] = surfMaxAngle;
+          }
+          _staged = {};
+          ui.makeToast("success", "Successfully updated.");
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
+      }
     );
 
-    return postSuccess;
+    return success;
   }
 
 
@@ -95,25 +100,20 @@ window.settings.maxSurfaceAngles = (function()
   }
 
 
-  async function _fetchData() {
-    try {
-      const raw = await ajax.fetchWithTimeout(backend.baseurl + backend.endpoints.maxSurfaceAnglesGet);
-      if (raw.status !== 200) {
-        throw new Error(backend.endpoints.maxSurfaceAnglesGet + " returned " + raw.status);
+  function _fetchData() {
+    return ajax.fetchWithTimeout(
+      backend.baseurl + backend.endpoints.maxSurfaceAnglesGet,
+      {
+        successHandler: (resp) => {
+          _maxSurfaceAngles.surfaces = {};
+          for (const surface of resp.AvailableSurfaces) {
+            _maxSurfaceAngles.surfaces[surface] = resp.MaxSurfaceAngles[surface] ?? 0;
+          }
+          _initialised = true;
+        },
+        failureHandler: ajax.handleJsonAjaxFail,
       }
-      const resp = await raw.json();
-      _maxSurfaceAngles.surfaces = {};
-      for (const surface of resp.AvailableSurfaces) {
-        _maxSurfaceAngles.surfaces[surface] = resp.MaxSurfaceAngles[surface] || 0;
-      }
-      _initialised = true;
-      return true;
-    } catch (err) {
-      const errorString = "Error fetching max. surface angles data.\n\n" + err.toString();
-      console.error(errorString, err);
-      ui.makeToast("error", errorString, 5000);
-      return false;
-    }
+    );
   }
 
 

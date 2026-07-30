@@ -31,7 +31,7 @@ window.pages.home = (function()
 
   /** Load basic server info for the homepage. */
   async function initSysInfo() {
-    if (!backend.info) {
+    if (!backend.bfcontrol) {
       console.error("Tried to initSysInfo without any server info!");
       return;
     }
@@ -39,7 +39,7 @@ window.pages.home = (function()
     utils.qs("#home-sysinfo-inner > p")?.remove();
     await _get_BfMUI_version();
     entries.reuseOrCreate("#home-sysinfo-inner", 0, "BfMUI", backend.bfmui);
-    const sysInfo = backend.info;
+    const sysInfo = backend.bfcontrol;
     for (let i = 0; i < sysInfo.length; i++) {
       const dataEntry = sysInfo[i];
       entries.reuseOrCreate("#home-sysinfo-inner", i+1, dataEntry.ComponentName, dataEntry.Properties);

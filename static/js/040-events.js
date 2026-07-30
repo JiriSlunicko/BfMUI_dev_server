@@ -11,27 +11,41 @@ window.events = (function () {
   let _debugMode = false;
 
 
-  function isDebugMode(change=null) {
-    if (change === null)
-      return _debugMode;
-
-    _debugMode = change === true;
+  /** @param {boolean} setTo whether we want debug mode */
+  function setDebugMode(setTo) {
+    _debugMode = setTo;
   }
 
 
+  /** Shorthand for "if in debug mode, print to console". */
+  function _debugLog(...data) {
+    if (_debugMode) {
+      console.debug(...data);
+    }
+  }
+
+
+  /** Close any existing stream and try to open a new one,
+   * retrying on failure indefinitely. */
   async function tryConnectionUntilOk() {
     if (_connectInterval) return;
+
     closeStream(); // sets _hasConnected to false
+
     _connectInterval = setInterval(() => {
-      if (isDebugMode())
-        console.debug("tryConnectionUntilOk interval hit.", {_hasConnected, _isAttemptingReconnect});
+      _debugLog("tryConnectionUntilOk interval hit.", {
+        _hasConnected,
+        _isAttemptingReconnect
+      });
       
+      // loop break condition
       if (_hasConnected) {
         clearInterval(_connectInterval);
         _connectInterval = null;
         return;
       }
 
+      // retry if another retry isn't already in progress
       if (!_isAttemptingReconnect) {
         _isAttemptingReconnect = true;
         openStream();
@@ -42,20 +56,22 @@ window.events = (function () {
 
   /** Connect to the backend server's event dispatcher. */
   function openStream() {
-    if (isDebugMode())
-      console.debug("Attempting to open a new event stream.");
+    _debugLog("Attempting to open a new event stream.");
 
     closeStream();
+
     _eventStream = new EventSource(backend.baseurl + backend.endpoints.events);
 
+    // when successfully connected, set the flags to stop connection attempts
     _eventStream.onopen = () => {
-      if (isDebugMode()) console.debug("Opened new event stream.", _eventStream);
+      _debugLog("Opened new event stream.", _eventStream);
       _hasConnected = true;
       _isAttemptingReconnect = false;
     }
 
+    // handle incoming messages
     _eventStream.onmessage = (msg) => {
-      if (isDebugMode()) console.debug(msg.data);
+      _debugLog(msg.data);
 
       let asJson = null;
       try {
@@ -71,8 +87,7 @@ window.events = (function () {
       } else if (newBootTime > _lastBoot) {
         _lastBoot = newBootTime;
         closeStream();
-        if (isDebugMode())
-          console.debug("Event manager requests reconnection from pages.settings.");
+        _debugLog("Event manager requests reconnection from pages.settings.");
         pages.settings.connect(backend, true, "Server has been restarted.");
       }
 
@@ -81,9 +96,9 @@ window.events = (function () {
       }
     };
 
+    // if the stream fails, try to reconnect
     _eventStream.onerror = (ev) => {
-      if (isDebugMode())
-        console.debug("Event stream fail.");
+      _debugLog("Event stream fail.");
 
       _isAttemptingReconnect = false;
       tryConnectionUntilOk();
@@ -94,7 +109,7 @@ window.events = (function () {
   /** Close an open event stream. Idempotent. */
   function closeStream() {
     if (_eventStream !== null) {
-      if (isDebugMode()) console.debug("Closing existing event stream.", _eventStream);
+      _debugLog("Closing existing event stream.", _eventStream);
       _eventStream?.close();
       _eventStream = null;
       _hasConnected = false;
@@ -103,15 +118,14 @@ window.events = (function () {
 
 
   /** Handle any events that came with a message from the backend.
+   * 
    * @param {string[]} eventArray list of event names
    */
   function _processEvents(eventArray) {
     let changedDomains = new Set();
 
     for (const backendEvent of eventArray) {
-      if (isDebugMode()) {
-        console.debug(new Date().toLocaleString(), backendEvent);
-      }
+      _debugLog(new Date().toLocaleString(), backendEvent);
 
       switch (backendEvent) {
         case "AvailableSerialPortsChanged":
@@ -151,7 +165,8 @@ window.events = (function () {
 
   // public API
   return {
-    isDebugMode,
+    getDebugMode: () => _debugMode,
+    setDebugMode,
     tryConnectionUntilOk,
     openStream,
     closeStream,

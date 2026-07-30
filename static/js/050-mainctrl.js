@@ -15,7 +15,7 @@ window.backend =
 {
   baseurl: localStorage.getItem("serverBaseurl") || "http://localhost:8080",
   bfmui: null, // info about the app itself
-  info: null, // info about the backend (Bloodfly Control server)
+  bfcontrol: null, // info about the backend (Bloodfly Control server)
   usingArduino: null, // whether the backend is using serial port communication
   musicEnabled: null, // whether background music is available
   endpoints: { // map of URLs for backend endpoints
@@ -66,12 +66,12 @@ window.nav = (function()
       nav.gotoPage("home");
     });
 
-    window.addEventListener("pagehide", () => events.closeStream());
-    window.addEventListener("beforeunload", () => events.closeStream());
+    window.addEventListener("pagehide", events.closeStream);
+    window.addEventListener("beforeunload", events.closeStream);
   }
 
 
-  /** Reload the whole thing if the user consents. */
+  /** Reload the whole frontend if the user consents. */
   async function reloadApp() {
     const consent = await ui.makePopup("confirm", "Reload the app?");
     if (consent) {
@@ -82,6 +82,7 @@ window.nav = (function()
 
 
   /** Navigate to the desired page.
+   * 
    * @param {string} targetPage "home", "status" etc.
    */
   function gotoPage(targetPage) {
@@ -104,7 +105,11 @@ window.nav = (function()
 
     // content
     utils.qsa(".main-content .view-tab").forEach(el => {
-      el.style.display = el.id === targetContainerId ? "" : "none";
+      el.style.display = (
+        el.id === targetContainerId
+        ? ""
+        : "none"
+      );
     });
 
     // page-specific logic
@@ -131,7 +136,6 @@ window.nav = (function()
 // this should be the ONLY DOMContentLoaded listener in the app
 document.addEventListener("DOMContentLoaded", () => {
   // init UI
-  ui.initToastContainer();
   ui.initRangeTextPairLinks();
   
   // init all page modules
