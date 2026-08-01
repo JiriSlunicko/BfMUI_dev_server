@@ -1,20 +1,28 @@
-window.pages.settings = (function() {
+window.pages.settings = (function()
+{
   let _polling = {
     delayMs: null,
     interval: null,
     active: false,
+    startBtn: null,
+    pauseBtn: null,
   };
   let _connectionAttempt = {
     delayMs: 1000,
     busy: false,
     interval: null,
     lastFail: null,
-  }
+  };
+
 
   function init() {
     // set poll delay
-    _polling.delayMs = Number(localStorage.getItem("pollDelay")
-      || (utils.isMobile() ? 1000 : 500));
+    _polling.delayMs = Number(localStorage.getItem("pollDelay"))
+      || (utils.isMobile() ? 1000 : 500);
+
+    // store these references for ergonomics
+    _polling.startBtn = utils.qs("#settings-poll-start-btn");
+    _polling.pauseBtn = utils.qs("#settings-poll-pause-btn");
 
     // server & polling config
     if (backend.baseurl) {
@@ -24,16 +32,18 @@ window.pages.settings = (function() {
       utils.qs("#input-port").value = port;
       connect(backend);
     }
-    utils.qs("#input-poll-interval").value = _polling.delayMs;
+
+    const pollIntervalInput = utils.qs("#input-poll-interval");
+    pollIntervalInput.value = _polling.delayMs;
+    pollIntervalInput.addEventListener("blur", _changePollInterval);
     utils.qs("#settings-reset-btn").addEventListener("click", _resetSettings);
     utils.qs("#settings-connect-btn").addEventListener("click", () => {
       connect(backend);
     });
-    utils.qs("#input-poll-interval").addEventListener("blur", _changePollInterval);
-    utils.qs("#settings-poll-start-btn").addEventListener("click", _pollStart);
-    utils.qs("#settings-poll-start-btn").disabled = true;
-    utils.qs("#settings-poll-pause-btn").addEventListener("click", _pollPause);
-    utils.qs("#settings-poll-pause-btn").disabled = true;
+    _polling.startBtn.addEventListener("click", _pollStart);
+    _polling.startBtn.disabled = true;
+    _polling.pauseBtn.addEventListener("click", () => _pollPause());
+    _polling.pauseBtn.disabled = true;
 
     // config saving/loading
     window.serverConfig.init();
@@ -45,11 +55,13 @@ window.pages.settings = (function() {
 
 
   /** Reset app settings to defaults (clear localStorage & unset tile URL)
-   *  if the user confirms. */
+   * if the user confirms. */
   async function _resetSettings() {
-    const consent = await ui.makePopup("confirm",
-      "Are you sure you want to reset all app settings, including server IP, map tile "
-    + "URL template etc?\n\nThis will reload the app.");
+    const consent = await ui.makePopup(
+      "confirm",
+      "Are you sure you want to reset all app settings, including server IP, "
+      + "map tile URL template etc?\n\nThis will reload the app."
+    );
     if (consent) {
       localStorage.clear();
       _resetTilesUrlTemplate();
@@ -59,50 +71,57 @@ window.pages.settings = (function() {
 
 
   function _attemptReconnect() {
-    if (_connectionAttempt.interval !== null)
-      return;
+    if (_connectionAttempt.interval !== null) return;
 
     _connectionAttempt.interval = setInterval(() => {
-      if (!_connectionAttempt.busy)
-        connect(backend, true);
+      if (!_connectionAttempt.busy) {
+        connect(backend);
+      }
     }, _connectionAttempt.delayMs);
   }
 
 
   /** Attempt connection to the backend server, start polling and everything.
+   *
    * @param {object} globalServer backend - will be updated on success
    * @param {boolean} retry whether to retry on failure
    * @param {string|null} lastFailOverride if retrying, what failed last time
    */
   async function connect(globalServer, retry=true, lastFailOverride=null) {
-    utils.qs("#settings-connection-status").textContent = "Currently not connected.";
+    // stop any polling, update the GUI
     _pollPause();
-    utils.qs("#settings-poll-start-btn").disabled = true;
-    utils.qs("#settings-poll-pause-btn").disabled = true;
+    utils.qs("#settings-connection-status").textContent = "Currently not connected.";
+    _polling.startBtn.disabled = true;
+    _polling.pauseBtn.disabled = true;
     _connectionAttempt.busy = true;
 
     const lastFail = lastFailOverride ?? _connectionAttempt.lastFail;
     console.debug("Attempting connection.", lastFail);
     if (lastFail === null) {
-      ui.makeToast(null, "Attempting connection...", -1);
+      ui.makeToast(
+        null,
+        "Attempting connection...",
+        -1
+      );
     } else {
-      ui.makeToast("error", "Retrying connection after the following problem:\n\n"+lastFail, -1);
+      ui.makeToast(
+        "error",
+        `Retrying connection after the following problem:\n\n${lastFail}`,
+        -1
+      );
     }
 
+    // attempt to connect & load everything...
     const ip = utils.qs("#input-ip").value;
     const port = utils.qs("#input-port").value;
     const baseurl = "http://" + ip + ":" + port;
     let shouldRetry = false;
     try {
       // try the systemInfo endpoint
-      let sysInfoOk = await ajax.fetchWithTimeout(
+      await ajax.fetchWithTimeout(
         baseurl + backend.endpoints.systemInfo + `?_=${Date.now()}`,
         {
           successHandler: (resp) => {
-            if (!_.isArray(resp)) {
-              throw new Error(`Fetch from server OK, but ${backend.endpoints.systemInfo} did `
-                            + `not return a JSON array`);
-            }
             globalServer.bfcontrol = resp;
           },
           failureHandler: ajax.propagateRespError, // fail loudly
@@ -129,14 +148,20 @@ window.pages.settings = (function() {
       events.tryConnectionUntilOk();
 
       // inform the user
-      utils.qs("#settings-connection-status").textContent = "Connected to " + baseurl;
+      utils.qs("#settings-connection-status").textContent = `Connected to ${baseurl}`;
       let successMessage = "Connected to server, polling.\n\nModules:";
       for (const [domain, success] of Object.entries(settingsLoadStatus)) {
-        successMessage += (success ? "\nOK: " : "\nERROR: ") + domain;
+        successMessage += (
+          success
+          ? `\nOK: ${domain}`
+          : `\nERROR: ${domain}`
+        );
       }
-      successMessage += backend.usingArduino
+      successMessage += (
+        backend.usingArduino
         ? "\n\nRunning in Arduino mode."
-        : "\n\nRunning without Arduino.";
+        : "\n\nRunning without Arduino."
+      );
       ui.makeToast("success", successMessage, 5000);
 
       // clean up
@@ -146,14 +171,21 @@ window.pages.settings = (function() {
         _connectionAttempt.interval = null;
       }
     } catch (err) {
+      // if anything went wrong
       console.error("During connect:", err);
       _connectionAttempt.lastFail = err.toString();
       if (!retry) {
-        ui.makeToast("error", `Connection failed.\n\n${err.toString()}`, 5000);
+        ui.makeToast(
+          "error",
+          `Connection failed.\n\n${err.toString()}`,
+          5000
+        );
+        // shouldRetry is false here.
       } else {
         shouldRetry = true;
       }
     } finally {
+      // after any attempt at all
       _connectionAttempt.busy = false;
       if (shouldRetry) {
         _attemptReconnect();
@@ -164,38 +196,35 @@ window.pages.settings = (function() {
 
   /** Start polling telemetry with the currently set interval. */
   function _pollStart() {
-    if (_polling.interval !== null) {
-      clearInterval(_polling.interval);
-      _polling.interval = null;
-    }
-
+    _pollPause(true); // cancel any existing polling
     _polling.active = true;
-    pages.status.clearTeleData();
 
     _polling.interval = setInterval(() => {
       pages.status.fetchTelemetry();
     }, _polling.delayMs);
     pages.status.fetchTelemetry();
 
-    utils.qs("#settings-poll-start-btn").disabled = true;
-    utils.qs("#settings-poll-pause-btn").disabled = false;
+    _polling.startBtn.disabled = true;
+    _polling.pauseBtn.disabled = false;
     ui.makeToast("success", "Polling!");
   }
 
 
   /** Stop polling telemetry. */
-  function _pollPause() {
+  function _pollPause(silent = false) {
     if (_polling.interval !== null) {
       clearInterval(_polling.interval);
       _polling.interval = null;
-      ui.makeToast(null, "Stopped polling.");
+      if (!silent) {
+        ui.makeToast(null, "Stopped polling.");
+      }
     }
 
     _polling.active = false;
     pages.status.clearTeleData();
 
-    utils.qs("#settings-poll-start-btn").disabled = false;
-    utils.qs("#settings-poll-pause-btn").disabled = true;
+    _polling.startBtn.disabled = false;
+    _polling.pauseBtn.disabled = true;
   }
 
 
@@ -203,16 +232,23 @@ window.pages.settings = (function() {
   function _changePollInterval() {
     const input = utils.qs("#input-poll-interval").value;
     const newPollDelay = Number(input);
+
+    // reject bogus values and overly short intervals
     if (!/^\d+$/.test(input) || newPollDelay < 100) {
-      ui.makeToast("error", "Polling interval must be a number >= 100.", 3000);
+      ui.makeToast(
+        "error",
+        "Polling interval must be a number >= 100.",
+        3000
+      );
       return;
     }
 
+    // only apply changes if the new delay is actually different
     if (newPollDelay !== _polling.delayMs) {
       _polling.delayMs = newPollDelay;
       _pollStart();
       localStorage.setItem("pollDelay", newPollDelay);
-      ui.makeToast("success", "Polling interval set to " + _polling.delayMs + " ms.");
+      ui.makeToast("success", `Polling interval set to ${_polling.delayMs} ms.`);
     }
   }
 
@@ -227,15 +263,22 @@ window.pages.settings = (function() {
     await ajax.fetchWithTimeout(
       `/tiles-url-template/set?urlTemplate=${encodeURIComponent(urlPat)}`,
       {
-        options: {method: "POST", body: "null"},
+        options: {
+          method: "POST",
+        },
         successHandler: (resp) => {
           if (resp.ok) {
             ui.makeToast("success", "Updated tile URL template.");
           } else {
-            ui.makeToast("error", `Something failed: ${JSON.stringify(resp)}`);
+            ui.makeToast(
+              "error",
+              `Failed: ${resp.error || "(unknown error)"}`,
+              5000
+            );
           }
         },
         failureHandler: ajax.handleJsonAjaxFail,
+        notOkMeansError: false,
       }
     );
   }
@@ -243,7 +286,8 @@ window.pages.settings = (function() {
 
   /** Clear the set URL template for tiles, revert to default. */
   async function _resetTilesUrlTemplate() {
-    const consent = await ui.makePopup("confirm",
+    const consent = await ui.makePopup(
+      "confirm",
       "Are you sure you want to revert to the default map tile source?",
       "Reset tile source?"
     );
@@ -252,7 +296,9 @@ window.pages.settings = (function() {
     await ajax.fetchWithTimeout(
       "/tiles/url-template/reset",
       {
-        options: {method: "POST", body: "null"},
+        options: {
+          method: "POST",
+        },
         successHandler: (resp) => {
           ui.makeToast("success", "Successfully reset.");
         },
@@ -268,5 +314,5 @@ window.pages.settings = (function() {
     activate: ()=>{},
     deactivate: ()=>{},
     connect,
-  }
+  };
 })();

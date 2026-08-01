@@ -12,8 +12,8 @@ window.ajax = (function()
    *  and the error on any type of failure, def N/A
    * @property {boolean} [emitErrorToasts] whether the function should
    *  handle spawning error toasts, def false
-   * @property {"json"|"ajax"} [responseType] how to process the response,
-   *  def "ajax"
+   * @property {"json"|"text"} [responseType] how to process the response,
+   *  def "json"
    * @property {boolean} [notOkMeansError] whether non-2xx status codes
    *  should qualify as errors, def true
    */
@@ -134,5 +134,5 @@ window.ajax = (function()
     fetchWithTimeout,
     handleJsonAjaxFail,
     propagateRespError,
-  }
+  };
 })();

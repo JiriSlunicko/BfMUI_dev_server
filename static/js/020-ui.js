@@ -211,10 +211,9 @@ window.ui = (function ()
     // put it all together and return the HTML
     inputWrapper.appendChild(rangeInput);
     if (config.incrementButtons) {
-      inputWrapper.insertAdjacentHTML("beforeend",
-        `<button type="button" class="btn range-btn range-decr">▼</button>
-         <button type="button" class="btn range-btn range-incr">▲</button>`
-      );
+      inputWrapper.insertAdjacentHTML("beforeend", `
+        <button type="button" class="btn range-btn range-decr">▼</button>
+        <button type="button" class="btn range-btn range-incr">▲</button>`);
     }
     inputWrapper.appendChild(textInput);
     label.appendChild(inputWrapper);
@@ -248,9 +247,9 @@ window.ui = (function ()
         new CustomEvent("slider-change", {
           detail: {
             value: textInput.value,
-            byUser: true
+            byUser: true,
           },
-          bubbles: true
+          bubbles: true,
         })
       );
     });
@@ -291,9 +290,9 @@ window.ui = (function ()
           new CustomEvent("slider-change", {
             detail: {
               value: textInput.value,
-              byUser: e.type === "change"
+              byUser: e.type === "change",
             },
-            bubbles: true
+            bubbles: true,
           })
         );
       })
@@ -324,7 +323,7 @@ window.ui = (function ()
       const fireEvent = (el) => {
         el.dispatchEvent(
           new Event("change", {
-            bubbles: true
+            bubbles: true,
           })
         );
       };
@@ -351,5 +350,5 @@ window.ui = (function ()
     makePopup,
     makeRangeTextInputPair,
     initRangeTextPairLinks,
-  }
+  };
 })();

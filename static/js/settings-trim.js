@@ -14,10 +14,11 @@ window.settings.trim = (function()
     surfaces: {},
   }
 
-  const _throttleSave = _.throttle(save, 1000, {trailing: false});
+  const _throttleSave = _.throttle(save, 1000, { trailing: false, });
 
 
   async function init() {
+    // apply / reset buttons
     utils.qs("#plane-trim-inner").addEventListener("click", function (e) {
       const applyButton = e.target.closest("#plane-trim-submit-btn");
       if (applyButton && hasPendingChanges()) {
@@ -32,8 +33,9 @@ window.settings.trim = (function()
       }
     });
 
+    // sliders: stage changes on user edit
     utils.qs("#plane-trim-inner").addEventListener("slider-change", function(e) {
-      if (!e.detail.byUser) return;
+      if (!e.detail.byUser) return; // automated changes -> don't stage
       
       const slider = e.target.closest(".range-text-pair");
       if (!slider) return;
@@ -56,9 +58,7 @@ window.settings.trim = (function()
 
 
   function reset() {
-    for (const surface of Object.keys(_staged)) {
-      _staged[surface] = undefined;
-    }
+    _staged = {};
     _render();
   }
 
@@ -81,8 +81,8 @@ window.settings.trim = (function()
           _trimValues.surfaces = {};
           for (const [surfName, surfTrim] of Object.entries(resp)) {
             _trimValues.surfaces[surfName] = surfTrim;
-            _staged[surfName] = undefined;
           }
+          _staged = {};
           ui.makeToast("success", "Successfully updated.");
         },
         failureHandler: ajax.handleJsonAjaxFail,
@@ -95,8 +95,9 @@ window.settings.trim = (function()
 
   function hasPendingChanges() {
     for (const [surface, serverValue] of Object.entries(_trimValues.surfaces)) {
-      if (_staged[surface] !== undefined && _staged[surface] !== serverValue)
+      if (_staged[surface] !== undefined && _staged[surface] !== serverValue) {
         return true;
+      }
     }
     return false;
   }
@@ -138,25 +139,34 @@ window.settings.trim = (function()
       if (myWrapper === null) {
         // create the UI element if not exists
         container.innerHTML += ui.makeRangeTextInputPair(
-          "plane-trim-" + surface, surface, {
-          bounds: { min: min, max: max }, step: 1, value: trimValue, scaling: "linear"
-        }
+          `plane-trim-${surface}`,
+          surface,
+          {
+            bounds: {
+              min: min,
+              max: max,
+            },
+            step: 1,
+            value: trimValue,
+            scaling: "linear",
+          }
         );
       } else {
         // or update an existing element
         const textInput = myWrapper.querySelector("input[type=text]");
         textInput.value = trimValue;
-        textInput.dispatchEvent(new CustomEvent("backend-refresh", { bubbles: true }));
+        textInput.dispatchEvent(
+          new CustomEvent("backend-refresh", { bubbles: true, }));
       }
     }
 
     // make apply button if not exists
     if (container.querySelector("#plane-trim-submit-btn") === null) {
       container.insertAdjacentHTML("beforeend", `
-          <div class="flex-r f-g8">
-            <button type="button" class="btn" id="plane-trim-submit-btn">Save</button>
-            <button type="button" class="btn" id="plane-trim-reset-btn">Reset</button>
-          </div>`);
+        <div class="flex-r f-g8">
+          <button type="button" class="btn" id="plane-trim-submit-btn">Save</button>
+          <button type="button" class="btn" id="plane-trim-reset-btn">Reset</button>
+        </div>`);
     }
   }
 
@@ -168,5 +178,5 @@ window.settings.trim = (function()
     reset,
     save,
     hasPendingChanges,
-  }
+  };
 })();

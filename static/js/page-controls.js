@@ -1,8 +1,9 @@
-window.pages.controls = (function() {
+window.pages.controls = (function()
+{
   // public API
   return {
     init: () => {},
     activate: () => {},
     deactivate: () => {},
-  }
+  };
 })();

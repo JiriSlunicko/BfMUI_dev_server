@@ -157,5 +157,5 @@ window.settingsManager = (function()
     reset,
     save,
     pendingChangesExist,
-  }
+  };
 })();

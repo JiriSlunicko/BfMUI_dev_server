@@ -91,5 +91,5 @@ window.entries = (function ()
   return {
     reuseOrCreate,
     trimList,
-  }
+  };
 })();

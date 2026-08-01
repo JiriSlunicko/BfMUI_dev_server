@@ -1,5 +1,9 @@
-window.ctrlHelpers = (function() {
+/** Helper functions for controls settings. */
+
+window.ctrlHelpers = (function()
+{
   /** Read a JSON response from the controls endpoint and save its data in the app.
+   * 
    * @param {object} controls the _controls property of window.pages.controls
    * @param {object} resp parsed JSON response from controls endpoint
    */
@@ -11,6 +15,7 @@ window.ctrlHelpers = (function() {
 
 
   /** Find out which controller role is currently selected (checks the combobox).
+   * 
    * @returns {string} controller role name
    */
   function getActiveControllerRole() {
@@ -19,6 +24,7 @@ window.ctrlHelpers = (function() {
 
 
   /** Populate the relevant container with current input-output mappings.
+   * 
    * @param {object} controls the _controls property of window.pages.controls
    * @param {object} staged the _staged property of window.pages.controls
    * @param {string} controller which controller we're showing
@@ -37,8 +43,9 @@ window.ctrlHelpers = (function() {
         break;
     }
 
-    Array.from(container.children).forEach(x => x.remove());
+    utils.removeChildren(container);
     const mappingsWrapper = document.createDocumentFragment();
+
     for (const output of outputs) {
       const mapping = getResolvedMapping(controls, staged, controller, output, kind);
 
@@ -46,71 +53,105 @@ window.ctrlHelpers = (function() {
       item.className = "entry-wrapper ctrl-wrapper";
       item.dataset.kind = kind;
       item.dataset.output = output;
+
       let mappingString;
       let stagedChange = false;
 
       if (kind === "axis") {
-        const mInAxis = mapping?.inAxis || "unbound";
-        const mInvert = mapping?.invert || false;
-        const mDeadzone = mapping?.deadzone || 0.0;
-        const mMode = mapping?.mode || "direct";
-        const mGain = typeof mapping?.gain === "number" ? mapping.gain : -1;
-        mappingString = _stringifyAxisMapping(mInAxis, mInvert, mDeadzone, mMode, mGain);
+        // axes
+        const currentInAxis = mapping?.inAxis || "unbound";
+        const currentInvert = mapping?.invert || false;
+        const currentDeadzone = mapping?.deadzone || 0.0;
+        const currentMode = mapping?.mode || "direct";
+        const currentGain = typeof mapping?.gain === "number" ? mapping.gain : -1;
+
+        mappingString = _stringifyAxisMapping(
+          currentInAxis,
+          currentInvert,
+          currentDeadzone,
+          currentMode,
+          currentGain
+        );
+
+        // pending change = staged state exists and isn't equivalent to server state
         if (staged.axisMappings[controller][output] !== undefined
           && !_.isEqual(staged.axisMappings[controller][output],
-                      controls.axisMappings[controller][output])) {
+                      controls.axisMappings[controller][output])
+        ) {
           stagedChange = true;               
         }
       } else {
+        // buttons
         item.dataset.isEnum = controls.restrictions[output] ? "yes" : "";
+
         mappingString = mapping?.button || "unbound";
+
+        // pending change = staged state exists and isn't equivalent to server state
         if (staged.actionMappings[controller][output] !== undefined
           && !_.isEqual(staged.actionMappings[controller][output],
-                      controls.actionMappings[controller][output])) {
+                      controls.actionMappings[controller][output])
+        ) {
           stagedChange = true;
         }
       }
 
-      item.insertAdjacentHTML("beforeend", `
+      // append the mapping to the wrapper
+      item.innerHTML = `
         <div class="entry-header ctrl-output">${output}</div>
-        <div class="ctrl-input-current${stagedChange ? ' modified' : ''}">${mappingString}</div>
-      `);
+        <div class="ctrl-input-current${stagedChange ? ' modified' : ''}"
+          >${mappingString}</div>`;
       mappingsWrapper.appendChild(item);
     }
+
+    // insert in the DOM
     container.append(mappingsWrapper);
   }
 
 
   /** Trivial helper for showing axis properties as a string. */
   function _stringifyAxisMapping(axis, invert, deadzone, mode, gain) {
-    if (axis === "unbound") return axis;
-    return `${axis}, inv=${invert ? "1" : "0"}, dz=${deadzone}, ${mode === "direct" ? "direct" : ("gain=" + gain)}`;
+    if (axis === "unbound") {
+      return axis;
+    }
+    return `${axis}, `
+         + `inv=${invert ? "1" : "0"}, `
+         + `dz=${deadzone}, `
+         + (mode === "direct" ? `direct` : `gain=${gain}`);
   }
 
 
   /** Convert response action mappings from server to:
- * {
- *  string controllerRole: {
- *    string action: {
- *      "button": string // button or 2 buttons joined by ", "
- *    },
- *    ...
- *  },
- *  ...
- * }
- */
+   * {
+   *  string controllerRole: {
+   *    string action: {
+   *      "button": string // button or 2 buttons joined by ", "
+   *    },
+   *    ...
+   *  },
+   *  ...
+   * }
+   */
   function _convertActionMappings(respMappings) {
     if (!respMappings) {
       throw new Error("invalid data for convertActionMappings");
     }
+
     const processedMappings = {};
+
+    // for each controller...
     for (const [ctrlrRole, ctrlrMappings] of Object.entries(respMappings)) {
       const processedCtrlrMappings = {};
+
+      // for each control action...
       for (const [action, mapping] of Object.entries(ctrlrMappings)) {
-        processedCtrlrMappings[action] = {button: mapping.join(", ")};
+        processedCtrlrMappings[action] = {
+          button: mapping.join(", "),
+        };
       }
+
       processedMappings[ctrlrRole] = processedCtrlrMappings;
     }
+
     return processedMappings;
   }
 
@@ -134,30 +175,40 @@ window.ctrlHelpers = (function() {
     if (!respMappings) {
       throw new Error("invalid data for convertAxisMappings");
     }
+
     const processedMappings = {};
 
+    // for each controller...
     for (const [ctrlrRole, ctrlrMappings] of Object.entries(respMappings)) {
       const processedCtrlrMappings = {};
+
+      // for each plane axis...
       for (const [axis, mapping] of Object.entries(ctrlrMappings)) {
+        let mappingMode;
+        switch (mapping.FinalValueAssigner.$type) {
+          case "DifferenceValueAssigner": mappingMode = "differential"; break;
+          case "DirectValueAssigner":     mappingMode = "direct"; break;
+          default:                        mappingMode = "undefined";
+        }
+
         processedCtrlrMappings[axis] = {
           inAxis: mapping.ControllerAxis,
           invert: mapping.Inverted,
           deadzone: mapping.ControllerAxisDeadBand,
-          mode: mapping.FinalValueAssigner.$type === "DifferenceValueAssigner"
-            ? "differential"
-            : mapping.FinalValueAssigner.$type === "DirectValueAssigner"
-              ? "direct"
-              : "undefined",
+          mode: mappingMode,
           gain: mapping.FinalValueAssigner.Gain || null,
-        }
+        };
       }
+
       processedMappings[ctrlrRole] = processedCtrlrMappings;
     }
+
     return processedMappings;
   }
 
 
   /** Get the staged mapping if one exists, otherwise the last known server mapping.
+   * 
    * @param {object} controls the _controls property of window.pages.controls
    * @param {object} staged the _staged property of window.pages.controls
    * @param {string} controller which controller we're interested in
@@ -166,7 +217,11 @@ window.ctrlHelpers = (function() {
    * @returns {object} a mapping for an action or an axis
    */
   function getResolvedMapping(controls, staged, controller, output, kind) {
-    const mappingsKey = kind === "axis" ? "axisMappings" : "actionMappings";
+    const mappingsKey = (
+      kind === "axis"
+      ? "axisMappings"
+      : "actionMappings"
+    );
 
     return utils.coalesceUndef(staged[mappingsKey][controller][output],
                              controls[mappingsKey][controller][output]);
@@ -179,5 +234,5 @@ window.ctrlHelpers = (function() {
     getActiveControllerRole,
     makeMappingList,
     getResolvedMapping,
-  }
+  };
 })();

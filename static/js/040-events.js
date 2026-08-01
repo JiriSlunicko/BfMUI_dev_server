@@ -170,5 +170,5 @@ window.events = (function () {
     tryConnectionUntilOk,
     openStream,
     closeStream,
-  }
+  };
 })();

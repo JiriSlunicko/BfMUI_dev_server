@@ -57,32 +57,35 @@ window.settings.controls = (function()
   async function load() {
     const controlsSuccess = await _fetchData();
 
-    if (controlsSuccess) {
-      // controller role select
-      if (!_initialised) {
-        const controllerSelect = utils.qs("#controls-role-select");
-        Array.from(controllerSelect.children).forEach(x => x.remove());
-        let selected = null;
-        for (const controller of Object.keys(_controls.actionMappings)) {
-          controllerSelect.insertAdjacentHTML("beforeend", `
-          <option value="${controller}"${selected === null ? " selected" : ""}>${controller}</option>`);
-          selected = selected || controller;
-        }
-        _initialised = true;
-      }
-
-      // buttons
-      utils.qs("#controls-btn-wrapper").innerHTML = `
-        <button type="button" class="btn" id="controls-submit-btn">Save</button>
-        <button type="button" class="btn" id="controls-reset-btn">Reset</button>
-      `;
-
-      _updateActiveController(ctrlHelpers.getActiveControllerRole());
-    } else {
+    if (!controlsSuccess) {
       utils.qs("#controls-buttons-inner").innerHTML = "<p>Failed to fetch options.</p>";
       utils.qs("#controls-axes-inner").innerHTML = "<p>Failed to fetch options.</p>";
-      utils.qs("#controls-btn-wrapper").innerHTML = "";
+      utils.removeChildren(utils.qs("#controls-btn-wrapper"));
+      return;
     }
+
+    // controller role select
+    if (!_initialised) {
+      const controllerSelect = utils.qs("#controls-role-select");
+      utils.removeChildren(controllerSelect);
+      let selected = null;
+
+      for (const controller of Object.keys(_controls.actionMappings)) {
+        controllerSelect.insertAdjacentHTML("beforeend", `
+          <option value="${controller}"${selected === null ? " selected" : ""}
+            >${controller}</option>`);
+        selected = selected || controller;
+      }
+
+      _initialised = true;
+    }
+
+    // buttons
+    utils.qs("#controls-btn-wrapper").innerHTML = `
+      <button type="button" class="btn" id="controls-submit-btn">Save</button>
+      <button type="button" class="btn" id="controls-reset-btn">Reset</button>`;
+
+    _updateActiveController(ctrlHelpers.getActiveControllerRole());
     
     return controlsSuccess;
   }
@@ -103,39 +106,46 @@ window.settings.controls = (function()
     // buttons -> actions
     for (const controller of Object.keys(_controls.actionMappings)) {
       const processedMappings = {};
+
       for (const action of _controls.actions) {
-        const resolvedMapping = ctrlHelpers.getResolvedMapping(_controls, _staged, controller,
-                                                               action, "button");
-        if (resolvedMapping === undefined || resolvedMapping.button === "unbound")
-          continue;
-        processedMappings[action] = resolvedMapping.button.split(", ");
+        const resolvedMapping = ctrlHelpers.getResolvedMapping(
+          _controls, _staged, controller, action, "button");
+
+        if (resolvedMapping !== undefined && resolvedMapping.button !== "unbound") {
+          processedMappings[action] = resolvedMapping.button.split(", ");
+        }
       }
+
       payload.ControlActionsSettings[controller] = processedMappings;
     }
 
     // axes
     for (const controller of Object.keys(_controls.axisMappings)) {
       const processedMappings = {};
+
       for (const planeAxis of _controls.outAxes) {
-        const resolvedMapping = ctrlHelpers.getResolvedMapping(_controls, _staged, controller,
-                                                               planeAxis, "axis");
-        if (resolvedMapping === undefined || resolvedMapping.deleteMe)
-          continue;
+        const resolvedMapping = ctrlHelpers.getResolvedMapping(
+          _controls, _staged, controller, planeAxis, "axis");
 
-        mappingInfo = {
-          ControllerAxis: resolvedMapping.inAxis,
-          Inverted: resolvedMapping.invert,
-          ControllerAxisDeadBand: resolvedMapping.deadzone,
-          FinalValueAssigner: { $type: "DirectValueAssigner" }
+        if (resolvedMapping !== undefined && !resolvedMapping.deleteMe) {
+          const mappingInfo = {
+            ControllerAxis: resolvedMapping.inAxis,
+            Inverted: resolvedMapping.invert,
+            ControllerAxisDeadBand: resolvedMapping.deadzone,
+            FinalValueAssigner: {
+              $type: "DirectValueAssigner",
+            },
+          };
+
+          if (resolvedMapping.mode !== "direct") {
+            mappingInfo.FinalValueAssigner.$type = "DifferenceValueAssigner";
+            mappingInfo.FinalValueAssigner.Gain = resolvedMapping.gain;
+          }
+
+          processedMappings[planeAxis] = mappingInfo;
         }
-
-        if (resolvedMapping.mode !== "direct") {
-          mappingInfo.FinalValueAssigner.$type = "DifferenceValueAssigner";
-          mappingInfo.FinalValueAssigner.Gain = resolvedMapping.gain;
-        }
-
-        processedMappings[planeAxis] = mappingInfo;
       }
+
       payload.PlaneAxesSettings[controller] = processedMappings;
     }
 
@@ -204,10 +214,12 @@ window.settings.controls = (function()
 
           ctrlHelpers.setMappingsFromJsonResponse(_controls, resp);
 
-          for (const controller of Object.keys(_controls.actionMappings))
+          for (const controller of Object.keys(_controls.actionMappings)) {
             _staged.actionMappings[controller] ??= {};
-          for (const controller of Object.keys(_controls.axisMappings))
+          }
+          for (const controller of Object.keys(_controls.axisMappings)) {
             _staged.axisMappings[controller] ??= {};
+          }
         },
         failureHandler: ajax.handleJsonAjaxFail,
       }
@@ -233,8 +245,9 @@ window.settings.controls = (function()
 
 
   /** Create a modal for mapping controller inputs to plane outputs.
- * @param {Element} mapping .ctrl-wrapper for the mapping in DOM
- */
+   * 
+   * @param {Element} mapping .ctrl-wrapper for the mapping in DOM
+   */
   function _makeMappingModal(mapping) {
     if (utils.qs(".modal-bg")) {
       console.error("Tried to open a control mapping modal while another modal was open.");
@@ -244,9 +257,13 @@ window.settings.controls = (function()
     const activeRole = ctrlHelpers.getActiveControllerRole();
     const kind = mapping.dataset.kind;
     const output = mapping.dataset.output;
-    const currentMapping = ctrlHelpers.getResolvedMapping(_controls, _staged, activeRole,
-                                                          output, kind);
-    const mappingMainProperty = kind === "axis" ? "inAxis" : "button";
+    const currentMapping = ctrlHelpers.getResolvedMapping(
+      _controls, _staged, activeRole, output, kind);
+    const mappingMainProperty = (
+      kind === "axis"
+      ? "inAxis"
+      : "button"
+    );
     let currentInput = currentMapping?.[mappingMainProperty]?.split(/\s*,\s*/) || ["unbound"];
 
     const bg = document.createElement("div");
@@ -256,65 +273,113 @@ window.settings.controls = (function()
     fg.className = "modal-fg flex-c f-a-c";
     fg.insertAdjacentHTML("beforeend", `
       <h3 class="hal-center break-word">${output.replace(/([A-Z]+)/g, "<wbr />$1")}</h3>
-      <p class="hal-center mb16">Select ${kind === "button"
+      <p class="hal-center mb16">Select ${
+        kind === "button"
         ? "0-2 buttons. If 2 are selected, both need to be pressed simultaneously."
-        : "input axis and its parameters."}</p>
-    `);
+        : "input axis and its parameters."
+        }</p>`);
 
     if (mapping.dataset.isEnum === "yes") {
       // enum of possible bindings
-      const enumSelect = _makeInputSelect("ctrl-input-enum", _controls.restrictions[output], currentMapping?.[mappingMainProperty]);
+      const enumSelect = _makeInputSelect(
+        "ctrl-input-enum",
+        _controls.restrictions[output],
+        currentMapping?.[mappingMainProperty]
+      );
       fg.appendChild(enumSelect);
     } else {
       // arbitrary buttons/axes
-      const priSelect = _makeInputSelect("ctrl-input-primary", kind === "axis" ? _controls.inAxes : _controls.buttons, currentInput[0]);
+      const priSelect = _makeInputSelect(
+        "ctrl-input-primary",
+        (
+          kind === "axis"
+          ? _controls.inAxes
+          : _controls.buttons
+        ),
+        currentInput[0]
+      );
       fg.appendChild(priSelect);
 
-      // buttons
       if (kind === "button") {
-        const secSelect = _makeInputSelect("ctrl-input-secondary", _controls.buttons, currentInput[1] || "unbound");
+        // buttons
+        const secSelect = _makeInputSelect(
+          "ctrl-input-secondary",
+          _controls.buttons,
+          currentInput[1] || "unbound"
+        );
         fg.appendChild(secSelect);
-        // axes
       } else {
+        // axes
         const inverted = currentMapping?.invert || false;
         const deadzone = currentMapping?.deadzone || 0.05;
         const mode = currentMapping?.mode || "direct";
         const gain = currentMapping?.gain || 0.5;
         fg.insertAdjacentHTML("beforeend", `
-        <label for="ctrl-input-invert" class="flex-c f-g4 w100 mb16">
-          <span>Axis direction</span>
-          <select id="ctrl-input-invert" class="ctrl-modal-options mb0">
-            <option class="ctrl-modal-option" value="normal"${inverted ? "" : " selected"}>not inverted</option>
-            <option class="ctrl-modal-option" value="inverted"${inverted ? " selected" : ""}>inverted</option>
-          </select>
-        </label>
-        ${ui.makeRangeTextInputPair("ctrl-input-deadzone", "Deadzone (0-1)", {
-          bounds: { min: _limits.axisDeadzone.min, max: _limits.axisDeadzone.max },
-          step: 0.01, value: deadzone, scaling: "linear", textInputClassOverride: "w5ch"
-        }, "w100 mb16"
-        )}
-        <label for="ctrl-input-method" class="flex-c f-g4 w100 mb16">
-          <span>Input processing</span>
-          <select id="ctrl-input-method" class="ctrl-modal-options mb0">
-            <option class="ctrl-modal-option" value="direct"${mode === "direct" ? " selected" : ""}>direct</option>
-            <option class="ctrl-modal-option" value="differential"${mode === "differential" ? " selected" : ""}>differential</option>
-          </select>
-        </label>
-        ${ui.makeRangeTextInputPair("ctrl-input-gain", "Gain", {
-          bounds: { min: _limits.axisGain.min, max: _limits.axisGain.max },
-          step: 0.01, value: gain < 0 ? "0.01" : gain, scaling: "logarithmic", textInputClassOverride: "w7ch"
-        }, "w100 mb16" + (mode === "direct" ? " hidden" : "")
-        )}
-      `);
+          <label for="ctrl-input-invert" class="flex-c f-g4 w100 mb16">
+            <span>Axis direction</span>
+            <select id="ctrl-input-invert" class="ctrl-modal-options mb0">
+              <option class="ctrl-modal-option" value="normal"
+                ${inverted ? "" : " selected"}
+                >not inverted</option>
+              <option class="ctrl-modal-option" value="inverted"
+                ${inverted ? " selected" : ""}
+                >inverted</option>
+            </select>
+          </label>
+          ${ui.makeRangeTextInputPair(
+            "ctrl-input-deadzone",
+            "Deadzone (0-1)",
+            {
+              bounds: {
+                min: _limits.axisDeadzone.min,
+                max: _limits.axisDeadzone.max,
+              },
+              step: 0.01,
+              value: deadzone,
+              scaling: "linear",
+              textInputClassOverride: "w5ch",
+            },
+            "w100 mb16"
+          )}
+          <label for="ctrl-input-method" class="flex-c f-g4 w100 mb16">
+            <span>Input processing</span>
+            <select id="ctrl-input-method" class="ctrl-modal-options mb0">
+              <option class="ctrl-modal-option" value="direct"
+                ${mode === "direct" ? " selected" : ""}
+                >direct</option>
+              <option class="ctrl-modal-option" value="differential"
+              ${mode === "differential" ? " selected" : ""}
+                >differential</option>
+            </select>
+          </label>
+          ${ui.makeRangeTextInputPair(
+            "ctrl-input-gain",
+            "Gain",
+            {
+              bounds: {
+                min: _limits.axisGain.min,
+                max: _limits.axisGain.max,
+              },
+              step: 0.01,
+              value: gain < 0 ? "0.01" : gain,
+              scaling: "logarithmic",
+              textInputClassOverride: "w7ch",
+            },
+            "w100 mb16" + (
+              mode === "direct"
+              ? " hidden"
+              : ""
+            ),
+          )}`);
       }
     }
 
     // buttons
     fg.insertAdjacentHTML("beforeend", `
-    <div class="flex-r f-j-c f-g8">
-      <button type="button" class="btn" id="ctrl-modal-ok">Ok</button>
-      <button type="button" class="btn" id="ctrl-modal-cancel">Cancel</button>
-    </div>`);
+      <div class="flex-r f-j-c f-g8">
+        <button type="button" class="btn" id="ctrl-modal-ok">Ok</button>
+        <button type="button" class="btn" id="ctrl-modal-cancel">Cancel</button>
+      </div>`);
 
     if (kind === "axis") {
       // show/hide gain settings on switching input processing mode
@@ -328,8 +393,10 @@ window.settings.controls = (function()
       });
     }
 
-    fg.querySelector("#ctrl-modal-ok").addEventListener("click", () => _applyCtrlMapping(kind));
-    fg.querySelector("#ctrl-modal-cancel").addEventListener("click", () => utils.qs(".modal-bg[data-output")?.remove());
+    fg.querySelector("#ctrl-modal-ok").addEventListener("click",
+      () => _applyCtrlMapping(kind));
+    fg.querySelector("#ctrl-modal-cancel").addEventListener("click",
+      () => utils.qs(".modal-bg[data-output")?.remove());
 
     bg.appendChild(fg);
     document.body.append(bg);
@@ -338,6 +405,7 @@ window.settings.controls = (function()
 
   /** Trivial helper for _makeMappingModal - make a <select>.
    * Automatically includes a (none) option which maps to 'unbound'.
+   * 
    * @param {string} id ID attribute to assign to the new select
    * @param {Array<string>} options list of options
    * @param {string} current which option is selected
@@ -348,8 +416,8 @@ window.settings.controls = (function()
     select.className = "ctrl-modal-options";
     select.id = id;
     select.insertAdjacentHTML("beforeend",
-      `<option class="ctrl-modal-option" value="unbound">(none)</option>`
-    );
+      `<option class="ctrl-modal-option" value="unbound">(none)</option>`);
+
     for (const opt of options.filter(x => x !== "None")) {
       const selected = current === opt;
       const optName = opt
@@ -357,14 +425,16 @@ window.settings.controls = (function()
         .replace(/\bLinux/g, "Lx")
         .replace(/\s*,\s*/g, " + ");
       select.insertAdjacentHTML("beforeend",
-        `<option class="ctrl-modal-option" value="${opt}"${selected ? ' selected' : ''}>${optName}</option>`
-      );
+        `<option class="ctrl-modal-option" value="${opt}"${selected ? ' selected' : ''}
+          >${optName}</option>`);
     }
+
     return select;
   }
 
 
   /** Stage new mapping from modal (not committed to server).
+   * 
    * @param {"button"|"axis"} kind are we mapping an action or an axis?
    */
   function _applyCtrlMapping(kind) {
@@ -377,7 +447,11 @@ window.settings.controls = (function()
     const output = modal.dataset.output;
     const relevantWrapper = utils.qs(`.ctrl-wrapper[data-output="${output}"]`);
     if (!relevantWrapper) {
-      ui.makeToast("error", `Error: No .ctrl-wrapper for '${output}' exists!`, 3500);
+      ui.makeToast(
+        "error",
+        `Error: No .ctrl-wrapper for '${output}' exists!`,
+        3500
+      );
       modal.remove();
       return;
     }
@@ -388,23 +462,42 @@ window.settings.controls = (function()
     const enumInput = modal.querySelector("#ctrl-input-enum");
     if (enumInput) {
       const enumButtons = enumInput.value.split(/\s*,\s*/);
-      [input1, input2] = enumButtons.length === 2 ? enumButtons : ["unbound", "unbound"];
-      // otherwise grab primary & secondary inputs
+      [input1, input2] = (
+        enumButtons.length === 2
+        ? enumButtons
+        : ["unbound", "unbound"]
+      );
     } else {
+      // otherwise grab primary & secondary inputs
       input1 = modal.querySelector("#ctrl-input-primary").value;
-      input2 = kind === "button" ? modal.querySelector("#ctrl-input-secondary").value : "unbound";
+      input2 = (
+        kind === "button"
+        ? modal.querySelector("#ctrl-input-secondary").value
+        : "unbound"
+      );
     }
-    // finalise the desired mapping
+    // finalise the desired mapping (remove unbound, if nothing left -> unbound)
     let desiredMapping = _.without(_.uniq([input1, input2]), "unbound");
-    if (!desiredMapping.length) { desiredMapping = ["unbound"]; }
+    if (!desiredMapping.length) {
+      desiredMapping = ["unbound"];
+    }
 
     // check constraints
-    const whitelistedMappings = _controls.restrictions[output]?.map(x => _.sortBy(x.split(/\s*,\s*/)));
-    if (whitelistedMappings) whitelistedMappings.push(["unbound"]);
+    const whitelistedMappings = _controls.restrictions[output]?.map(
+      x => _.sortBy(x.split(/\s*,\s*/)));
+    if (whitelistedMappings) {
+      whitelistedMappings.push(["unbound"]);
+    }
     if (whitelistedMappings
-      && !whitelistedMappings.some(x => _.isEqual(x, _.sortBy(desiredMapping)))) {
-      ui.makeToast("error", "This mapping is not allowed. Whitelisted options for this action/axis:\n\n"
-        + whitelistedMappings.map(x => `<p class="tiny-p mb0">${x.join(" + ")}</p>`).join(""), 5000);
+        && !whitelistedMappings.some(x => _.isEqual(x, _.sortBy(desiredMapping)))) {
+      ui.makeToast(
+        "error",
+        "This mapping is not allowed. Whitelisted options for this action/axis:\n\n"
+          + whitelistedMappings
+            .map(x => `<p class="tiny-p mb0">${x.join(" + ")}</p>`)
+            .join(""),
+        5000
+      );
       return;
     }
 
@@ -413,21 +506,27 @@ window.settings.controls = (function()
     if (kind === "axis") {
       try {
         newInvert = modal.querySelector("#ctrl-input-invert")?.value === "inverted";
-        newDeadzone = Number(modal.querySelector("#ctrl-input-deadzone-range")?.value || 0);
+        newDeadzone = Number(modal.querySelector("#ctrl-input-deadzone-range")?.value) || 0;
         const minDZ = _limits.axisDeadzone.min;
         const maxDZ = _limits.axisDeadzone.max;
-        if (isNaN(newDeadzone) || newDeadzone < minDZ || newDeadzone > maxDZ) {
-          throw new Error(`invalid deadzone '${newDeadzone}' (must be a number ${minDZ}–${maxDZ})`);
+        if (newDeadzone < minDZ || newDeadzone > maxDZ) {
+          throw new Error(`invalid deadzone '${newDeadzone}' `
+                        + `(must be a number ${minDZ}–${maxDZ})`);
         }
         newMode = modal.querySelector("#ctrl-input-method")?.value || "direct";
-        newGain = Number(modal.querySelector("#ctrl-input-gain-text")?.value || 0);
+        newGain = Number(modal.querySelector("#ctrl-input-gain-text")?.value) || 0;
         const minGain = _limits.axisGain.min;
         const maxGain = _limits.axisGain.max;
-        if (isNaN(newGain) || newGain < minGain || newGain > maxGain) {
-          throw new Error(`invalid gain '${newGain}' (must be a number ${minGain}–${maxGain})`);
+        if (newGain < minGain || newGain > maxGain) {
+          throw new Error(`invalid gain '${newGain}' `
+                        + `(must be a number ${minGain}–${maxGain})`);
         }
       } catch (err) {
-        ui.makeToast("error", `Error processing modal data for axis:\n\n${err.toString()}`, 7500);
+        ui.makeToast(
+          "error",
+          `Error processing modal data for axis:\n\n${err.toString()}`,
+          5000
+        );
         return;
       }
     }
@@ -436,9 +535,13 @@ window.settings.controls = (function()
     const stringMapping = desiredMapping.join(", ");
     const activeRole = ctrlHelpers.getActiveControllerRole();
     if (kind === "axis") {
-      if (stringMapping === "unbound")
-        _staged.axisMappings[activeRole][output] = { deleteMe: true };
-      else {
+      if (stringMapping === "unbound") {
+        // unmap axis
+        _staged.axisMappings[activeRole][output] = {
+          deleteMe: true,
+        };
+      } else {
+        // map axis
         _staged.axisMappings[activeRole][output] = {
           inAxis: stringMapping,
           invert: newInvert,
@@ -448,7 +551,10 @@ window.settings.controls = (function()
         }
       }
     } else {
-      _staged.actionMappings[activeRole][output] = { button: stringMapping };
+      // map/unmap button
+      _staged.actionMappings[activeRole][output] = {
+        button: stringMapping
+      };
     }
 
     _updateActiveController();
@@ -458,7 +564,9 @@ window.settings.controls = (function()
 
 
   function _updateActiveController(controller = null) {
-    if (controller) utils.qs("#controls-role-select").value = controller;
+    if (controller) {
+      utils.qs("#controls-role-select").value = controller;
+    }
 
     const active = ctrlHelpers.getActiveControllerRole();
     ctrlHelpers.makeMappingList(_controls, _staged, active, "button");
@@ -483,7 +591,5 @@ window.settings.controls = (function()
     reset,
     save,
     hasPendingChanges,
-    _controls, // debug export
-    _staged, // debug export
-  }
+  };
 })();

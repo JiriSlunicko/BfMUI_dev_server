@@ -104,6 +104,19 @@ window.utils = (function()
   }
 
 
+  /** Remove all children from an element.
+   * 
+   * @param {Element} elem 
+   */
+  function removeChildren(elem) {
+    // not using direct foreach because that mutates
+    // the collection and ends up skipping children.
+    Array.from(elem.children).forEach(child => {
+      child.remove();
+    });
+  }
+
+
   return {
     qs: (sel) => document.querySelector(sel),
     qsa: (sel) => document.querySelectorAll(sel),
@@ -111,5 +124,6 @@ window.utils = (function()
     textInputToRange,
     isMobile,
     coalesceUndef,
-  }
+    removeChildren,
+  };
 })();

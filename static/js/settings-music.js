@@ -13,22 +13,35 @@ window.settings.music = (function()
     // volume
     const volumePlaceholder = utils.qs("#settings-music-volume-placeholder");
     volumePlaceholder.outerHTML = ui.makeRangeTextInputPair(
-      "settings-music-volume", "Volume %", {
-        bounds: {min: 0.0, max: 100}, step: 0.01, value: 0,
-        scaling: "logarithmic", textInputClassOverride: "w7ch"
-      }, "mb16"
+      "settings-music-volume",
+      "Volume %",
+      {
+        bounds: {
+          min: 0.0,
+          max: 100,
+        },
+        step: 0.01,
+        value: 0,
+        scaling: "logarithmic",
+        textInputClassOverride: "w7ch",
+      },
+      "mb16",
     );
-    utils.qs(`label[for="settings-music-volume-text"]`).addEventListener("slider-change", (e) => {
-      if (e.detail.byUser) {
-        _staged.volume = parseFloat(e.detail.value);
-      }
+    const sliderWrapper = utils.qs(`label[for="settings-music-volume-text"]`);
+    sliderWrapper.addEventListener("slider-change", (e) => {
+      if (!e.detail.byUser) return; // automated changes -> don't stage
+      
+      _staged.volume = parseFloat(e.detail.value);
     });
 
     // submit
     utils.qs("#settings-music-submit-btn").addEventListener("click",
       _.throttle(() => {
-        if (hasPendingChanges()) save();
-      }, 1000, {trailing: false}));
+        if (hasPendingChanges()) {
+          save();
+        }
+      }, 1000, { trailing: false, })
+    );
     // reset
     utils.qs("#settings-music-reset-btn").addEventListener("click", reset);
 
@@ -38,8 +51,9 @@ window.settings.music = (function()
 
   async function load() {
     const musicEnabled = await _fetchData(backend);
-    if (musicEnabled === null)
+    if (musicEnabled === null) {
       return false; // loading error
+    }
     _render();
     return true;
   }
@@ -83,6 +97,7 @@ window.settings.music = (function()
 
 
   /** Load fresh data from the server into _music.
+   * 
    * @param {object} globalServer backend - .musicEnabled will be updated
    * @returns {Promise<boolean|null>} true = music enabled, false = not enabled, null = error
    */
@@ -121,6 +136,7 @@ window.settings.music = (function()
 
 
   /** Convert <0.0000,1.0000> to <0.00,100.00>
+   * 
    * @param {number} val backend value
    * @returns {number} multiplied by 100 and rounded to 2 decimals
    */
@@ -129,6 +145,7 @@ window.settings.music = (function()
   }
 
   /** Convert <0.00,100.00> to <0.0000,1.0000>
+   * 
    * @param {number} val frontend value
    * @returns {number} rounded to 2 decimal and divided by 100
    */
@@ -148,8 +165,11 @@ window.settings.music = (function()
     musicPanel.classList.remove("hidden");
     musicPanel.querySelector("#music-error")?.remove();
     const textInput = musicPanel.querySelector("#settings-music-volume-text");
-    textInput.value = (utils.coalesceUndef(_staged.volume, _music.volume)).toFixed(2);
-    textInput.dispatchEvent(new CustomEvent("backend-refresh", { bubbles: true }));
+    textInput.value = (
+      utils.coalesceUndef(_staged.volume, _music.volume)
+    ).toFixed(2);
+    textInput.dispatchEvent(
+      new CustomEvent("backend-refresh", { bubbles: true, }));
   }
 
 
@@ -160,5 +180,5 @@ window.settings.music = (function()
     reset,
     save,
     hasPendingChanges,
-  }
+  };
 })();

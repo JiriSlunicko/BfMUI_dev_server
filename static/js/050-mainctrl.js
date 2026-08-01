@@ -38,7 +38,7 @@ window.backend =
     trimGet: "/settings/trim/",
     trimPost: "/settings/trim/",
   },
-}
+};
 
 
 // module for navigating between pages etc
@@ -128,8 +128,8 @@ window.nav = (function()
     getCurrentPage: () => _currentPage,
     init,
     reloadApp,
-    gotoPage
-  }
+    gotoPage,
+  };
 })();
 
 

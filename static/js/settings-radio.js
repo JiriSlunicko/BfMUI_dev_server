@@ -21,43 +21,74 @@ window.settings.radio = (function()
     // main channel
     const channelPlaceholder = utils.qs("#settings-radio-channel-placeholder");
     channelPlaceholder.outerHTML = ui.makeRangeTextInputPair(
-      "settings-radio-channel", "Channel", {
-        bounds: {min: 0, max: 125}, step: 1, value: 0, scaling: "linear", incrementButtons: true
-      }, "mb16"
+      "settings-radio-channel",
+      "Channel",
+      {
+        bounds: {
+          min: 0,
+          max: 125
+        },
+        step: 1,
+        value: 0,
+        scaling: "linear",
+        incrementButtons: true,
+      },
+      "mb16"
     );
-    utils.qs(`label[for="settings-radio-channel-text"]`).addEventListener("slider-change", (e) => {
-      if (e.detail.byUser) {
-        _staged.channel = parseInt(e.detail.value);
-      }
+    const sliderWrapperPrimary = utils.qs(`label[for="settings-radio-channel-text"]`);
+    sliderWrapperPrimary.addEventListener("slider-change", (e) => {
+      if (!e.detail.byUser) return; // automated changes -> don't stage
+
+      _staged.channel = parseInt(e.detail.value);
     });
 
     // feedback channel
     const fbcPlaceholder = utils.qs("#settings-radio-feedback-channel-placeholder");
     fbcPlaceholder.outerHTML = ui.makeRangeTextInputPair(
-      "settings-radio-feedback-channel", "Feedback channel", {
-      bounds: { min: 0, max: 125 }, step: 1, value: 0, scaling: "linear", incrementButtons: true
-    }, "mb16"
+      "settings-radio-feedback-channel",
+      "Feedback channel",
+      {
+        bounds: {
+          min: 0,
+          max: 125,
+        },
+        step: 1,
+        value: 0,
+        scaling: "linear",
+        incrementButtons: true,
+      },
+      "mb16"
     );
-    utils.qs(`label[for="settings-radio-feedback-channel-text"]`).addEventListener(
-      "slider-change",
-      (e) => {
-        if (e.detail.byUser) {
-          _staged.feedbackChannel = parseInt(e.detail.value);
-        }
+    const sliderWrapperFeedback = utils.qs(`label[for="settings-radio-feedback-channel-text"]`);
+    sliderWrapperFeedback.addEventListener("slider-change", (e) => {
+        if (!e.detail.byUser) return; // automated changes -> don't stage
+
+        _staged.feedbackChannel = parseInt(e.detail.value);
       }
     );
 
     // PA
     const PAPlaceholder = utils.qs("#settings-radio-pa-placeholder");
     PAPlaceholder.outerHTML = ui.makeRangeTextInputPair(
-      "settings-radio-pa", "Power amp level", {
-        bounds: {min: 0, max: 3}, step: 1, value: 0, scaling: "linear", incrementButtons: true
-      }, "f-grow"
+      "settings-radio-pa",
+      "Power amp level",
+      {
+        bounds: {
+          min: 0,
+          max: 3,
+        },
+        step: 1,
+        value: 0,
+        scaling: "linear",
+        incrementButtons: true,
+      },
+      "f-grow"
     );
-    utils.qs(`label[for="settings-radio-pa-text"]`).addEventListener("slider-change", (e) => {
-      if (e.detail.byUser) {
-        _staged.paLevel = parseInt(e.detail.value);
-      }
+    const sliderWrapperPA = utils.qs(`label[for="settings-radio-pa-text"]`);
+    sliderWrapperPA.addEventListener("slider-change", (e) => {
+      if (!e.detail.byUser) return; // automated changes -> don't stage
+
+      _staged.paLevel = parseInt(e.detail.value);
     });
 
     // feedback on/off
@@ -69,7 +100,8 @@ window.settings.radio = (function()
     utils.qs("#settings-radio-submit-btn").addEventListener("click",
       _.throttle(() => {
         if (hasPendingChanges()) save();
-      }, 1000, {trailing: false}));
+      }, 1000, { trailing: false, })
+    );
     // reset
     utils.qs("#settings-radio-reset-btn").addEventListener("click", reset);
 
@@ -143,6 +175,7 @@ window.settings.radio = (function()
 
 
   /** Load fresh data from the server into _radio.
+   * 
    * @returns {Promise<boolean>} success
    */
   function _fetchData() {
@@ -165,10 +198,10 @@ window.settings.radio = (function()
     const radioPanel = utils.qs("#settings-radio");
 
     if (!_lastFetchOk) {
-      if (radioPanel.querySelector("#radio-error") === null)
+      if (radioPanel.querySelector("#radio-error") === null) {
         radioPanel.insertAdjacentHTML("beforeend", `
-          <p id="radio-error">Failed to fetch data.</p>`
-        );
+          <p id="radio-error">Failed to fetch data.</p>`);
+      }
       return;
     }
 
@@ -194,5 +227,5 @@ window.settings.radio = (function()
     reset,
     save,
     hasPendingChanges,
-  }
+  };
 })();

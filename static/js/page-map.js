@@ -1,4 +1,5 @@
-window.pages.mapPage = (function() {
+window.pages.mapPage = (function()
+{
   let _map = null;
   const _maxRadiusKm = 10;
   const _approxTileFileSizeMB = 0.04;
@@ -42,18 +43,21 @@ window.pages.mapPage = (function() {
         keepCurrentZoomLevel: false,
         drawCircle: true,
         showPopup: true,
-        locateOptions: { enableHighAccuracy: true },
+        locateOptions: {
+          enableHighAccuracy: true,
+        },
         onLocationError: (err) => {
           switch (err.code) {
             case 1: // permission denied by user
+              ui.makeToast(null, "You denied the necessary permissions.");
               return;
             case 2: // geolocation fail
             case 3: // geolocation timeout
             default:
-              ui.makePopup(
-                "confirm",
-                `Failed to locate:\n\n${err.toString()}`,
-                "Geolocation error"
+              ui.makeToast(
+                "error",
+                `Geolocation error:\n\n${err.toString()}`,
+                5000
               );
           }
         }
@@ -75,17 +79,17 @@ window.pages.mapPage = (function() {
       {
         successHandler: (resp) => {
           abortFlag = resp.jobs.length > 0; // job already running
-          if (abortFlag) {
-            ui.makeToast(
-              "error",
-              "A download is already in progress, please wait for it to finish."
-            );
-          }
         },
         failureHandler: ajax.handleJsonAjaxFail,
       }
     );
-    if (abortFlag) return;
+    if (abortFlag) {
+      ui.makeToast(
+        "error",
+        "A download is already in progress, please wait for it to finish."
+      );
+      return;
+    }
 
     const lat = e.latlng.lat;
     const lng = e.latlng.lng;
@@ -101,19 +105,19 @@ window.pages.mapPage = (function() {
       + `the tile server's ToS.`,
       "Download map?"
     );
-    if (radius === null) { return; }
+    if (radius === null) return; // user cancel
     radius = parseFloat(radius.toString().replace(",", "."));
     if (_.isNaN(radius) || !radius || radius <= 0 || radius > _maxRadiusKm) {
-      ui.makeToast("error", "Please enter a number (0–" + _maxRadiusKm + ").");
+      ui.makeToast(
+        "error",
+        `Please enter a positive number up to ${_maxRadiusKm}.`
+      );
       return;
     }
 
     // get & visualise estimate
     const downloadParams = _getDownloadParameters(lat, lng, radius);
-    if (_previewRect !== null) _map.removeLayer(_previewRect);
-    _previewRect = L.rectangle(downloadParams.bounds, {
-      stroke: false, fill: true, fillOpacity: 0.3, fillColor: "red"
-    }).addTo(_map);
+    _setPreviewRect(downloadParams.bounds);
 
     // confirm scope
     const consent = await ui.makePopup(
@@ -125,10 +129,7 @@ window.pages.mapPage = (function() {
     );
 
     // remove preview rectangle
-    if (_previewRect !== null) {
-      _map.removeLayer(_previewRect);
-    }
-    _previewRect = null;
+    _setPreviewRect(null);
 
     // go.
     if (consent) {
@@ -143,13 +144,19 @@ window.pages.mapPage = (function() {
       + `?minLng=${rect.minLng}&maxLng=${rect.maxLng}`
       + `&minLat=${rect.minLat}&maxLat=${rect.maxLat}`,
       {
-        options: {method: "POST", body: "null"},
+        options: {
+          method: "POST",
+        },
         successHandler: (resp) => {
           if (resp.ok) {
             _monitorDownload(resp.jobId);
           }
           else {
-            ui.makeToast("error", `Something failed: ${JSON.stringify(resp)}`);
+            ui.makeToast(
+              "error",
+              `Something failed: ${JSON.stringify(resp)}`,
+              5000
+            );
           }
         },
         failureHandler: ajax.handleJsonAjaxFail,
@@ -166,10 +173,16 @@ window.pages.mapPage = (function() {
     okBar.style.width = "0%";
     errBar.style.width = "0%";
 
+    let polling = true;
+
     const _handleResp = (resp) => {
       // dead :(
       if (resp.fail) {
-        ui.makeToast("error", `Tile download job fail:\n\n${resp.msg}`);
+        ui.makeToast(
+          "error",
+          `Tile download job fail:\n\n${resp.msg}`,
+          5000
+        );
         polling = false; // BREAK
       }
 
@@ -178,7 +191,7 @@ window.pages.mapPage = (function() {
         100 * (resp.meta.downloaded + resp.meta.skipped) / resp.meta.total);
       let percentErr = Math.round(
         100 * resp.meta.failed / resp.meta.total);
-      percentErr = Math.min(percentErr, 100 - percentOk);
+      percentErr = Math.min(percentErr, 100 - percentOk); // make sure the sum's <=100
       okBar.style.width = `${percentOk}%`;
       errBar.style.width = `${percentErr}%`;
 
@@ -201,7 +214,6 @@ window.pages.mapPage = (function() {
       }
     }
 
-    let polling = true;
     while (polling) {
       await new Promise(r => setTimeout(r, 1000)); // wait
       await ajax.fetchWithTimeout(
@@ -239,9 +251,12 @@ window.pages.mapPage = (function() {
   }
 
 
-  function _get_rect_around(lat, lng, rad) {
-    const dLat = rad / 111.32;
-    const dLng = rad / (111.32 * Math.cos(_toRad(lat)));
+  function _get_rect_around(lat, lng, radiusKm) {
+    // this is a "good enough" approximation.
+    // 111.32 = avg. km per ° lat/lng at the equator;
+    // uniform for lat, scales for lng depending on lat
+    const dLat = radiusKm / 111.32;
+    const dLng = radiusKm / (111.32 * Math.cos(_toRad(lat)));
     return {
       minLat: _.clamp(lat - dLat, _minLat, _maxLat),
       maxLat: _.clamp(lat + dLat, _minLat, _maxLat),
@@ -282,10 +297,33 @@ window.pages.mapPage = (function() {
     return {total, rect, bounds};
   }
 
+
+  function _setPreviewRect(bounds = null) {
+    // unset
+    if (_previewRect !== null) {
+      _map.removeLayer(_previewRect);
+    }
+    _previewRect = null;
+
+    // if bounds provided -> create new
+    if (bounds !== null) {
+      _previewRect = L.rectangle(
+        bounds,
+        {
+          stroke: false,
+          fill: true,
+          fillOpacity: 0.3,
+          fillColor: "red",
+        }
+      ).addTo(_map);
+    }
+  }
+
+
   // public API
   return {
     init: () => {},
     activate,
     deactivate: () => {},
-  }
+  };
 })();

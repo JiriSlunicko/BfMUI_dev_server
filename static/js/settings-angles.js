@@ -14,10 +14,11 @@ window.settings.maxSurfaceAngles = (function()
     surfaces: {},
   }
 
-  const _throttleSave = _.throttle(save, 1000, {trailing: false});
+  const _throttleSave = _.throttle(save, 1000, { trailing: false, });
 
 
   async function init() {
+    // apply / reset buttons
     utils.qs("#plane-angles-inner").addEventListener("click", function (e) {
       const applyButton = e.target.closest("#plane-angles-submit-btn");
       if (applyButton && hasPendingChanges()) {
@@ -32,8 +33,9 @@ window.settings.maxSurfaceAngles = (function()
       }
     });
 
+    // sliders: stage changes on user edit
     utils.qs("#plane-angles-inner").addEventListener("slider-change", function (e) {
-      if (!e.detail.byUser) return;
+      if (!e.detail.byUser) return; // automated changes -> don't stage
 
       const slider = e.target.closest(".range-text-pair");
       if (!slider) return;
@@ -93,8 +95,9 @@ window.settings.maxSurfaceAngles = (function()
 
   function hasPendingChanges() {
     for (const [surface, serverValue] of Object.entries(_maxSurfaceAngles.surfaces)) {
-      if (_staged[surface] !== undefined && _staged[surface] !== serverValue)
+      if (_staged[surface] !== undefined && _staged[surface] !== serverValue) {
         return true;
+      }
     }
     return false;
   }
@@ -136,25 +139,34 @@ window.settings.maxSurfaceAngles = (function()
       if (myWrapper === null) {
         // create the UI element if not exists
         container.innerHTML += ui.makeRangeTextInputPair(
-          "plane-angles-" + surface, surface, {
-          bounds: { min: min, max: max }, step: 1, value: maxAngle, scaling: "linear"
-        }
+          `plane-angles-${surface}`,
+          surface,
+          {
+            bounds: {
+              min: min,
+              max: max,
+            },
+            step: 1,
+            value: maxAngle,
+            scaling: "linear",
+          }
         );
       } else {
         // or update an existing element
         const textInput = myWrapper.querySelector("input[type=text]");
         textInput.value = maxAngle;
-        textInput.dispatchEvent(new CustomEvent("backend-refresh", { bubbles: true }));
+        textInput.dispatchEvent(
+          new CustomEvent("backend-refresh", { bubbles: true, }));
       }
     }
 
     // make apply button if not exists
     if (container.querySelector("#plane-angles-submit-btn") === null) {
       container.insertAdjacentHTML("beforeend", `
-          <div class="flex-r f-g8">
-            <button type="button" class="btn" id="plane-angles-submit-btn">Save</button>
-            <button type="button" class="btn" id="plane-angles-reset-btn">Reset</button>
-          </div>`);
+        <div class="flex-r f-g8">
+          <button type="button" class="btn" id="plane-angles-submit-btn">Save</button>
+          <button type="button" class="btn" id="plane-angles-reset-btn">Reset</button>
+        </div>`);
     }
   }
 
@@ -166,5 +178,5 @@ window.settings.maxSurfaceAngles = (function()
     reset,
     save,
     hasPendingChanges,
-  }
+  };
 })();

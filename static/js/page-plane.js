@@ -1,8 +1,9 @@
-window.pages.plane = (function() {
+window.pages.plane = (function()
+{
   // public API
   return {
     init: () => {},
     activate: () => {},
     deactivate: () => {},
-  }
+  };
 })();
