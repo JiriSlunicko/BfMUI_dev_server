@@ -53,6 +53,11 @@ jobs:
           mkdir extracted
           powershell -Command "Expand-Archive -Path dist/BfMUI_desktop.zip -DestinationPath extracted"
 
+      - name: DEBUG - inspect extracted directory
+        run: |
+          Get-ChildItem -Force -Recurse extracted | Select-Object FullName, Length, Attributes
+        shell: pwsh
+
       - name: Upload artifact - desktop
         uses: actions/upload-artifact@v4
         with:
