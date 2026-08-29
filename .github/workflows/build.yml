@@ -31,38 +31,21 @@ jobs:
           echo "APP_VERSION=$version" >> $env:GITHUB_ENV
         shell: pwsh
 
-      - name: DEBUG - print version
-        run: echo "Version = $env:APP_VERSION"
-        shell: pwsh
-
       - name: Run build script
         run: |
           python build.py
-
-      - name: DEBUG - inspect generated zip
-        run: |
-          Write-Host "Generated ZIP:"
-          Get-Item dist/BfMUI_desktop.zip | Format-List FullName,Length
-
-          Write-Host "`nZIP contents:"
-          tar -tf dist/BfMUI_desktop.zip
-        shell: pwsh
 
       - name: Unzip build results
         run: |
           mkdir extracted
           powershell -Command "Expand-Archive -Path dist/BfMUI_desktop.zip -DestinationPath extracted"
 
-      - name: DEBUG - inspect extracted directory
-        run: |
-          Get-ChildItem -Force -Recurse extracted | Select-Object FullName, Length, Attributes
-        shell: pwsh
-
       - name: Upload artifact - desktop
         uses: actions/upload-artifact@v4
         with:
           name: BfMUI_desktop_dist-${{ env.APP_VERSION }}
           path: extracted/
+          include-hidden-files: true
       
       - name: Upload artifact - android
         uses: actions/upload-artifact@v4
