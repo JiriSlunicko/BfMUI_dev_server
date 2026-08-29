@@ -39,6 +39,15 @@ jobs:
         run: |
           python build.py
 
+      - name: DEBUG - inspect generated zip
+        run: |
+          Write-Host "Generated ZIP:"
+          Get-Item dist/BfMUI_desktop.zip | Format-List FullName,Length
+
+          Write-Host "`nZIP contents:"
+          tar -tf dist/BfMUI_desktop.zip
+        shell: pwsh
+
       - name: Unzip build results
         run: |
           mkdir extracted
