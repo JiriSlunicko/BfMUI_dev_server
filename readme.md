@@ -19,7 +19,7 @@ should be necessary under normal circumstances.
 1. Download the repo or the android artifact (under Actions on GitHub).
 2. Copy `bfmui.apk` to your phone.
 3. Install the app, confirming you're OK with installing from unknown sources and all that.
-4. Open the app.
+4. Open the app...
 
 ## Detailed info
 Most business logic is delegated to Bloodfly Control server, separate from this repo. The app will
