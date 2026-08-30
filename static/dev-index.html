@@ -130,15 +130,18 @@
         <div id="home-logging">
           <h2>BfMUI app log</h2>
           <div id="home-log-settings" class="flex-r f-g8 mb16">
-            <button class="btn log-sorter" id="home-log-sorter" data-dir="desc"><span>▼</span></button>
-            <select class="log-filter" id="home-log-filter">
+            <button type="button" class="btn log-sorter" id="home-log-sorter" data-dir="desc">
+              <span>▼</span>
+            </button>
+            <select class="log-filter" id="home-log-filter" autocomplete="off">
               <option value="error,warn,info,debug">debug</option>
-              <option value="error,warn,info" selected>info</option>
-              <option value="error,warn">warn</option>
-              <option value="error">error</option>
+              <option value="error,warn,info" selected>default</option>
+              <option value="error,warn">warnings, errors</option>
+              <option value="error">errors only</option>
             </select>
+            <button type="button" class="btn log-pauser" id="home-log-pauser" data-paused="">Pause</button>
           </div>
-          <div class="flex-c f-g12 log-container" id="home-log"
+          <div class="flex-c log-container" id="home-log"
                data-sort="desc" data-show="error,warn,info"></div>
         </div>
       </div>

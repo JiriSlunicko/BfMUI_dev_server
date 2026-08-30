@@ -358,9 +358,11 @@ window.serialiser = (function()
 // the actual logger
 window.logger = (function()
 {
-  let _appLogEntryTTL = 10; // seconds
+  let _appLogEntryTTL = 300; // seconds
   let _appLogEntries = [];
   const _maxStoredEntries = 256;
+  
+  let _isRenderingPaused = false;
 
 
   function _browserConsoleLog(severity, module, time, data) {
@@ -393,6 +395,8 @@ window.logger = (function()
   function appLoggerRender() {
     // skip the render if we're not actually on the page
     if (nav.getCurrentPage() !== "home") return;
+    // skip the render if the user has paused rendering
+    if (_isRenderingPaused) return;
 
     const logContainer = utils.qs("#home-log");
     utils.removeChildren(logContainer);
@@ -449,6 +453,15 @@ window.logger = (function()
     container.querySelector(".log-filter").addEventListener("change", function() {
       const newFilter = this.value;
       container.querySelector(".log-container").dataset.show = newFilter;
+    });
+
+    // pause / unpause
+    container.querySelector(".log-pauser").addEventListener("click", function() {
+      const newPaused = this.dataset.paused === "";
+      this.dataset.paused = newPaused ? "1" : "";
+      this.textContent = newPaused ? "Unpause" : "Pause";
+      _isRenderingPaused = newPaused;
+      if (!newPaused) appLoggerRender();
     });
   }
 

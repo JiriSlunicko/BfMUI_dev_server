@@ -71,24 +71,44 @@
     <div class="main-content">
 
       <div class="view-tab flex-c" id="view-home">
-        <div id="home-intro" class="desktop-panel">
-          <h2>Bloodfly MUI</h2>
-          <p>Welcome to the Bloodfly Mobile UI app.</p>
-          <p>If the app fails to connect and start polling automatically,
-            go to Settings and configure the backend IP and port. This must
-            point to a Bloodfly Control server running via HTTP (not HTTPS).</p>
-          <p>Enjoy. It's awesome.</p>
-          <button type="button" class="btn" id="home-hide-intro-btn">Hide & don't show again</button>
+        <div class="flex-c f-g24" id="home-overview">
+          <div id="home-intro" class="desktop-panel">
+            <h2>Bloodfly MUI</h2>
+            <p>Welcome to the Bloodfly Mobile UI app.</p>
+            <p>If the app fails to connect and start polling automatically,
+              go to Settings and configure the backend IP and port. This must
+              point to a Bloodfly Control server running via HTTP (not HTTPS).</p>
+            <p>Enjoy. It's awesome.</p>
+            <button type="button" class="btn" id="home-hide-intro-btn">Hide & don't show again</button>
+          </div>
+
+          <div id="home-checklist">
+            <h2>Flight checklist</h2>
+            <div id="home-checklist-inner" class="flex-c f-g12"><p>Not connected.</p></div>
+          </div>
+
+          <div id="home-sysinfo">
+            <h2>System info</h2>
+            <div id="home-sysinfo-inner" class="flex-c f-g12"><p>Not connected.</p></div>
+          </div>
         </div>
 
-        <div id="home-checklist">
-          <h2>Flight checklist</h2>
-          <div id="home-checklist-inner" class="flex-c f-g12"><p>Not connected.</p></div>
-        </div>
-
-        <div id="home-sysinfo">
-          <h2>System info</h2>
-          <div id="home-sysinfo-inner" class="flex-c f-g12"><p>Not connected.</p></div>
+        <div id="home-logging">
+          <h2>BfMUI app log</h2>
+          <div id="home-log-settings" class="flex-r f-g8 mb16">
+            <button type="button" class="btn log-sorter" id="home-log-sorter" data-dir="desc">
+              <span>▼</span>
+            </button>
+            <select class="log-filter" id="home-log-filter" autocomplete="off">
+              <option value="error,warn,info,debug">debug</option>
+              <option value="error,warn,info" selected>default</option>
+              <option value="error,warn">warnings, errors</option>
+              <option value="error">errors only</option>
+            </select>
+            <button type="button" class="btn log-pauser" id="home-log-pauser" data-paused="">Pause</button>
+          </div>
+          <div class="flex-c log-container" id="home-log"
+               data-sort="desc" data-show="error,warn,info"></div>
         </div>
       </div>
 

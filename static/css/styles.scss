@@ -232,6 +232,10 @@ input[type=range]::-moz-range-thumb {
 
 .flex-c.log-container[data-sort=desc] { flex-direction: column-reverse; }
 
+.log-container {
+    @media only screen and (min-width: 1024px) { gap: 12px; }
+}
+
 .log-container .log-entry { display: none; }
 .log-container[data-show*=error] .log-entry-error { display: block; }
 .log-container[data-show*=warn]  .log-entry-warn  { display: block; }
@@ -239,7 +243,10 @@ input[type=range]::-moz-range-thumb {
 .log-container[data-show*=debug] .log-entry-debug { display: block; }
 
 .log-entry {
-    @media only screen and (max-width: 1023px) { padding-bottom: 12px; }
+    @media only screen and (max-width: 1023px) {
+        margin: 0 -8px; // ale fuj...
+        padding: 12px 8px;
+    }
 
     &.log-entry-debug { background-color: var(--log-debug); }
     &.log-entry-info  { background-color: var(--log-info); }

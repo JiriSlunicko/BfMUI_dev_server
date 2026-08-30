@@ -366,6 +366,12 @@ input[type=range]::-moz-range-thumb {
   flex-direction: column-reverse;
 }
 
+@media only screen and (min-width: 1024px) {
+  .log-container {
+    gap: 12px;
+  }
+}
+
 .log-container .log-entry {
   display: none;
 }
@@ -388,7 +394,8 @@ input[type=range]::-moz-range-thumb {
 
 @media only screen and (max-width: 1023px) {
   .log-entry {
-    padding-bottom: 12px;
+    margin: 0 -8px;
+    padding: 12px 8px;
   }
 }
 .log-entry.log-entry-debug {
