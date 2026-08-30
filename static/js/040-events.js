@@ -3,6 +3,8 @@
 */
 
 window.events = (function () {
+  const _m = "events";
+
   let _eventStream = null;
   let _lastBoot = null;
   let _connectInterval = null;
@@ -20,7 +22,7 @@ window.events = (function () {
   /** Shorthand for "if in debug mode, print to console". */
   function _debugLog(...data) {
     if (_debugMode) {
-      console.debug(...data);
+      logger.debug(_m, ...data);
     }
   }
 
@@ -65,19 +67,20 @@ window.events = (function () {
     // when successfully connected, set the flags to stop connection attempts
     _eventStream.onopen = () => {
       _debugLog("Opened new event stream.", _eventStream);
+      pages.settings.pollStart(true);
       _hasConnected = true;
       _isAttemptingReconnect = false;
     }
 
     // handle incoming messages
     _eventStream.onmessage = (msg) => {
-      _debugLog(msg.data);
+      _debugLog("Received message.", msg.data);
 
       let asJson = null;
       try {
         asJson = JSON.parse(msg.data);
       } catch (err) {
-        console.error("Event source received a message that's not valid JSON.", msg, err);
+        logger.error(_m, "Event source received a message that's not valid JSON.", msg, err);
         return;
       }
 
@@ -98,7 +101,8 @@ window.events = (function () {
 
     // if the stream fails, try to reconnect
     _eventStream.onerror = (ev) => {
-      _debugLog("Event stream fail.");
+      logger.error(_m, "Event stream failed.", ev);
+      pages.settings.pollPause(true);
 
       _isAttemptingReconnect = false;
       tryConnectionUntilOk();
@@ -125,7 +129,7 @@ window.events = (function () {
     let changedDomains = new Set();
 
     for (const backendEvent of eventArray) {
-      _debugLog(new Date().toLocaleString(), backendEvent);
+      _debugLog(backendEvent);
 
       switch (backendEvent) {
         case "AvailableSerialPortsChanged":
@@ -155,7 +159,7 @@ window.events = (function () {
           break;
 
         default:
-          console.warn("Received unknown event", backendEvent);
+          logger.warn(_m, "Received unknown event", backendEvent);
       }
     }
 

@@ -1,5 +1,7 @@
 window.settings.controls = (function()
 {
+  const _m = "settings.controls";
+
   let _initialised = false;
 
   let _staged = {
@@ -149,7 +151,7 @@ window.settings.controls = (function()
       payload.PlaneAxesSettings[controller] = processedMappings;
     }
 
-    console.debug("controls payload:", payload);
+    logger.debug(_m, "controls payload:", payload);
 
     const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.controlsPost,
@@ -250,7 +252,7 @@ window.settings.controls = (function()
    */
   function _makeMappingModal(mapping) {
     if (utils.qs(".modal-bg")) {
-      console.error("Tried to open a control mapping modal while another modal was open.");
+      logger.error(_m, "Tried to open a control mapping modal while another modal was open.");
       return;
     }
 
@@ -440,7 +442,7 @@ window.settings.controls = (function()
   function _applyCtrlMapping(kind) {
     const modal = utils.qs(".modal-bg[data-output]");
     if (!modal) {
-      console.error("Tried to applyCtrlMapping while the mapping modal wasn't open.");
+      logger.error(_m, "Tried to applyCtrlMapping while the mapping modal wasn't open.");
       return;
     }
 

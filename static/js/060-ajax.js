@@ -2,6 +2,8 @@
 
 window.ajax = (function()
 {
+  const _m = "ajax";
+
   /**
    * @typedef {object} AjaxConfig Defines parameters for a fetchWithTimeout.
    * @property {number} [timeout] ms before the request is aborted, def 5000
@@ -39,7 +41,7 @@ window.ajax = (function()
     } catch (err) {
       // connection errors
       clearTimeout(abortTimeoutId);
-      console.error(config.options?.method ?? "GET", url, err);
+      logger.error(_m, config.options?.method ?? "GET", url, err);
       config.failureHandler?.(rawResp, err);
       if (config.emitErrorToasts) {
         ui.makeToast(
@@ -57,9 +59,11 @@ window.ajax = (function()
 
     if (rawResp) {
       let parsed;
+      let is512 = false;
       try {
         // promote non-2xx statuses to errors if we should
         notOkMeansError = config.notOkMeansError ?? true;
+        is512 = rawResp.status === 512;
         if (!rawResp.ok && notOkMeansError) {
           throw new Error(`HTTP ${rawResp.status}`);
         }
@@ -76,9 +80,9 @@ window.ajax = (function()
         }
       } catch (err) {
         // response status code & parse errors
-        console.error(config.options?.method ?? "GET", url, err);
+        if (!is512) logger.error(_m, config.options?.method ?? "GET", url, err);
         config.failureHandler?.(rawResp, err);
-        if (config.emitErrorToasts) {
+        if (!is512 && config.emitErrorToasts) {
           ui.makeToast(
             "error",
             `${config.options?.method ?? "GET"} ${url} failed (bad response):\n\n${err.toString()}`,
@@ -101,6 +105,13 @@ window.ajax = (function()
    * @param {Error} error
    */
   async function handleJsonAjaxFail(rawResp, error) {
+    if (!rawResp) {
+      ui.makeToast(
+        "error",
+        `AJAX fail - no response exists\n\n${error.toString()}`,
+      );
+      return;
+    }
     try {
       const jsonResp = await rawResp.json();
       ui.makeToast(

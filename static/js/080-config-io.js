@@ -2,6 +2,8 @@
 
 window.serverConfig = (function()
 {
+  const _m = "serverConfig";
+
   let _configTypes = [];
   let _availableConfigs = {};
   const _configGroups = {
@@ -90,7 +92,7 @@ window.serverConfig = (function()
     }
 
     const payload = { ConfigType: cfgType, ConfigId: cfgName };
-    console.debug("loadConfig payload:", payload);
+    logger.debug(_m, "loadConfig payload:", payload);
 
     const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.configLoadPost,
@@ -197,7 +199,7 @@ window.serverConfig = (function()
     }
 
     const payload = { ConfigType: cfgType, ConfigId: cfgName };
-    console.debug("saveConfig payload:", payload);
+    logger.debug(_m, "saveConfig payload:", payload);
 
     const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.configSavePost,

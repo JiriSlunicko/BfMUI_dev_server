@@ -44,6 +44,8 @@ window.backend =
 // module for navigating between pages etc
 window.nav = (function()
 {
+  const _m = "nav";
+
   let _currentPage = localStorage.getItem("activeTab") || "home";
 
   /** Add navigation listeners & load the initial page. */
@@ -88,7 +90,7 @@ window.nav = (function()
   function gotoPage(targetPage) {
     const targetContainerId = "view-"+targetPage;
     if (!utils.qs("#"+targetContainerId)) {
-      console.warn(`Failed to navigate to page "${targetPage}".`);
+      logger.warn(_m, `Failed to navigate to page "${targetPage}".`);
       return;
     }
 

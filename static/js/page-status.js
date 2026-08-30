@@ -1,5 +1,7 @@
 window.pages.status = (function()
 {
+  const _m = "pages.status";
+
   let _teleData = {
     serialTimers: Array(25).fill([]),
     controllers: {},

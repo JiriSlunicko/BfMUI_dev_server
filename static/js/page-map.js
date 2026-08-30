@@ -1,5 +1,7 @@
 window.pages.mapPage = (function()
 {
+  const _m = "pages.mapPage";
+
   let _map = null;
   const _maxRadiusKm = 10;
   const _approxTileFileSizeMB = 0.04;

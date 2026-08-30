@@ -1,5 +1,7 @@
 window.settings.radio = (function()
 {
+  const _m = "settings.radio";
+
   let _lastFetchOk = null;
 
   let _staged = {
@@ -132,7 +134,7 @@ window.settings.radio = (function()
       PALevel: utils.coalesceUndef(_staged.paLevel, _radio.paLevel),
       IsPlaneFeedbackEnabled: utils.coalesceUndef(_staged.feedback, _radio.feedback),
     };
-    console.debug("radio payload:", payload);
+    logger.debug(_m, "radio payload:", payload);
 
     const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.radioPost,

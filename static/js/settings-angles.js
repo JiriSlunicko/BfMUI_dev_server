@@ -1,5 +1,7 @@
 window.settings.maxSurfaceAngles = (function()
 {
+  const _m = "settings.maxSurfaceAngles";
+
   let _initialised = false;
 
   let _staged = {};
@@ -68,7 +70,7 @@ window.settings.maxSurfaceAngles = (function()
     for (const [surface, serverValue] of Object.entries(_maxSurfaceAngles.surfaces)) {
       payload[surface] = utils.coalesceUndef(_staged[surface], serverValue);
     }
-    console.debug("max angles payload:", payload);
+    logger.debug(_m, "max angles payload:", payload);
 
     const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.maxSurfaceAnglesPost,

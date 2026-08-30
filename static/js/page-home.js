@@ -1,11 +1,14 @@
 window.pages.home = (function()
 {
+  const _m = "pages.home";
+
   let _userPreferences = {
     hideIntro: Boolean(localStorage.getItem("hideIntro")),
   }
 
   /** On DOM load:
    * - hide the intro text if desired & allow the user to hide it.
+   * - initialise the logger's settings
    * */
   function init() {
     if (_userPreferences.hideIntro) {
@@ -22,6 +25,13 @@ window.pages.home = (function()
         3000
       );
     });
+
+    logger.init();
+  }
+
+
+  function activate() {
+    logger.appLoggerRender();
   }
 
 
@@ -44,7 +54,7 @@ window.pages.home = (function()
   /** Load basic server info for the homepage. */
   async function initSysInfo() {
     if (!backend.bfcontrol) {
-      console.error("Tried to initSysInfo without any server info!");
+      logger.error(_m, "Tried to initSysInfo without any server info!");
       return;
     }
 
@@ -108,7 +118,7 @@ window.pages.home = (function()
   // public API
   return {
     init,
-    activate: ()=>{},
+    activate,
     deactivate: ()=>{},
     initSysInfo,
     updateChecklist,

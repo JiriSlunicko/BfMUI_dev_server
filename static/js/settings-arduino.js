@@ -1,5 +1,7 @@
 window.settings.arduino = (function()
 {
+  const _m = "settings.arduino";
+
   let _initialised = false;
 
   let _staged = {
@@ -165,7 +167,7 @@ window.settings.arduino = (function()
 
 
   async function _saveInternal(payload) {
-    console.debug("arduino payload:", payload);
+    logger.debug(_m, "arduino payload:", payload);
 
     const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.serialPortPost,
@@ -203,7 +205,7 @@ window.settings.arduino = (function()
         successHandler: (resp) => {
           globalServer.usingArduino = true;
           isArduinoEnabled = true;
-          console.debug("Server is using arduino.");
+          logger.debug(_m, "Server is using arduino.");
           _arduino.port = resp.SerialPortParameters?.Name ?? null;
           _arduino.baudRate = resp.SerialPortParameters?.BaudRate ?? null;
           _arduino.availablePorts = resp.AvailablePorts ?? [];
@@ -213,10 +215,10 @@ window.settings.arduino = (function()
           if (resp.status === 512) {
             globalServer.usingArduino = false;
             isArduinoEnabled = false;
-            console.debug("Server is not using arduino.");
+            logger.debug(_m, "Server is not using arduino.");
           } else {
             isArduinoEnabled = null;
-            console.debug("Arduino fetch errored unexpectedly.", err);
+            logger.debug(_m, "Arduino fetch errored unexpectedly.", err);
             ui.makeToast(
               "error",
               `AJAX fail for ${resp.url}:\n\n${err.toString()}`,

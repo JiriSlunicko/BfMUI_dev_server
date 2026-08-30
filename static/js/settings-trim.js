@@ -1,5 +1,7 @@
 window.settings.trim = (function()
 {
+  const _m = "settings.trim";
+
   let _initialised = false;
 
   let _staged = {};
@@ -68,7 +70,7 @@ window.settings.trim = (function()
     for (const [surface, serverValue] of Object.entries(_trimValues.surfaces)) {
       payload[surface] = utils.coalesceUndef(_staged[surface], serverValue);
     }
-    console.debug("trim payload:", payload);
+    logger.debug(_m, "trim payload:", payload);
 
     const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.trimPost,

@@ -16,6 +16,11 @@
     --shadow: hsla(0,10%,10%,0.75);
     --download-ok: hsl(120, 100%, 50%);
     --download-err: hsl(0, 100%, 60%);
+
+    --log-debug: unset;
+    --log-info: unset;
+    --log-warn: hsla(30, 75%, 50%, 0.2);
+    --log-error: hsla(0, 75%, 50%, 0.2);
 }
 
 *, *::before, *::after {
@@ -216,6 +221,61 @@ input[type=range]::-moz-range-thumb {
 }
 
 
+
+/**********
+ * LOGGER *
+ **********/
+.log-sorter[data-dir=asc] span {
+    display: block;
+    transform: rotate(180deg);
+}
+
+.flex-c.log-container[data-sort=desc] { flex-direction: column-reverse; }
+
+.log-container .log-entry { display: none; }
+.log-container[data-show*=error] .log-entry-error { display: block; }
+.log-container[data-show*=warn]  .log-entry-warn  { display: block; }
+.log-container[data-show*=info]  .log-entry-info  { display: block; }
+.log-container[data-show*=debug] .log-entry-debug { display: block; }
+
+.log-entry {
+    @media only screen and (max-width: 1023px) { padding-bottom: 12px; }
+
+    &.log-entry-debug { background-color: var(--log-debug); }
+    &.log-entry-info  { background-color: var(--log-info); }
+    &.log-entry-warn  { background-color: var(--log-warn); }
+    &.log-entry-error { background-color: var(--log-error); }
+
+    .log-entry-module span { font-family: monospace; }
+
+    details {
+        summary {
+            padding: 2px 4px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        div {
+            margin-top: 8px;
+            padding: 4px 8px;
+            background-color: var(--bg-dark);
+            color: var(--bg-brightest);
+            overflow: auto;
+            scrollbar-width: none;
+        }
+    
+        pre { line-height: 1.6; }
+
+        hr {
+            height: 1px;
+            border: none;
+            background-color: var(--bg-medium);
+        }
+    }
+}
+
+
+
 /*******************
  * BASIC STRUCTURE *
  *******************/
@@ -339,8 +399,11 @@ section {
 /***************
  * HOME SCREEN *
  ***************/
-#view-home {
-    max-width: 480px;
+@media only screen and (min-width: 1024px) {
+    #view-home {
+        display: grid;
+        grid-template-columns: repeat(2, calc(50% - 16px));
+    }
 }
 @media only screen and (max-width: 1023px) {
     #home-hide-intro-btn { margin-bottom: 24px; }

@@ -10,6 +10,7 @@
   <script src="/js/deps/lodash.min.js" defer type="application/javascript"></script>
   <script src="/js/deps/leaflet.js" defer type="application/javascript"></script>
   <script src="/js/deps/L.Control.Locate.min.js" defer type="application/javascript"></script>
+  <script src="/js/005-logging.js" defer type="application/javascript"></script>
   <script src="/js/010-utils.js" defer type="application/javascript"></script>
   <script src="/js/020-ui.js" defer type="application/javascript"></script>
   <script src="/js/030-entries.js" defer type="application/javascript"></script>
@@ -104,24 +105,41 @@
     <div class="main-content">
 
       <div class="view-tab flex-c" id="view-home">
-        <div id="home-intro" class="desktop-panel">
-          <h2>Bloodfly MUI</h2>
-          <p>Welcome to the Bloodfly Mobile UI app.</p>
-          <p>If the app fails to connect and start polling automatically,
-            go to Settings and configure the backend IP and port. This must
-            point to a Bloodfly Control server running via HTTP (not HTTPS).</p>
-          <p>Enjoy. It's awesome.</p>
-          <button type="button" class="btn" id="home-hide-intro-btn">Hide & don't show again</button>
+        <div class="flex-c f-g24" id="home-overview">
+          <div id="home-intro" class="desktop-panel">
+            <h2>Bloodfly MUI</h2>
+            <p>Welcome to the Bloodfly Mobile UI app.</p>
+            <p>If the app fails to connect and start polling automatically,
+              go to Settings and configure the backend IP and port. This must
+              point to a Bloodfly Control server running via HTTP (not HTTPS).</p>
+            <p>Enjoy. It's awesome.</p>
+            <button type="button" class="btn" id="home-hide-intro-btn">Hide & don't show again</button>
+          </div>
+
+          <div id="home-checklist">
+            <h2>Flight checklist</h2>
+            <div id="home-checklist-inner" class="flex-c f-g12"><p>Not connected.</p></div>
+          </div>
+
+          <div id="home-sysinfo">
+            <h2>System info</h2>
+            <div id="home-sysinfo-inner" class="flex-c f-g12"><p>Not connected.</p></div>
+          </div>
         </div>
 
-        <div id="home-checklist">
-          <h2>Flight checklist</h2>
-          <div id="home-checklist-inner" class="flex-c f-g12"><p>Not connected.</p></div>
-        </div>
-
-        <div id="home-sysinfo">
-          <h2>System info</h2>
-          <div id="home-sysinfo-inner" class="flex-c f-g12"><p>Not connected.</p></div>
+        <div id="home-logging">
+          <h2>BfMUI app log</h2>
+          <div id="home-log-settings" class="flex-r f-g8 mb16">
+            <button class="btn log-sorter" id="home-log-sorter" data-dir="desc"><span>▼</span></button>
+            <select class="log-filter" id="home-log-filter">
+              <option value="error,warn,info,debug">debug</option>
+              <option value="error,warn,info" selected>info</option>
+              <option value="error,warn">warn</option>
+              <option value="error">error</option>
+            </select>
+          </div>
+          <div class="flex-c f-g12 log-container" id="home-log"
+               data-sort="desc" data-show="error,warn,info"></div>
         </div>
       </div>
 

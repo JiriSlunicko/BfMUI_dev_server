@@ -2,6 +2,8 @@
 
 window.ctrlHelpers = (function()
 {
+  const _m = "ctrlHelpers";
+
   /** Read a JSON response from the controls endpoint and save its data in the app.
    * 
    * @param {object} controls the _controls property of window.pages.controls

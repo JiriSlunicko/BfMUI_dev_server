@@ -2,6 +2,8 @@
 
 window.utils = (function()
 {
+  const _m = "utils";
+
   /** Map values between 0 and 100 to min-max logarithmically or exponentially.
    * 
    * @param {number} min output at 0%

@@ -1,5 +1,7 @@
 window.pages.settings = (function()
 {
+  const _m = "pages.settings";
+
   let _polling = {
     delayMs: null,
     interval: null,
@@ -40,9 +42,9 @@ window.pages.settings = (function()
     utils.qs("#settings-connect-btn").addEventListener("click", () => {
       connect(backend);
     });
-    _polling.startBtn.addEventListener("click", _pollStart);
+    _polling.startBtn.addEventListener("click", pollStart);
     _polling.startBtn.disabled = true;
-    _polling.pauseBtn.addEventListener("click", () => _pollPause());
+    _polling.pauseBtn.addEventListener("click", () => pollPause());
     _polling.pauseBtn.disabled = true;
 
     // config saving/loading
@@ -89,14 +91,14 @@ window.pages.settings = (function()
    */
   async function connect(globalServer, retry=true, lastFailOverride=null) {
     // stop any polling, update the GUI
-    _pollPause();
+    pollPause();
     utils.qs("#settings-connection-status").textContent = "Currently not connected.";
     _polling.startBtn.disabled = true;
     _polling.pauseBtn.disabled = true;
     _connectionAttempt.busy = true;
 
     const lastFail = lastFailOverride ?? _connectionAttempt.lastFail;
-    console.debug("Attempting connection.", lastFail);
+    logger.debug(_m, "Attempting connection.", lastFail);
     if (lastFail === null) {
       ui.makeToast(
         null,
@@ -136,7 +138,7 @@ window.pages.settings = (function()
       pages.home.initSysInfo();
 
       // start polling telemetry
-      _pollStart();
+      //pollStart();
 
       // load all settings subscribed to the manager
       const settingsLoadStatus = await settingsManager.load();
@@ -144,7 +146,7 @@ window.pages.settings = (function()
       // load config storage data
       serverConfig.getFreshServerConfigs();
 
-      // open event stream
+      // open event stream (it controls telemetry polling too)
       events.tryConnectionUntilOk();
 
       // inform the user
@@ -172,8 +174,10 @@ window.pages.settings = (function()
       }
     } catch (err) {
       // if anything went wrong
-      console.error("During connect:", err);
-      _connectionAttempt.lastFail = err.toString();
+      if (!err.toString().includes("NetworkError")) {
+        logger.error(_m, "During connect:", err);
+      }
+      _connectionAttempt.lastFail = err;
       if (!retry) {
         ui.makeToast(
           "error",
@@ -195,8 +199,8 @@ window.pages.settings = (function()
 
 
   /** Start polling telemetry with the currently set interval. */
-  function _pollStart() {
-    _pollPause(true); // cancel any existing polling
+  function pollStart(silent = false) {
+    pollPause(true); // cancel any existing polling
     _polling.active = true;
 
     _polling.interval = setInterval(() => {
@@ -206,12 +210,14 @@ window.pages.settings = (function()
 
     _polling.startBtn.disabled = true;
     _polling.pauseBtn.disabled = false;
-    ui.makeToast("success", "Polling!");
+    if (!silent) {
+      ui.makeToast("success", "Polling!");
+    }
   }
 
 
   /** Stop polling telemetry. */
-  function _pollPause(silent = false) {
+  function pollPause(silent = false) {
     if (_polling.interval !== null) {
       clearInterval(_polling.interval);
       _polling.interval = null;
@@ -246,7 +252,7 @@ window.pages.settings = (function()
     // only apply changes if the new delay is actually different
     if (newPollDelay !== _polling.delayMs) {
       _polling.delayMs = newPollDelay;
-      _pollStart();
+      pollStart();
       localStorage.setItem("pollDelay", newPollDelay);
       ui.makeToast("success", `Polling interval set to ${_polling.delayMs} ms.`);
     }
@@ -314,5 +320,7 @@ window.pages.settings = (function()
     activate: ()=>{},
     deactivate: ()=>{},
     connect,
+    pollStart,
+    pollPause,
   };
 })();

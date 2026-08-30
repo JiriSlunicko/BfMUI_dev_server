@@ -2,6 +2,8 @@
 
 window.ui = (function ()
 {
+  const _m = "ui";
+  
   let _rangeTextPairsInitialised = false;
 
   let _toastFadeTimeout = null;
@@ -63,7 +65,7 @@ window.ui = (function ()
    */
   function makePopup(type, msg, title = null) {
     if (utils.qs(".modal-bg")) {
-      console.error("Tried to open a modal while one was already present.");
+      logger.error(_m, "Tried to open a modal while one was already present.");
       return false;
     }
 
@@ -130,7 +132,7 @@ window.ui = (function ()
         if (type === "prompt") {
           const userInput = utils.qs("#modal-text-input")?.value;
           if (userInput === undefined) {
-            console.error("Prompt modal resolved when it didn't exist. (what?)");
+            logger.error(_m, "Prompt modal resolved when it didn't exist. (what?)");
           }
           _resolve(userInput || "");
         } else {
@@ -204,7 +206,7 @@ window.ui = (function ()
       rangeInput.setAttribute("max", usesLogScaling ? 100 : maxScaled);
       rangeInput.setAttribute("step", usesLogScaling ? 0.1 : step);
     } catch (err) {
-      console.error("Invalid config passed to makeRangeTextInputPair.", config, err);
+      logger.error(_m, "Invalid config passed to makeRangeTextInputPair.", config, err);
       return "";
     }
 
@@ -302,17 +304,17 @@ window.ui = (function ()
     document.addEventListener("click", function(e) {
       const decrButton = e.target.closest(".range-decr");
       const incrButton = e.target.closest(".range-incr");
-      if (!decrButton || !incrButton) return;
+      if (!decrButton && !incrButton) return;
 
       const pairWrapper = e.target.closest(".range-text-pair");
       if (!pairWrapper) {
-        console.error("Increment/decrement button not within a range-text input pair");
+        logger.error(_m, "Increment/decrement button not within a range-text input pair");
         return;
       }
 
       const textInput = pairWrapper.querySelector("input[type=text]");
       if (!textInput) {
-        console.error("Increment/decrement button's wrapper has no text input");
+        logger.error(_m, "Increment/decrement button's wrapper has no text input");
         return;
       }
 

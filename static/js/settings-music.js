@@ -1,5 +1,7 @@
 window.settings.music = (function()
 {
+  const _m = "settings.music";
+
   let _staged = {
     volume: undefined,
   }
@@ -69,7 +71,7 @@ window.settings.music = (function()
     const payload = {
       Volume: _convertOutgoing(utils.coalesceUndef(_staged.volume, _music.volume)),
     };
-    console.debug("music payload:", payload);
+    logger.debug(_m, "music payload:", payload);
 
     const success = await ajax.fetchWithTimeout(
       backend.baseurl + backend.endpoints.musicPost,
@@ -110,17 +112,17 @@ window.settings.music = (function()
         successHandler: (resp) => {
           globalServer.musicEnabled = true;
           isMusicEnabled = true;
-          console.debug("Music is available.");
+          logger.debug(_m, "Music is available.");
           _music.volume = _convertIncoming(resp.Volume);
         },
         failureHandler: (resp, err) => {
           if (resp.status === 512) {
             globalServer.musicEnabled = false;
             isMusicEnabled = false;
-            console.debug("Music is not available.");
+            logger.debug(_m, "Music is not available.");
           } else {
             isMusicEnabled = null;
-            console.debug("Music fetch errored unexpectedly.", err);
+            logger.debug(_m, "Music fetch errored unexpectedly.", err);
             ui.makeToast(
               "error",
               `AJAX fail for ${resp.url}:\n\n${err.toString()}`,

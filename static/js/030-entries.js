@@ -2,6 +2,8 @@
 
 window.entries = (function ()
 {
+  const _m = "entries";
+
   /** Use the (n+1)-th entry if available, otherwise create one
    * 
    * @param {string} parentSelector immediate parent of the entry
@@ -15,7 +17,7 @@ window.entries = (function ()
   function reuseOrCreate(parentSelector, n, header, data, health = null, lastError = null) {
     const container = utils.qs(parentSelector);
     if (!container) {
-      console.error("Tried to edit entries of '" + parentSelector + "', which does not exist.");
+      logger.error(_m, `Tried to edit entries of '${parentSelector}', which does not exist.`);
       return;
     }
 
@@ -72,7 +74,7 @@ window.entries = (function ()
   function trimList(parentSelector, maxLength) {
     const container = utils.qs(parentSelector);
     if (!container) {
-      console.error("Tried to edit entries of '" + parentSelector + "', which does not exist.");
+      logger.error(_m, `Tried to edit entries of '${parentSelector}', which does not exist.`);
       return;
     }
 

@@ -31,6 +31,8 @@ class InvalidDomainInterfaceError extends Error {
 
 window.settingsManager = (function()
 {
+  const _m = "settingsManager";
+
   let _validated = null;
 
   /** Ask the specified domains to run their app load setup.
@@ -45,7 +47,7 @@ window.settingsManager = (function()
       _validated = true;
     } catch (err) {
       _validated = false;
-      console.error(`Config domain interface validation failed for '${err?.domainName}'.`,
+      logger.error(_m, `Config domain interface validation failed for '${err?.domainName}'.`,
         err?.domainContent);
       ui.makeToast("error", "CRITICAL ERROR:\n\nConfiguration domain interface validation failed.");
       return null;
